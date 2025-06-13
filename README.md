@@ -1,1 +1,1 @@
-# **R**efactoring **I**dentification **Mo**dule (ReIMo)
+![Texto alternativo](logo.png)
