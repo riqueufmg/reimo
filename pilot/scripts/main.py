@@ -1,13 +1,17 @@
 from snippets_functions import get_samples, get_snippet, snippet_to_file, backup_original_class, replace_method, restore_original_class, build_repository, analyze_build_output
 from llms_functions import hf_inference_endpoint, zeroshot_prompt
 from parser_llm_output import extract_issue_description, extract_refactored_code, extract_refactoring_explanation
+from dotenv import load_dotenv
+
 import pandas as pd
 import time
 import os
 import logging
 
-API_URL = "https://otnk6c3y6fae8bgb.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
-API_TOKEN = "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"
+load_dotenv()
+API_URL = os.getenv("API_URL")
+API_TOKEN = os.getenv("API_TOKEN")
+MODEL_NAME = os.getenv("MODEL_NAME")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +33,6 @@ if __name__ == "__main__":
 
     # Generate LLM outputs
     for sample in samples:
-        break ### I ALREADY GENERATE LLM OUTPUTS FOR TESTS
         try:
             snippet = get_snippet(sample['repository'] + sample['path'], sample['line'])
             snippet_to_file(snippet, sample['id'])
@@ -44,16 +47,11 @@ if __name__ == "__main__":
             
         except Exception as e:
             logger.error(f"Error processing sample {sample['id']}: {e}")
-    i = 0
+
     # Compile & Test LLMs outputs
     for sample in samples:
         try:
-            i += 1
-            if(i==3):
-                break
-            if(i!=2):
-                continue
-            directory_path = "outputs/codellama7binstruct/"
+            directory_path = f"outputs/{MODEL_NAME}/"
 
             extract_issue_description(
                 f"{directory_path}outputs",
