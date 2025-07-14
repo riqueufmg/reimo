@@ -2,8 +2,22 @@
 TODO:
 -----
 
-Criar código para dar start e stop no inference endpoint.
-Pegar 15 exemplos de Extract Method.
-Criar 5 prompts.
-Criar commits para obter codigo antes e depois da alteração.
-	|-- Rodar .jar com RefactoringMiner para saber se refatoração foi executada.
+Get 15 Extract Method Examples
+
+Create 15 prompts.
+
+Commit and rollback the changes
+
+Calculate Standard Error
+
+---------
+PROBLEMS:
+---------
+
+Need manual intervention to resume and pause the inference endpoint.
+
+Some inferences does not finish (eg. IDs 8 and 10).
+
+The LLM give as output the same code before refactoring (Improve prompt?).
+
+How to calculate the max tokens?

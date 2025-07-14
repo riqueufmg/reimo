@@ -45,14 +45,18 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
             }
         ],
         "temperature": 0.0,
-        "max_tokens": 10000
+        "max_tokens": 2000
     }
 
     logger.info(f"Sending inference request for sample_id: {sample_id}")
 
     try:
-        response = requests.post(api_url, headers=headers, json=data)
-        response.raise_for_status()
+        response = requests.post(
+            api_url,
+            headers=headers,
+            json=data,
+            timeout=(5, 300)
+        )
     except requests.RequestException as e:
         logger.error(f"Request failed: {e}")
         return

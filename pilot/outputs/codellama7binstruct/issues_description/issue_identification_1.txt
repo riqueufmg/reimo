@@ -1,1 +1,1 @@
-The code has a high Cognitive Complexity of 15, which is a sign of a codebase that is difficult to understand and maintain. The code is also repetitive and has a lot of nested loops, which makes it hard to follow the logic.
+The code has a high Cognitive Complexity of 155, which is a sign of a codebase that is difficult to understand and maintain. The code is also very long, with over 100 lines of code.

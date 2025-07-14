@@ -53,6 +53,9 @@ if __name__ == "__main__":
         try:
             directory_path = f"outputs/{MODEL_NAME}/"
 
+            if not os.path.exists(f"{directory_path}/outputs/output_{sample['id']}.txt"):
+                continue
+
             extract_issue_description(
                 f"{directory_path}outputs",
                 f"{directory_path}issues_description"
@@ -86,7 +89,7 @@ if __name__ == "__main__":
             build_status = analyze_build_output(build_output)
             logger.info(f"Build analysis result: {build_status}")
             
-            if(build_status == "SUCCESS"):
+            '''if(build_status == "SUCCESS"):
                 ### START COMMIT AND ROLLBACK
                 modified_file = sample['repository'] + sample['path']
                 repo_path = sample['repository']
@@ -96,7 +99,7 @@ if __name__ == "__main__":
                 # ... run RefactoringMiner ...
 
                 rollback_commit(repo_path)
-                ### END COMMIT AND ROLLBACK
+                ### END COMMIT AND ROLLBACK'''
 
             restore_original_class(sample['repository'] + sample['path'])
 
