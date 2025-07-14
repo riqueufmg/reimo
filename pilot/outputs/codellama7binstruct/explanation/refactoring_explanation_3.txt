@@ -1,0 +1,7 @@
+The refactoring consists of extracting the inner loop into a separate method, `calculatePenalty`, which takes the array, the current index, and the limit as parameters. This makes the code more modular and easier to understand, as the responsibility of calculating the penalty is now clearly separated from the responsibility of iterating over the array. Additionally, the `calculatePenalty` method can be reused in other parts of the code, making it more maintainable.
+
+The original code had a high Cognitive Complexity because it had a lot of nested loops, which made it difficult to understand the flow of the code. By extracting the inner loop into a separate method, the code becomes more linear and easier to follow.
+
+The refactoring also reduces the number of variables used in the code, which makes it easier to understand and maintain. The original code had four variables (`iLimit`, `jLimit`, `array`, and `prevBit`), while the refactored code has only two variables (`i` and `j`).
+
+Overall, the refactoring improves the readability and maintainability of the code, making it easier for developers to understand and work with.

@@ -1,0 +1,11 @@
+﻿id,repository,issue,path,line
+1,data/repositories/zxing-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/com/google/zxing/datamatrix/encoder/MinimalEncoder.java,254
+2,data/repositories/zxing-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/com/google/zxing/datamatrix/DataMatrixWriter.java,128
+3,data/repositories/zxing-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/com/google/zxing/qrcode/encoder/MaskUtil.java,197
+4,data/repositories/jsoup-master/,Cognitive Complexity of methods should not be too high,src/main/java/org/jsoup/nodes/Document.java,353
+5,data/repositories/jsoup-master/,Cognitive Complexity of methods should not be too high,src/main/java/org/jsoup/parser/CharacterReader.java,321
+6,data/repositories/jsoup-master/,Cognitive Complexity of methods should not be too high,src/main/java/org/jsoup/select/NodeTraversor.java,87
+7,data/repositories/jitwatch-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/org/adoptopenjdk/jitwatch/model/bytecode/BytecodeAnnotationBuilder.java,274
+8,data/repositories/jitwatch-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/org/adoptopenjdk/jitwatch/model/bytecode/BytecodeAnnotationBuilder.java,395
+9,data/repositories/jitwatch-master/,Cognitive Complexity of methods should not be too high,core/src/main/java/org/adoptopenjdk/jitwatch/model/assembly/AssemblyProcessor.java,71
+10,data/repositories/webmagic-develop/,Cognitive Complexity of methods should not be too high,webmagic-extension/src/main/java/us/codecraft/webmagic/model/PageModelExtractor.java,231

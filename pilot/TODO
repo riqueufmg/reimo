@@ -1,0 +1,12 @@
+-----
+TODO:
+-----
+
+Criar código para dar start e stop no inference endpoint.
+Separar ações de build do replace de código.
+Criar um .env
+Colocar projeto no GitHub.
+Pegar 15 exemplos de Extract Method.
+Criar 5 prompts.
+Criar commits para obter codigo antes e depois da alteração.
+	|-- Rodar .jar com RefactoringMiner para saber se refatoração foi executada.

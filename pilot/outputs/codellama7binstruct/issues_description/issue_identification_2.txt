@@ -1,0 +1,1 @@
+The code has a high cognitive complexity due to the nested if-else statements and the multiple loops. The code is difficult to understand and maintain.

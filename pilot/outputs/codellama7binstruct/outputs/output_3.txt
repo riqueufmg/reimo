@@ -1,0 +1,51 @@
+  <issue identification>
+The code has a high Cognitive Complexity of 15, which is a sign of a code smell. The function is doing too many things and has a lot of nested loops, making it difficult to understand and maintain.
+</issue identification>
+<refactored code>
+
+\begin{code}
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        penalty += calculatePenalty(array, i, jLimit, isHorizontal);
+    }
+    return penalty;
+}
+
+private static int calculatePenalty(byte[][] array, int i, int jLimit, boolean isHorizontal) {
+    int numSameBitCells = 0;
+    int prevBit = -1;
+    for (int j = 0; j < jLimit; j++) {
+        int bit = isHorizontal ? array[i][j] : array[j][i];
+        if (bit == prevBit) {
+            numSameBitCells++;
+        } else {
+            if (numSameBitCells >= 5) {
+                return N1 + (numSameBitCells - 5);
+            }
+            // Include the cell itself.
+            numSameBitCells = 1;
+            prevBit = bit;
+        }
+    }
+    if (numSameBitCells >= 5) {
+        return N1 + (numSameBitCells - 5);
+    }
+    return 0;
+}
+\end{code}
+
+</refactored code>
+<refactoring explanation>
+
+The refactoring consists of extracting the inner loop into a separate method, `calculatePenalty`, which takes the array, the current index, and the limit as parameters. This makes the code more modular and easier to understand, as the responsibility of calculating the penalty is now clearly separated from the responsibility of iterating over the array. Additionally, the `calculatePenalty` method can be reused in other parts of the code, making it more maintainable.
+
+The original code had a high Cognitive Complexity because it had a lot of nested loops, which made it difficult to understand the flow of the code. By extracting the inner loop into a separate method, the code becomes more linear and easier to follow.
+
+The refactoring also reduces the number of variables used in the code, which makes it easier to understand and maintain. The original code had four variables (`iLimit`, `jLimit`, `array`, and `prevBit`), while the refactored code has only two variables (`i` and `j`).
+
+Overall, the refactoring improves the readability and maintainability of the code, making it easier for developers to understand and work with.
+</refactoring explanation>

@@ -1,0 +1,2127 @@
+2025-07-11 13:51:20,509 [INFO] Starting main execution
+2025-07-11 13:51:20,509 [INFO] Reading samples from: data/samples.csv with delimiter: ','
+2025-07-11 13:51:20,509 [INFO] Loaded dataframe with 10 rows and 5 columns
+2025-07-11 13:51:20,509 [INFO] Loaded 10 samples
+2025-07-11 13:51:20,509 [INFO] Starting extraction of issue descriptions from: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,509 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,509 [INFO] Found 3 '.txt' files
+2025-07-11 13:51:20,509 [INFO] Found 3 text files to process.
+2025-07-11 13:51:20,509 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:51:20,509 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_1.txt
+2025-07-11 13:51:20,509 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:51:20,509 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_2.txt
+2025-07-11 13:51:20,509 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:51:20,524 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_3.txt
+2025-07-11 13:51:20,524 [INFO] Starting extraction of refactored code from: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,524 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,524 [INFO] Found 3 '.txt' files
+2025-07-11 13:51:20,525 [INFO] Found 3 files to process.
+2025-07-11 13:51:20,525 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:51:20,527 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_1.java
+2025-07-11 13:51:20,527 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:51:20,529 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_2.java
+2025-07-11 13:51:20,529 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:51:20,531 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_3.java
+2025-07-11 13:51:20,531 [INFO] Starting extraction of refactoring explanations from directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,531 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:51:20,531 [INFO] Found 3 '.txt' files
+2025-07-11 13:51:20,531 [INFO] Found 3 files to process.
+2025-07-11 13:51:20,531 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:51:20,531 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_1.txt
+2025-07-11 13:51:20,531 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:51:20,531 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_2.txt
+2025-07-11 13:51:20,531 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:51:20,531 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_3.txt
+2025-07-11 13:51:20,531 [INFO] Creating backup for class file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/encoder/MinimalEncoder.java
+2025-07-11 13:51:20,671 [INFO] Backup completed successfully.
+2025-07-11 13:51:20,672 [INFO] Replacing method in file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/encoder/MinimalEncoder.java at line: 254 using refactored snippet: outputs/codellama7binstruct/refactorings/refactored_code_1.java
+2025-07-11 13:51:21,261 [INFO] Method replacement completed successfully.
+2025-07-11 13:51:21,261 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:52:22,185 [ERROR] Build failed with return code 1.
+2025-07-11 13:52:22,186 [ERROR] STDERR: INFO: Starting src\test\resources\blackbox\aztec-1\7.png
+INFO: Starting src\test\resources\blackbox\aztec-1\abc-19x19C.png
+INFO: Starting src\test\resources\blackbox\aztec-1\abc-37x37.png
+INFO: Starting src\test\resources\blackbox\aztec-1\dlusbs.png
+INFO: Starting src\test\resources\blackbox\aztec-1\hello-with-errors.png
+INFO: Starting src\test\resources\blackbox\aztec-2\01.png
+INFO: Starting src\test\resources\blackbox\aztec-2\02.png
+INFO: Starting src\test\resources\blackbox\aztec-2\03.png
+INFO: Starting src\test\resources\blackbox\aztec-2\04.png
+INFO: Starting src\test\resources\blackbox\aztec-2\05.png
+INFO: Starting src\test\resources\blackbox\aztec-1\hello.png
+INFO: Starting src\test\resources\blackbox\aztec-2\06.png
+INFO: Starting src\test\resources\blackbox\aztec-2\07.png
+INFO: Starting src\test\resources\blackbox\aztec-2\08.png
+INFO: Starting src\test\resources\blackbox\aztec-2\09.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\0123456789.png
+INFO: Starting src\test\resources\blackbox\aztec-2\10.png
+INFO: Starting src\test\resources\blackbox\aztec-2\11.png
+INFO: Starting src\test\resources\blackbox\aztec-2\12.png
+INFO: Starting src\test\resources\blackbox\aztec-2\13.png
+INFO: Starting src\test\resources\blackbox\aztec-1\Historico.png
+INFO: Starting src\test\resources\blackbox\aztec-1\HistoricoLong.png
+INFO: Starting src\test\resources\blackbox\aztec-1\lorem-075x075.png
+INFO: Starting src\test\resources\blackbox\aztec-2\14.png
+INFO: Starting src\test\resources\blackbox\aztec-1\lorem-105x105.png
+INFO: Starting src\test\resources\blackbox\aztec-2\15.png
+INFO: Starting src\test\resources\blackbox\aztec-2\16.png
+INFO: Starting src\test\resources\blackbox\aztec-1\lorem-131x131.png
+INFO: Starting src\test\resources\blackbox\aztec-1\lorem-151x151.png
+INFO: Starting src\test\resources\blackbox\aztec-2\17.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-18x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-26x12.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-32x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-36x12.png
+INFO: Starting src\test\resources\blackbox\aztec-2\18.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-36x16.png
+INFO: Starting src\test\resources\blackbox\aztec-2\19.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-48x16.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-52x52-IDAutomation.png
+INFO: Starting src\test\resources\blackbox\aztec-1\tableShifts.png
+INFO: Starting src\test\resources\blackbox\aztec-1\tag.png
+INFO: Starting src\test\resources\blackbox\aztec-2\20.png
+INFO: Starting src\test\resources\blackbox\aztec-1\texte.png
+INFO: Rotation 0 degrees:
+INFO:  15 of 15 images passed (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  15 of 15 images passed with try harder (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  15 of 15 images passed (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  15 of 15 images passed with try harder (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  15 of 15 images passed (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  15 of 15 images passed with try harder (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  15 of 15 images passed (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  15 of 15 images passed with try harder (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 120 images out of 120 (100%, 120 required)
+INFO: Starting src\test\resources\blackbox\aztec-2\21.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcd-52x52.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\01.png
+INFO: Starting src\test\resources\blackbox\aztec-2\22.png
+INFO: Rotation 0 degrees:
+INFO:  5 of 22 images passed (5 required)
+INFO:  0 failed due to misreads, 17 not detected
+INFO:  5 of 22 images passed with try harder (5 required)
+INFO:  0 failed due to misreads, 17 not detected
+INFO: Rotation 90 degrees:
+INFO:  4 of 22 images passed (4 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO:  4 of 22 images passed with try harder (4 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO: Rotation 180 degrees:
+INFO:  6 of 22 images passed (6 required)
+INFO:  0 failed due to misreads, 16 not detected
+INFO:  6 of 22 images passed with try harder (6 required)
+INFO:  0 failed due to misreads, 16 not detected
+INFO: Rotation 270 degrees:
+INFO:  3 of 22 images passed (3 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO:  3 of 22 images passed with try harder (3 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO: Decoded 36 images out of 176 (20%, 36 required)
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-120x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\02.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcdefg-64x64.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-144x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-36x20.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-40x26.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-44x20.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-48x22.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-48x24.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-48x26.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\03.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcdefg-with-errors.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-48x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x12.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\04.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x16.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x20.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x24.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x26.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\05.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\abcdefg.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\06.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-64x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-80x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-88x12.png
+INFO: Starting src\test\resources\blackbox\datamatrix-3\abcd-96x8.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\C40.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\EDIFACT.png
+INFO: Rotation 0 degrees:
+INFO:  18 of 18 images passed (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  18 of 18 images passed with try harder (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  17 of 18 images passed (17 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO:  17 of 18 images passed with try harder (17 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO: Rotation 180 degrees:
+INFO:  18 of 18 images passed (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  18 of 18 images passed with try harder (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  18 of 18 images passed (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  18 of 18 images passed with try harder (18 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 142 images out of 144 (98%, 142 required)
+INFO: Starting src\test\resources\blackbox\datamatrix-1\GUID.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\HelloWorld_Text_L_Kaywa.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\07.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\HelloWorld_Text_L_Kaywa_1_error_byte.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\HelloWorld_Text_L_Kaywa_2_error_byte.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\HelloWorld_Text_L_Kaywa_3_error_byte.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\08.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\HelloWorld_Text_L_Kaywa_4_error_byte.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\X12.png
+INFO: Starting src\test\resources\blackbox\datamatrix-1\zxing_URL_L_Kayway.png
+INFO: Starting src\test\resources\blackbox\inverted\datamatrix-0123456789.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\09.png
+INFO: Rotation 0 degrees:
+INFO:  22 of 22 images passed (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  22 of 22 images passed with try harder (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  22 of 22 images passed (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  22 of 22 images passed with try harder (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  22 of 22 images passed (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  22 of 22 images passed with try harder (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  22 of 22 images passed (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  22 of 22 images passed with try harder (22 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 176 images out of 176 (100%, 176 required)
+INFO: Starting src\test\resources\blackbox\inverted\datamatrix-0123456789.png
+INFO: Rotation 0 degrees: 0 of 1 images were false positives (0 allowed)
+INFO: Rotation 90 degrees: 0 of 1 images were false positives (0 allowed)
+INFO: Rotation 180 degrees: 0 of 1 images were false positives (0 allowed)
+INFO: Rotation 270 degrees: 0 of 1 images were false positives (0 allowed)
+INFO: Rotation 0 degrees:
+INFO:  1 of 1 images passed (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  1 of 1 images passed with try harder (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  1 of 1 images passed (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  1 of 1 images passed with try harder (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  1 of 1 images passed (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  1 of 1 images passed with try harder (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  1 of 1 images passed (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  1 of 1 images passed with try harder (1 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 8 images out of 8 (100%, 8 required)
+INFO: Starting src\test\resources\blackbox\datamatrix-2\10.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\1.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\MODE2.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\MODE3.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\mode4-mixed-sets.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\MODE4.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\mode5-with-large-quiet-zone.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\11.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\01.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\MODE5.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\MODE6.png
+INFO: Starting src\test\resources\blackbox\maxicode-1\with-errors.png
+INFO: Rotation 0 degrees:
+INFO:  9 of 9 images passed (9 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  9 of 9 images passed with try harder (9 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 18 images out of 18 (100%, 18 required)
+INFO: Starting src\test\resources\blackbox\falsepositives\01.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\12.png
+INFO: Try harder found false positive: '1858176738383' with format 'EAN_13' (rotation: 0)
+INFO: Try harder found false positive: '1858176738383' with format 'EAN_13' (rotation: 90)
+INFO: Starting src\test\resources\blackbox\datamatrix-2\13.png
+INFO: Try harder found false positive: '1858176738383' with format 'EAN_13' (rotation: 180)
+INFO: Try harder found false positive: '1858176738383' with format 'EAN_13' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives\02.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\14.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\02.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\15.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\16.png
+INFO: Format mismatch: expected 'DATA_MATRIX' but got 'UPC_E' (try harder, rotation: 0)
+INFO: Format mismatch: expected 'DATA_MATRIX' but got 'UPC_E' (try harder, rotation: 90)
+INFO: Format mismatch: expected 'DATA_MATRIX' but got 'UPC_E' (try harder, rotation: 180)
+INFO: Format mismatch: expected 'DATA_MATRIX' but got 'UPC_E' (try harder, rotation: 270)
+INFO: Starting src\test\resources\blackbox\datamatrix-2\17.png
+INFO: Starting src\test\resources\blackbox\datamatrix-2\18.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\03.png
+INFO: Rotation 0 degrees:
+INFO:  13 of 18 images passed (13 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  13 of 18 images passed with try harder (13 required)
+INFO:  1 failed due to misreads, 4 not detected
+INFO: Rotation 90 degrees:
+INFO:  15 of 18 images passed (15 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  15 of 18 images passed with try harder (15 required)
+INFO:  1 failed due to misreads, 2 not detected
+INFO: Rotation 180 degrees:
+INFO:  17 of 18 images passed (17 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO:  16 of 18 images passed with try harder (16 required)
+INFO:  1 failed due to misreads, 1 not detected
+INFO: Rotation 270 degrees:
+INFO:  15 of 18 images passed (15 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  15 of 18 images passed with try harder (15 required)
+INFO:  1 failed due to misreads, 2 not detected
+INFO: Decoded 119 images out of 144 (82%, 119 required)
+INFO: Starting src\test\resources\blackbox\partial\01.png
+INFO: Starting src\test\resources\blackbox\falsepositives\03.png
+INFO: Starting src\test\resources\blackbox\unsupported\01.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\04.png
+INFO: Starting src\test\resources\blackbox\partial\02.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\05.png
+INFO: Starting src\test\resources\blackbox\partial\03.png
+INFO: Starting src\test\resources\blackbox\falsepositives\04.png
+INFO: Starting src\test\resources\blackbox\unsupported\03.png
+INFO: Starting src\test\resources\blackbox\partial\04.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\06.png
+INFO: Starting src\test\resources\blackbox\unsupported\04.png
+INFO: Starting src\test\resources\blackbox\falsepositives\05.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\07.png
+INFO: Starting src\test\resources\blackbox\partial\05.png
+INFO: Starting src\test\resources\blackbox\unsupported\05.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\08.png
+INFO: Starting src\test\resources\blackbox\partial\06.png
+INFO: Starting src\test\resources\blackbox\falsepositives\06.png
+INFO: Rotation 0 degrees: 0 of 4 images were false positives (0 allowed)
+INFO: Rotation 90 degrees: 0 of 4 images were false positives (0 allowed)
+INFO: Rotation 180 degrees: 0 of 4 images were false positives (0 allowed)
+INFO: Rotation 270 degrees: 0 of 4 images were false positives (0 allowed)
+INFO: Starting src\test\resources\blackbox\partial\07.png
+INFO: Starting src\test\resources\blackbox\codabar-1\01.png
+INFO: Starting src\test\resources\blackbox\codabar-1\02.png
+INFO: Starting src\test\resources\blackbox\codabar-1\03.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\09.png
+INFO: Starting src\test\resources\blackbox\codabar-1\04.png
+INFO: Starting src\test\resources\blackbox\codabar-1\09.png
+INFO: Starting src\test\resources\blackbox\codabar-1\10.png
+INFO: Starting src\test\resources\blackbox\codabar-1\11.png
+INFO: Starting src\test\resources\blackbox\codabar-1\12.png
+INFO: Starting src\test\resources\blackbox\codabar-1\13.png
+INFO: Starting src\test\resources\blackbox\codabar-1\14.png
+INFO: Starting src\test\resources\blackbox\codabar-1\15.png
+INFO: Rotation 0 degrees:
+INFO:  11 of 11 images passed (11 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  11 of 11 images passed with try harder (11 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  11 of 11 images passed (11 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  11 of 11 images passed with try harder (11 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 44 images out of 44 (100%, 44 required)
+INFO: Starting src\test\resources\blackbox\code128-1\1.png
+INFO: Starting src\test\resources\blackbox\code128-1\2.png
+INFO: Starting src\test\resources\blackbox\code128-1\3.png
+INFO: Starting src\test\resources\blackbox\code128-1\4.png
+INFO: Starting src\test\resources\blackbox\falsepositives\07.png
+INFO: Starting src\test\resources\blackbox\partial\08.png
+INFO: Starting src\test\resources\blackbox\code128-1\5.png
+INFO: Try harder found false positive: '21290886' with format 'EAN_8' (rotation: 90)
+INFO: Starting src\test\resources\blackbox\code128-1\6.png
+INFO: Rotation 0 degrees:
+INFO:  6 of 6 images passed (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  6 of 6 images passed with try harder (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  6 of 6 images passed (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  6 of 6 images passed with try harder (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 24 images out of 24 (100%, 24 required)
+INFO: Starting src\test\resources\blackbox\code128-2\01.png
+INFO: Try harder found false positive: '21290886' with format 'EAN_8' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\code128-2\02.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\10.png
+INFO: Found false positive: '12251117' with format 'EAN_8' (rotation: 0)
+INFO: Try harder found false positive: '12251117' with format 'EAN_8' (rotation: 90)
+INFO: Starting src\test\resources\blackbox\partial\09.png
+INFO: Starting src\test\resources\blackbox\code128-2\03.png
+INFO: Starting src\test\resources\blackbox\falsepositives\08.png
+INFO: Try harder found false positive: '12251117' with format 'EAN_8' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\code128-2\04.png
+INFO: Starting src\test\resources\blackbox\code128-2\05.png
+INFO: Try harder found false positive: '12251117' with format 'EAN_8' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives-2\11.png
+INFO: Starting src\test\resources\blackbox\code128-2\06.png
+INFO: Starting src\test\resources\blackbox\code128-2\07.png
+INFO: Starting src\test\resources\blackbox\code128-2\08.png
+INFO: Starting src\test\resources\blackbox\code128-2\09.png
+INFO: Starting src\test\resources\blackbox\partial\10.png
+INFO: Starting src\test\resources\blackbox\falsepositives\09.png
+INFO: Starting src\test\resources\blackbox\code128-2\10.png
+INFO: Starting src\test\resources\blackbox\code128-2\11.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\12.png
+INFO: Starting src\test\resources\blackbox\code128-2\12.png
+INFO: Starting src\test\resources\blackbox\code128-2\13.png
+INFO: Starting src\test\resources\blackbox\code128-2\14.png
+INFO: Starting src\test\resources\blackbox\partial\11.png
+INFO: Starting src\test\resources\blackbox\code128-2\15.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\13.png
+INFO: Found false positive: '02371672' with format 'UPC_E' (rotation: 0)
+INFO: Starting src\test\resources\blackbox\falsepositives\10.png
+INFO: Starting src\test\resources\blackbox\code128-2\16.png
+INFO: Starting src\test\resources\blackbox\code128-2\17.png
+INFO: Try harder found false positive: '02371672' with format 'UPC_E' (rotation: 90)
+INFO: Found false positive: '17321679' with format 'UPC_E' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\partial\12.png
+INFO: Starting src\test\resources\blackbox\code128-2\18.png
+INFO: Try harder found false positive: '02371672' with format 'UPC_E' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives-2\14.png
+INFO: Starting src\test\resources\blackbox\code128-2\19.png
+INFO: Starting src\test\resources\blackbox\code128-2\20.png
+INFO: Starting src\test\resources\blackbox\code128-2\21.png
+INFO: Starting src\test\resources\blackbox\partial\13.png
+INFO: Starting src\test\resources\blackbox\code128-2\22.png
+INFO: Starting src\test\resources\blackbox\code128-2\23.png
+INFO: Starting src\test\resources\blackbox\code128-2\24.png
+INFO: Starting src\test\resources\blackbox\falsepositives\11.png
+INFO: Starting src\test\resources\blackbox\code128-2\25.png
+INFO: Starting src\test\resources\blackbox\code128-2\26.png
+INFO: Starting src\test\resources\blackbox\code128-2\27.png
+INFO: Starting src\test\resources\blackbox\code128-2\28.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\15.png
+INFO: Starting src\test\resources\blackbox\code128-2\29.png
+INFO: Starting src\test\resources\blackbox\code128-2\30.png
+INFO: Starting src\test\resources\blackbox\partial\14.png
+INFO: Starting src\test\resources\blackbox\falsepositives\12.png
+INFO: Starting src\test\resources\blackbox\code128-2\31.png
+INFO: Starting src\test\resources\blackbox\code128-2\32.png
+INFO: Starting src\test\resources\blackbox\partial\15.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\16.png
+INFO: Starting src\test\resources\blackbox\code128-2\33.png
+INFO: Starting src\test\resources\blackbox\code128-2\34.png
+INFO: Starting src\test\resources\blackbox\code128-2\35.png
+INFO: Starting src\test\resources\blackbox\code128-2\36.png
+INFO: Starting src\test\resources\blackbox\partial\16.png
+INFO: Starting src\test\resources\blackbox\code128-2\37.png
+INFO: Starting src\test\resources\blackbox\falsepositives\13.png
+INFO: Starting src\test\resources\blackbox\code128-2\38.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\17.png
+INFO: Try harder found false positive: '06117825' with format 'UPC_E' (rotation: 0)
+INFO: Try harder found false positive: '03017932' with format 'UPC_E' (rotation: 0)
+INFO: Starting src\test\resources\blackbox\code128-2\39.png
+INFO: Try harder found false positive: '02176871' with format 'EAN_8' (rotation: 90)
+INFO: Try harder found false positive: '06117825' with format 'UPC_E' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\partial\17.png
+INFO: Starting src\test\resources\blackbox\code128-2\40.png
+INFO: Rotation 0 degrees:
+INFO:  36 of 40 images passed (36 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  39 of 40 images passed with try harder (39 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO: Rotation 180 degrees:
+INFO:  36 of 40 images passed (36 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  39 of 40 images passed with try harder (39 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO: Decoded 150 images out of 160 (93%, 150 required)
+INFO: Try harder found false positive: '03017932' with format 'UPC_E' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives\14.png
+INFO: Starting src\test\resources\blackbox\code128-3\1.png
+INFO: Starting src\test\resources\blackbox\code128-3\2.png
+INFO: Rotation 0 degrees:
+INFO:  2 of 2 images passed (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  2 of 2 images passed with try harder (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  2 of 2 images passed (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  2 of 2 images passed with try harder (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 8 images out of 8 (100%, 8 required)
+INFO: Try harder found false positive: '02176871' with format 'EAN_8' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives-2\18.png
+INFO: Starting src\test\resources\blackbox\code39-1\1.png
+INFO: Starting src\test\resources\blackbox\code39-1\2.png
+INFO: Starting src\test\resources\blackbox\code39-1\3.png
+INFO: Starting src\test\resources\blackbox\code39-1\4.png
+INFO: Rotation 0 degrees:
+INFO:  4 of 4 images passed (4 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  4 of 4 images passed with try harder (4 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  4 of 4 images passed (4 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  4 of 4 images passed with try harder (4 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 16 images out of 16 (100%, 16 required)
+INFO: Starting src\test\resources\blackbox\partial\18.png
+INFO: Starting src\test\resources\blackbox\code39-3\01.png
+INFO: Starting src\test\resources\blackbox\code39-3\02.png
+INFO: Starting src\test\resources\blackbox\code39-3\03.png
+INFO: Starting src\test\resources\blackbox\code39-3\04.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\19.png
+INFO: Starting src\test\resources\blackbox\code39-3\05.png
+INFO: Starting src\test\resources\blackbox\partial\19.png
+INFO: Starting src\test\resources\blackbox\falsepositives\15.png
+INFO: Starting src\test\resources\blackbox\code39-3\06.png
+INFO: Starting src\test\resources\blackbox\code39-3\07.png
+INFO: Starting src\test\resources\blackbox\code39-3\08.png
+INFO: Starting src\test\resources\blackbox\code39-3\09.png
+INFO: Starting src\test\resources\blackbox\partial\20.png
+INFO: Starting src\test\resources\blackbox\code39-3\10.png
+INFO: Starting src\test\resources\blackbox\code39-3\11.png
+INFO: Starting src\test\resources\blackbox\code39-3\12.png
+INFO: Starting src\test\resources\blackbox\partial\21.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\20.png
+INFO: Starting src\test\resources\blackbox\code39-3\13.png
+INFO: Try harder found false positive: '06182218' with format 'UPC_E' (rotation: 0)
+INFO: Starting src\test\resources\blackbox\code39-3\14.png
+INFO: Starting src\test\resources\blackbox\code39-3\15.png
+INFO: Starting src\test\resources\blackbox\partial\22.png
+INFO: Try harder found false positive: '06182218' with format 'UPC_E' (rotation: 90)
+INFO: Starting src\test\resources\blackbox\code39-3\16.png
+INFO: Starting src\test\resources\blackbox\falsepositives\16.png
+INFO: Try harder found false positive: '06182218' with format 'UPC_E' (rotation: 180)
+INFO: Try harder found false positive: '06182218' with format 'UPC_E' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\falsepositives-2\21.png
+INFO: Starting src\test\resources\blackbox\code39-3\17.png
+INFO: Starting src\test\resources\blackbox\partial\23.png
+INFO: Rotation 0 degrees:
+INFO:  17 of 17 images passed (17 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  17 of 17 images passed with try harder (17 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  17 of 17 images passed (17 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  17 of 17 images passed with try harder (17 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 68 images out of 68 (100%, 68 required)
+INFO: Starting src\test\resources\blackbox\code39-2\1.png
+INFO: Starting src\test\resources\blackbox\code39-2\2.png
+INFO: Rotation 0 degrees:
+INFO:  2 of 2 images passed (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  2 of 2 images passed with try harder (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  2 of 2 images passed (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  2 of 2 images passed with try harder (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 8 images out of 8 (100%, 8 required)
+INFO: Starting src\test\resources\blackbox\code93-1\1.png
+INFO: Starting src\test\resources\blackbox\code93-1\2.png
+INFO: Starting src\test\resources\blackbox\code93-1\3.png
+INFO: Rotation 0 degrees:
+INFO:  3 of 3 images passed (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  3 of 3 images passed with try harder (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  3 of 3 images passed (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  3 of 3 images passed with try harder (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 12 images out of 12 (100%, 12 required)
+INFO: Starting src\test\resources\blackbox\partial\24.png
+INFO: Starting src\test\resources\blackbox\ean13-1\1.png
+INFO: Starting src\test\resources\blackbox\ean13-1\10.png
+INFO: Starting src\test\resources\blackbox\ean13-1\12.png
+INFO: Starting src\test\resources\blackbox\ean13-1\13.png
+INFO: Starting src\test\resources\blackbox\ean13-1\14.png
+INFO: Starting src\test\resources\blackbox\ean13-1\15.png
+INFO: Starting src\test\resources\blackbox\partial\25.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\22.png
+INFO: Starting src\test\resources\blackbox\partial\26.png
+INFO: Starting src\test\resources\blackbox\ean13-1\18.png
+INFO: Starting src\test\resources\blackbox\falsepositives\17.png
+INFO: Starting src\test\resources\blackbox\ean13-1\19.png
+INFO: Starting src\test\resources\blackbox\ean13-1\2.png
+INFO: Starting src\test\resources\blackbox\partial\27.png
+INFO: Starting src\test\resources\blackbox\ean13-1\20.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\23.png
+INFO: Starting src\test\resources\blackbox\ean13-1\21.png
+INFO: Starting src\test\resources\blackbox\partial\28.png
+INFO: Starting src\test\resources\blackbox\ean13-1\22.png
+INFO: Starting src\test\resources\blackbox\ean13-1\23.png
+INFO: Starting src\test\resources\blackbox\falsepositives\18.png
+INFO: Starting src\test\resources\blackbox\partial\29.png
+INFO: Starting src\test\resources\blackbox\ean13-1\24.png
+INFO: Starting src\test\resources\blackbox\ean13-1\25.png
+INFO: Starting src\test\resources\blackbox\partial\30.png
+INFO: Starting src\test\resources\blackbox\ean13-1\26.png
+INFO: Starting src\test\resources\blackbox\ean13-1\28.png
+INFO: Starting src\test\resources\blackbox\ean13-1\29.png
+INFO: Starting src\test\resources\blackbox\falsepositives-2\24.png
+INFO: Starting src\test\resources\blackbox\falsepositives\19.png
+INFO: Starting src\test\resources\blackbox\partial\31.png
+INFO: Starting src\test\resources\blackbox\ean13-1\3.png
+INFO: Starting src\test\resources\blackbox\ean13-1\30.png
+INFO: Starting src\test\resources\blackbox\partial\32.png
+INFO: Starting src\test\resources\blackbox\ean13-1\31.png
+INFO: Starting src\test\resources\blackbox\ean13-1\32.png
+INFO: Starting src\test\resources\blackbox\ean13-1\33.png
+INFO: Starting src\test\resources\blackbox\ean13-1\34.png
+INFO: Starting src\test\resources\blackbox\partial\33.png
+INFO: Try harder found false positive: '02751160' with format 'UPC_E' (rotation: 0)
+INFO: Try harder found false positive: '02751160' with format 'UPC_E' (rotation: 90)
+INFO: Try harder found false positive: '02751160' with format 'UPC_E' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\falsepositives-2\25.png
+INFO: Starting src\test\resources\blackbox\ean13-1\35.png
+INFO: Try harder found false positive: '02751160' with format 'UPC_E' (rotation: 270)
+INFO: Starting src\test\resources\blackbox\partial\34.png
+INFO: Starting src\test\resources\blackbox\falsepositives\20.png
+INFO: Starting src\test\resources\blackbox\partial\35.png
+INFO: Starting src\test\resources\blackbox\ean13-1\36.png
+INFO: Rotation 0 degrees: 4 of 25 images were false positives (4 allowed)
+INFO: Rotation 90 degrees: 4 of 25 images were false positives (4 allowed)
+INFO: Rotation 180 degrees: 4 of 25 images were false positives (4 allowed)
+INFO: Rotation 270 degrees: 4 of 25 images were false positives (4 allowed)
+INFO: Starting src\test\resources\blackbox\ean13-2\01.png
+INFO: Starting src\test\resources\blackbox\partial\36.png
+INFO: Starting src\test\resources\blackbox\ean13-2\02.png
+INFO: Starting src\test\resources\blackbox\ean13-1\37.png
+INFO: Starting src\test\resources\blackbox\ean13-1\38.png
+INFO: Starting src\test\resources\blackbox\partial\37.png
+INFO: Starting src\test\resources\blackbox\ean13-1\4.png
+INFO: Starting src\test\resources\blackbox\ean13-2\03.png
+INFO: Starting src\test\resources\blackbox\ean13-1\5.png
+INFO: Starting src\test\resources\blackbox\partial\38.png
+INFO: Starting src\test\resources\blackbox\falsepositives\21.png
+INFO: Starting src\test\resources\blackbox\ean13-2\04.png
+INFO: Starting src\test\resources\blackbox\ean13-1\6.png
+INFO: Starting src\test\resources\blackbox\ean13-1\7.png
+INFO: Starting src\test\resources\blackbox\partial\39.png
+INFO: Starting src\test\resources\blackbox\ean13-1\8.png
+INFO: Starting src\test\resources\blackbox\ean13-2\05.png
+INFO: Starting src\test\resources\blackbox\ean13-2\06.png
+INFO: Starting src\test\resources\blackbox\ean13-2\07.png
+INFO: Starting src\test\resources\blackbox\ean13-1\9.png
+INFO: Rotation 0 degrees:
+INFO:  30 of 34 images passed (30 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  32 of 34 images passed with try harder (32 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO: Rotation 180 degrees:
+INFO:  27 of 34 images passed (27 required)
+INFO:  0 failed due to misreads, 7 not detected
+INFO:  32 of 34 images passed with try harder (32 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO: Decoded 121 images out of 136 (88%, 121 required)
+INFO: Starting src\test\resources\blackbox\ean13-3\01.png
+INFO: Starting src\test\resources\blackbox\ean13-3\02.png
+INFO: Starting src\test\resources\blackbox\partial\40.png
+INFO: Starting src\test\resources\blackbox\ean13-2\08.png
+INFO: Starting src\test\resources\blackbox\ean13-2\09.png
+INFO: Starting src\test\resources\blackbox\ean13-2\10.png
+INFO: Starting src\test\resources\blackbox\falsepositives\22.png
+INFO: Starting src\test\resources\blackbox\ean13-3\03.png
+INFO: Starting src\test\resources\blackbox\ean13-3\04.png
+INFO: Starting src\test\resources\blackbox\ean13-3\05.png
+INFO: Starting src\test\resources\blackbox\ean13-3\06.png
+INFO: Starting src\test\resources\blackbox\ean13-3\07.png
+INFO: Starting src\test\resources\blackbox\ean13-3\08.png
+INFO: Starting src\test\resources\blackbox\ean13-3\09.png
+INFO: Starting src\test\resources\blackbox\ean13-3\10.png
+INFO: Starting src\test\resources\blackbox\ean13-3\11.png
+INFO: Starting src\test\resources\blackbox\partial\41.png
+INFO: Starting src\test\resources\blackbox\ean13-3\12.png
+INFO: Starting src\test\resources\blackbox\ean13-3\13.png
+INFO: Starting src\test\resources\blackbox\ean13-3\14.png
+INFO: Starting src\test\resources\blackbox\ean13-3\15.png
+INFO: Starting src\test\resources\blackbox\ean13-3\16.png
+INFO: Starting src\test\resources\blackbox\ean13-3\17.png
+INFO: Starting src\test\resources\blackbox\ean13-3\18.png
+INFO: Starting src\test\resources\blackbox\ean13-3\19.png
+INFO: Starting src\test\resources\blackbox\ean13-3\20.png
+INFO: Starting src\test\resources\blackbox\ean13-3\21.png
+INFO: Starting src\test\resources\blackbox\ean13-3\22.png
+INFO: Starting src\test\resources\blackbox\ean13-3\23.png
+INFO: Starting src\test\resources\blackbox\ean13-3\24.png
+INFO: Starting src\test\resources\blackbox\ean13-2\11.png
+INFO: Starting src\test\resources\blackbox\partial\42.png
+INFO: Starting src\test\resources\blackbox\ean13-3\25.png
+INFO: Starting src\test\resources\blackbox\ean13-3\26.png
+INFO: Starting src\test\resources\blackbox\ean13-3\27.png
+INFO: Starting src\test\resources\blackbox\ean13-3\28.png
+INFO: Starting src\test\resources\blackbox\ean13-3\29.png
+INFO: Starting src\test\resources\blackbox\ean13-3\30.png
+INFO: Starting src\test\resources\blackbox\ean13-3\31.png
+INFO: Starting src\test\resources\blackbox\ean13-2\12.png
+INFO: Rotation 0 degrees: 2 of 22 images were false positives (2 allowed)
+INFO: Rotation 90 degrees: 2 of 22 images were false positives (2 allowed)
+INFO: Rotation 180 degrees: 2 of 22 images were false positives (2 allowed)
+INFO: Rotation 270 degrees: 2 of 22 images were false positives (2 allowed)
+INFO: Starting src\test\resources\blackbox\partial\43.png
+INFO: Starting src\test\resources\blackbox\ean13-3\32.png
+INFO: Starting src\test\resources\blackbox\ean13-3\33.png
+INFO: Starting src\test\resources\blackbox\ean13-3\34.png
+INFO: Starting src\test\resources\blackbox\ean13-3\35.png
+INFO: Starting src\test\resources\blackbox\ean13-3\36.png
+INFO: Starting src\test\resources\blackbox\ean13-3\37.png
+INFO: Starting src\test\resources\blackbox\ean13-3\38.png
+INFO: Starting src\test\resources\blackbox\ean13-3\39.png
+INFO: Starting src\test\resources\blackbox\ean13-4\01.png
+INFO: Format mismatch: expected 'EAN_13' but got 'UPC_E' (rotation: 0)
+INFO: Format mismatch: expected 'EAN_13' but got 'UPC_E' (try harder, rotation: 0)
+INFO: Format mismatch: expected 'EAN_13' but got 'UPC_E' (rotation: 180)
+INFO: Format mismatch: expected 'EAN_13' but got 'UPC_E' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\ean13-4\02.png
+INFO: Starting src\test\resources\blackbox\ean13-4\03.png
+INFO: Starting src\test\resources\blackbox\ean13-3\40.png
+INFO: Starting src\test\resources\blackbox\ean13-3\41.png
+INFO: Starting src\test\resources\blackbox\ean13-3\42.png
+INFO: Starting src\test\resources\blackbox\ean13-3\43.png
+INFO: Starting src\test\resources\blackbox\ean13-3\44.png
+INFO: Starting src\test\resources\blackbox\ean13-3\45.png
+INFO: Starting src\test\resources\blackbox\ean13-3\46.png
+INFO: Starting src\test\resources\blackbox\ean13-3\47.png
+INFO: Starting src\test\resources\blackbox\ean13-3\48.png
+INFO: Starting src\test\resources\blackbox\partial\44.png
+INFO: Starting src\test\resources\blackbox\ean13-3\49.png
+INFO: Starting src\test\resources\blackbox\ean13-3\50.png
+INFO: Starting src\test\resources\blackbox\ean13-3\51.png
+INFO: Starting src\test\resources\blackbox\ean13-3\52.png
+INFO: Starting src\test\resources\blackbox\ean13-3\53.png
+INFO: Starting src\test\resources\blackbox\ean13-3\54.png
+INFO: Starting src\test\resources\blackbox\ean13-3\55.png
+INFO: Rotation 0 degrees:
+INFO:  53 of 55 images passed (53 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO:  55 of 55 images passed with try harder (55 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  55 of 55 images passed (55 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  55 of 55 images passed with try harder (55 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 218 images out of 220 (99%, 218 required)
+INFO: Starting src\test\resources\blackbox\ean13-4\04.png
+INFO: Starting src\test\resources\blackbox\ean13-4\05.png
+INFO: Starting src\test\resources\blackbox\ean13-4\06.png
+INFO: Starting src\test\resources\blackbox\ean13-4\07.png
+INFO: Starting src\test\resources\blackbox\ean13-2\13.png
+INFO: Starting src\test\resources\blackbox\ean13-2\14.png
+INFO: Starting src\test\resources\blackbox\ean13-2\15.png
+INFO: Starting src\test\resources\blackbox\ean13-5\01.png
+INFO: Starting src\test\resources\blackbox\ean13-5\02.png
+INFO: Starting src\test\resources\blackbox\ean13-4\08.png
+INFO: Starting src\test\resources\blackbox\ean13-2\16.png
+INFO: Starting src\test\resources\blackbox\ean13-2\17.png
+INFO: Starting src\test\resources\blackbox\ean13-2\18.png
+INFO: Starting src\test\resources\blackbox\ean13-5\03.png
+INFO: Starting src\test\resources\blackbox\partial\45.png
+INFO: Starting src\test\resources\blackbox\ean13-2\19.png
+INFO: Starting src\test\resources\blackbox\ean13-2\20.png
+INFO: Starting src\test\resources\blackbox\ean13-2\21.png
+INFO: Starting src\test\resources\blackbox\ean13-4\09.png
+INFO: Starting src\test\resources\blackbox\ean13-4\10.png
+INFO: Starting src\test\resources\blackbox\ean13-5\04.png
+INFO: Starting src\test\resources\blackbox\ean13-5\05.png
+INFO: Starting src\test\resources\blackbox\partial\46.png
+INFO: Starting src\test\resources\blackbox\ean13-4\11.png
+INFO: Starting src\test\resources\blackbox\ean13-4\12.png
+INFO: Starting src\test\resources\blackbox\ean13-4\13.png
+INFO: Starting src\test\resources\blackbox\ean13-4\14.png
+INFO: Starting src\test\resources\blackbox\ean13-4\15.png
+INFO: Starting src\test\resources\blackbox\ean13-5\06.png
+INFO: Starting src\test\resources\blackbox\ean13-4\16.png
+INFO: Starting src\test\resources\blackbox\ean13-5\07.png
+INFO: Starting src\test\resources\blackbox\ean13-5\08.png
+INFO: Starting src\test\resources\blackbox\partial\47.png
+INFO: Starting src\test\resources\blackbox\ean13-2\22.png
+INFO: Starting src\test\resources\blackbox\ean13-4\17.png
+INFO: Starting src\test\resources\blackbox\ean13-5\09.png
+INFO: Starting src\test\resources\blackbox\ean13-4\18.png
+INFO: Starting src\test\resources\blackbox\ean13-4\19.png
+INFO: Starting src\test\resources\blackbox\partial\48.png
+INFO: Starting src\test\resources\blackbox\ean13-5\10.png
+INFO: Starting src\test\resources\blackbox\ean13-4\20.png
+INFO: Starting src\test\resources\blackbox\ean13-4\21.png
+INFO: Starting src\test\resources\blackbox\ean13-2\23.png
+INFO: Starting src\test\resources\blackbox\ean13-5\11.png
+INFO: Starting src\test\resources\blackbox\ean13-5\12.png
+INFO: Starting src\test\resources\blackbox\partial\49.png
+INFO: Starting src\test\resources\blackbox\ean13-2\24.png
+INFO: Content mismatch: expected '9784872348880' but got '1920081045006' (try harder, rotation: 0)
+INFO: Content mismatch: expected '9784872348880' but got '1920081045006' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\ean13-2\25.png
+INFO: Starting src\test\resources\blackbox\ean13-4\22.png
+INFO: Rotation 0 degrees:
+INFO:  6 of 22 images passed (6 required)
+INFO:  1 failed due to misreads, 15 not detected
+INFO:  13 of 22 images passed with try harder (13 required)
+INFO:  1 failed due to misreads, 8 not detected
+INFO: Rotation 180 degrees:
+INFO:  7 of 22 images passed (7 required)
+INFO:  1 failed due to misreads, 14 not detected
+INFO:  13 of 22 images passed with try harder (13 required)
+INFO:  1 failed due to misreads, 8 not detected
+INFO: Decoded 39 images out of 88 (44%, 39 required)
+INFO: Starting src\test\resources\blackbox\ean13-5\13.png
+INFO: Starting src\test\resources\blackbox\ean13-5\14.png
+INFO: Starting src\test\resources\blackbox\ean8-1\1.png
+INFO: Starting src\test\resources\blackbox\ean8-1\2.png
+INFO: Starting src\test\resources\blackbox\ean8-1\3.png
+INFO: Starting src\test\resources\blackbox\ean8-1\4.png
+INFO: Starting src\test\resources\blackbox\ean8-1\5.png
+INFO: Starting src\test\resources\blackbox\ean8-1\6.png
+INFO: Starting src\test\resources\blackbox\ean8-1\7.png
+INFO: Starting src\test\resources\blackbox\ean8-1\8.png
+INFO: Rotation 0 degrees:
+INFO:  8 of 8 images passed (8 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  8 of 8 images passed with try harder (8 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  8 of 8 images passed (8 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  8 of 8 images passed with try harder (8 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 32 images out of 32 (100%, 32 required)
+INFO: Starting src\test\resources\blackbox\ean13-5\15.png
+INFO: Starting src\test\resources\blackbox\partial\50.png
+INFO: Starting src\test\resources\blackbox\ean13-2\26.png
+INFO: Starting src\test\resources\blackbox\itf-1\1.png
+INFO: Starting src\test\resources\blackbox\itf-1\10.png
+INFO: Starting src\test\resources\blackbox\itf-1\13.png
+INFO: Starting src\test\resources\blackbox\itf-1\14.png
+INFO: Starting src\test\resources\blackbox\itf-1\15.png
+INFO: Starting src\test\resources\blackbox\itf-1\16.png
+INFO: Starting src\test\resources\blackbox\itf-1\17.png
+INFO: Starting src\test\resources\blackbox\itf-1\2.png
+INFO: Starting src\test\resources\blackbox\itf-1\3.png
+INFO: Starting src\test\resources\blackbox\itf-1\5.png
+INFO: Starting src\test\resources\blackbox\itf-1\6.png
+INFO: Starting src\test\resources\blackbox\itf-1\7.png
+INFO: Starting src\test\resources\blackbox\itf-1\8.png
+INFO: Starting src\test\resources\blackbox\itf-1\9.png
+INFO: Rotation 0 degrees:
+INFO:  14 of 14 images passed (14 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  14 of 14 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  14 of 14 images passed (14 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  14 of 14 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 56 images out of 56 (100%, 56 required)
+INFO: Starting src\test\resources\blackbox\ean13-5\16.png
+INFO: Starting src\test\resources\blackbox\itf-2\01.png
+INFO: Starting src\test\resources\blackbox\itf-2\02.png
+INFO: Starting src\test\resources\blackbox\itf-2\03.png
+INFO: Starting src\test\resources\blackbox\itf-2\04.png
+INFO: Starting src\test\resources\blackbox\ean13-5\17.png
+INFO: Starting src\test\resources\blackbox\ean13-5\18.png
+INFO: Starting src\test\resources\blackbox\partial\51.png
+INFO: Starting src\test\resources\blackbox\itf-2\05.png
+INFO: Starting src\test\resources\blackbox\itf-2\06.png
+INFO: Starting src\test\resources\blackbox\itf-2\07.png
+INFO: Starting src\test\resources\blackbox\itf-2\08.png
+INFO: Starting src\test\resources\blackbox\itf-2\09.png
+INFO: Starting src\test\resources\blackbox\itf-2\10.png
+INFO: Starting src\test\resources\blackbox\itf-2\11.png
+INFO: Starting src\test\resources\blackbox\itf-2\12.png
+INFO: Starting src\test\resources\blackbox\ean13-2\27.png
+INFO: Starting src\test\resources\blackbox\ean13-2\28.png
+INFO: Starting src\test\resources\blackbox\itf-2\13.png
+INFO: Rotation 0 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 52 images out of 52 (100%, 52 required)
+INFO: Rotation 0 degrees:
+INFO:  0 of 18 images passed (0 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO:  0 of 18 images passed with try harder (0 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO: Rotation 180 degrees:
+INFO:  0 of 18 images passed (0 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO:  0 of 18 images passed with try harder (0 required)
+INFO:  0 failed due to misreads, 18 not detected
+INFO: Decoded 0 images out of 72 (0%, 0 required)
+INFO: Starting src\test\resources\blackbox\partial\52.png
+INFO: Rotation 0 degrees:
+INFO:  12 of 28 images passed (12 required)
+INFO:  0 failed due to misreads, 16 not detected
+INFO:  17 of 28 images passed with try harder (17 required)
+INFO:  1 failed due to misreads, 10 not detected
+INFO: Rotation 180 degrees:
+INFO:  11 of 28 images passed (11 required)
+INFO:  0 failed due to misreads, 17 not detected
+INFO:  17 of 28 images passed with try harder (17 required)
+INFO:  1 failed due to misreads, 10 not detected
+INFO: Decoded 57 images out of 112 (50%, 57 required)
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\1.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\10.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\11.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\12.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\13.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\1.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\10.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\100.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\101.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\102.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\103.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\104.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\105.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\106.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\12.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\14.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\15.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\16.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\17.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\18.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\19.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\2.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\107.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\108.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\109.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\11.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\110.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\111.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\112.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\113.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\114.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\20.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\21.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\22.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\23.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\24.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\25.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\26.png
+INFO: Starting src\test\resources\blackbox\partial\53.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\115.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\27.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\28.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\29.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\3.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\116.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\117.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\12.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\13.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\14.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\15.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\16.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\17.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\18.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\19.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\2.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\13.png
+INFO: Starting src\test\resources\blackbox\partial\54.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\20.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\21.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\22.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\23.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\24.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\25.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\26.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\27.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\28.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\30.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\31.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\32.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\33.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\34.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\16.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\29.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\3.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\30.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\31.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\32.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\33.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\34.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\35.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\36.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\37.png
+INFO: Starting src\test\resources\blackbox\partial\55.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\35.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\4.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\38.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\39.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\4.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\40.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\41.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\42.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\43.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\44.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\45.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\46.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\5.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\6.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\7.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\8.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-1\9.png
+INFO: Rotation 0 degrees:
+INFO:  35 of 35 images passed (35 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  35 of 35 images passed with try harder (35 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  35 of 35 images passed (35 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  35 of 35 images passed with try harder (35 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 140 images out of 140 (100%, 140 required)
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\17.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\47.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\48.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\49.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\5.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\50.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\51.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\52.png
+INFO: Starting src\test\resources\blackbox\partial\56.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\53.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\54.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\55.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\56.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\57.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\58.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\59.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\6.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\60.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\61.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\62.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\63.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\64.png
+INFO: Starting src\test\resources\blackbox\partial\57.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\65.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\66.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\67.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\68.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\69.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\7.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\70.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\71.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\72.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\73.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\18.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\1.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\10.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\11.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\12.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\13.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\74.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\75.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\76.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\77.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\78.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\79.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\8.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\80.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\81.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\82.png
+INFO: Starting src\test\resources\blackbox\partial\59.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\14.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\15.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\16.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\83.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\84.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\85.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\86.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\87.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\88.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\89.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\9.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\90.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\91.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\92.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\93.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\94.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\95.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\96.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\97.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\18b.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\98.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-3\99.png
+INFO: Rotation 0 degrees:
+INFO:  117 of 117 images passed (117 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  117 of 117 images passed with try harder (117 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  117 of 117 images passed (117 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  117 of 117 images passed with try harder (117 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 468 images out of 468 (100%, 468 required)
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\17.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\18.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\19.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\2.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\20.png
+INFO: Starting src\test\resources\blackbox\partial\60.png
+INFO: Starting src\test\resources\blackbox\partial\61.png
+INFO: Rotation 0 degrees: 1 of 60 images were false positives (1 allowed)
+INFO: Rotation 90 degrees: 1 of 60 images were false positives (1 allowed)
+INFO: Rotation 180 degrees: 1 of 60 images were false positives (1 allowed)
+INFO: Rotation 270 degrees: 1 of 60 images were false positives (1 allowed)
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\1.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\1000.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\21.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\22.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\13.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\19.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\23.png
+INFO: Starting src\test\resources\blackbox\rss14-1\1.png
+INFO: Starting src\test\resources\blackbox\rss14-1\2.png
+INFO: Starting src\test\resources\blackbox\rss14-1\3.png
+INFO: Starting src\test\resources\blackbox\rss14-1\4.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\19.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\20.png
+INFO: Starting src\test\resources\blackbox\rss14-1\5.png
+INFO: Starting src\test\resources\blackbox\rss14-1\6.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\24.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\25.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\26.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\27.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\28.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\29.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\21.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\22.png
+INFO: Rotation 0 degrees:
+INFO:  6 of 6 images passed (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  6 of 6 images passed with try harder (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  6 of 6 images passed (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  6 of 6 images passed with try harder (6 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 24 images out of 24 (100%, 24 required)
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\3.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\30.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\31.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\32.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\33.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\34.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-2\23.png
+INFO: Rotation 0 degrees:
+INFO:  2 of 7 images passed (2 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  7 of 7 images passed with try harder (7 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  2 of 7 images passed (2 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  7 of 7 images passed with try harder (7 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 18 images out of 28 (64%, 18 required)
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\35.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\36.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\37.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\38.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\39.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\4.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\40.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\41.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\42.png
+INFO: Starting src\test\resources\blackbox\rss14-2\1.png
+INFO: Starting src\test\resources\blackbox\upca-1\1.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\43.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\44.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\45.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\46.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\47.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\48.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\49.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\5.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\50.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\51.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_01.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\52.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\53.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\54.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\55.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\56.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\57.png
+INFO: Starting src\test\resources\blackbox\upca-1\10.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\58.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\59.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\6.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\60.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\61.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_02.png
+INFO: Starting src\test\resources\blackbox\upca-1\11.png
+INFO: Starting src\test\resources\blackbox\upca-1\12.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\62.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\63.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\64.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\65.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\7.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\8.png
+INFO: Starting src\test\resources\blackbox\rssexpandedstacked-1\9.png
+INFO: Rotation 0 degrees:
+INFO:  60 of 65 images passed (60 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  65 of 65 images passed with try harder (65 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  60 of 65 images passed (60 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  65 of 65 images passed with try harder (65 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 250 images out of 260 (96%, 250 required)
+INFO: Starting src\test\resources\blackbox\upca-2\01.png
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_8' (try harder, rotation: 0)
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_8' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-2\02.png
+INFO: Starting src\test\resources\blackbox\upca-1\13.png
+INFO: Starting src\test\resources\blackbox\upca-1\16.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_03.png
+INFO: Starting src\test\resources\blackbox\rss14-2\10.png
+INFO: Starting src\test\resources\blackbox\upca-2\03.png
+INFO: Starting src\test\resources\blackbox\upca-2\04.png
+INFO: Starting src\test\resources\blackbox\upca-1\17.png
+INFO: Starting src\test\resources\blackbox\upca-1\18.png
+INFO: Starting src\test\resources\blackbox\upca-2\05.png
+INFO: Starting src\test\resources\blackbox\rss14-2\11.png
+INFO: Format mismatch: expected 'RSS_14' but got 'UPC_E' (rotation: 0)
+INFO: Format mismatch: expected 'RSS_14' but got 'UPC_E' (try harder, rotation: 0)
+INFO: Format mismatch: expected 'RSS_14' but got 'UPC_E' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\rss14-2\12.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_04.png
+INFO: Starting src\test\resources\blackbox\upca-1\19.png
+INFO: Starting src\test\resources\blackbox\upca-1\2.png
+INFO: Starting src\test\resources\blackbox\upca-2\06.png
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_8' (try harder, rotation: 0)
+INFO: Starting src\test\resources\blackbox\rss14-2\13.png
+INFO: Starting src\test\resources\blackbox\rss14-2\14.png
+INFO: Starting src\test\resources\blackbox\rss14-2\15.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_05.png
+INFO: Starting src\test\resources\blackbox\upca-1\20.png
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_8' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\rss14-2\16.png
+INFO: Starting src\test\resources\blackbox\upca-2\07.png
+INFO: Starting src\test\resources\blackbox\upca-2\08.png
+INFO: Starting src\test\resources\blackbox\upca-2\09.png
+INFO: Starting src\test\resources\blackbox\upca-2\10.png
+INFO: Starting src\test\resources\blackbox\rss14-2\17.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_06.png
+INFO: Starting src\test\resources\blackbox\upca-1\21.png
+INFO: Starting src\test\resources\blackbox\upca-1\27.png
+INFO: Starting src\test\resources\blackbox\rss14-2\18.png
+INFO: Starting src\test\resources\blackbox\upca-2\11.png
+INFO: Starting src\test\resources\blackbox\upca-1\28.png
+INFO: Starting src\test\resources\blackbox\rss14-2\19.png
+INFO: Starting src\test\resources\blackbox\upca-1\29.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_07.png
+INFO: Starting src\test\resources\blackbox\rss14-2\2.png
+INFO: Starting src\test\resources\blackbox\upca-2\12.png
+INFO: Starting src\test\resources\blackbox\upca-2\13.png
+INFO: Starting src\test\resources\blackbox\upca-2\14.png
+INFO: Starting src\test\resources\blackbox\upca-2\15.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\3_09.png
+INFO: Starting src\test\resources\blackbox\upca-1\3.png
+INFO: Starting src\test\resources\blackbox\upca-1\35.png
+INFO: Starting src\test\resources\blackbox\upca-2\16.png
+INFO: Starting src\test\resources\blackbox\upca-2\17.png
+INFO: Starting src\test\resources\blackbox\upca-2\18.png
+INFO: Starting src\test\resources\blackbox\rss14-2\20.png
+INFO: Starting src\test\resources\blackbox\rss14-2\21.png
+INFO: Starting src\test\resources\blackbox\upca-1\4.png
+INFO: Content mismatch: expected '070097025088' but got '070097026788' (try harder, rotation: 0)
+INFO: Content mismatch: expected '070097025088' but got '070097026788' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-1\5.png
+INFO: Starting src\test\resources\blackbox\upca-1\8.png
+INFO: Starting src\test\resources\blackbox\upca-1\9.png
+INFO: Rotation 0 degrees:
+INFO:  14 of 21 images passed (14 required)
+INFO:  0 failed due to misreads, 7 not detected
+INFO:  18 of 21 images passed with try harder (18 required)
+INFO:  1 failed due to misreads, 2 not detected
+INFO: Rotation 180 degrees:
+INFO:  16 of 21 images passed (16 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  18 of 21 images passed with try harder (18 required)
+INFO:  1 failed due to misreads, 2 not detected
+INFO: Decoded 66 images out of 84 (78%, 66 required)
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_00.png
+INFO: Starting src\test\resources\blackbox\upca-3\01.png
+INFO: Starting src\test\resources\blackbox\upca-2\19.png
+INFO: Starting src\test\resources\blackbox\upca-2\20.png
+INFO: Starting src\test\resources\blackbox\upca-2\21.png
+INFO: Starting src\test\resources\blackbox\upca-2\22.png
+INFO: Starting src\test\resources\blackbox\upca-2\23.png
+INFO: Starting src\test\resources\blackbox\upca-2\24.png
+INFO: Starting src\test\resources\blackbox\upca-2\25.png
+INFO: Starting src\test\resources\blackbox\upca-2\26.png
+INFO: Starting src\test\resources\blackbox\upca-2\27.png
+INFO: Starting src\test\resources\blackbox\upca-2\28.png
+INFO: Starting src\test\resources\blackbox\rss14-2\22.png
+INFO: Starting src\test\resources\blackbox\rss14-2\23.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_01.png
+INFO: Starting src\test\resources\blackbox\upca-3\02.png
+INFO: Starting src\test\resources\blackbox\rss14-2\24.png
+INFO: Starting src\test\resources\blackbox\rss14-2\3.png
+INFO: Starting src\test\resources\blackbox\upca-2\29.png
+INFO: Starting src\test\resources\blackbox\upca-2\30.png
+INFO: Starting src\test\resources\blackbox\upca-2\31.png
+INFO: Starting src\test\resources\blackbox\rss14-2\4.png
+INFO: Starting src\test\resources\blackbox\upca-2\32.png
+INFO: Starting src\test\resources\blackbox\upca-3\03.png
+INFO: Starting src\test\resources\blackbox\upca-3\04.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_02.png
+INFO: Starting src\test\resources\blackbox\rss14-2\5.png
+INFO: Starting src\test\resources\blackbox\upca-2\33.png
+INFO: Starting src\test\resources\blackbox\upca-2\34.png
+INFO: Starting src\test\resources\blackbox\upca-3\05.png
+INFO: Starting src\test\resources\blackbox\upca-2\35.png
+INFO: Starting src\test\resources\blackbox\upca-2\36.png
+INFO: Starting src\test\resources\blackbox\rss14-2\6.png
+INFO: Starting src\test\resources\blackbox\rss14-2\7.png
+INFO: Starting src\test\resources\blackbox\upca-3\06.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_03.png
+INFO: Starting src\test\resources\blackbox\upca-2\37.png
+INFO: Starting src\test\resources\blackbox\upca-2\38.png
+INFO: Starting src\test\resources\blackbox\rss14-2\8.png
+INFO: Starting src\test\resources\blackbox\rss14-2\9.png
+INFO: Rotation 0 degrees:
+INFO:  4 of 24 images passed (4 required)
+INFO:  1 failed due to misreads, 19 not detected
+INFO:  8 of 24 images passed with try harder (8 required)
+INFO:  1 failed due to misreads, 15 not detected
+INFO: Rotation 180 degrees:
+INFO:  3 of 24 images passed (3 required)
+INFO:  0 failed due to misreads, 21 not detected
+INFO:  8 of 24 images passed with try harder (8 required)
+INFO:  1 failed due to misreads, 15 not detected
+INFO: Decoded 23 images out of 96 (23%, 23 required)
+INFO: Starting src\test\resources\blackbox\upca-4\1.png
+INFO: Starting src\test\resources\blackbox\upca-2\39.png
+INFO: Starting src\test\resources\blackbox\upca-2\40.png
+INFO: Starting src\test\resources\blackbox\upca-2\41.png
+INFO: Starting src\test\resources\blackbox\upca-3\07.png
+INFO: Starting src\test\resources\blackbox\upca-3\08.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_04.png
+INFO: Starting src\test\resources\blackbox\upca-2\42.png
+INFO: Starting src\test\resources\blackbox\upca-2\43.png
+INFO: Starting src\test\resources\blackbox\upca-2\44.png
+INFO: Starting src\test\resources\blackbox\upca-3\09.png
+INFO: Starting src\test\resources\blackbox\upca-4\10.png
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_13' (try harder, rotation: 0)
+INFO: Format mismatch: expected 'UPC_A' but got 'EAN_13' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-4\11.png
+INFO: Starting src\test\resources\blackbox\upca-2\45.png
+INFO: Starting src\test\resources\blackbox\upca-2\46.png
+INFO: Starting src\test\resources\blackbox\upca-2\47.png
+INFO: Starting src\test\resources\blackbox\upca-2\48.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\4_05.png
+INFO: Starting src\test\resources\blackbox\upca-3\10.png
+INFO: Starting src\test\resources\blackbox\upca-2\49.png
+INFO: Starting src\test\resources\blackbox\upca-4\12.png
+INFO: Starting src\test\resources\blackbox\upca-3\11.png
+INFO: Starting src\test\resources\blackbox\upca-3\12.png
+INFO: Starting src\test\resources\blackbox\rssexpanded-2\5.png
+INFO: Starting src\test\resources\blackbox\upca-2\50.png
+INFO: Starting src\test\resources\blackbox\upca-3\13.png
+INFO: Starting src\test\resources\blackbox\upca-3\14.png
+INFO: Content mismatch: expected '854818000116' but got '854818097116' (try harder, rotation: 0)
+INFO: Content mismatch: expected '854818000116' but got '854818097116' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-3\15.png
+INFO: Starting src\test\resources\blackbox\upca-3\16.png
+INFO: Starting src\test\resources\blackbox\upca-2\51.png
+INFO: Starting src\test\resources\blackbox\upca-2\52.png
+INFO: Rotation 0 degrees:
+INFO:  28 of 52 images passed (28 required)
+INFO:  0 failed due to misreads, 24 not detected
+INFO:  36 of 52 images passed with try harder (36 required)
+INFO:  2 failed due to misreads, 14 not detected
+INFO: Rotation 180 degrees:
+INFO:  29 of 52 images passed (29 required)
+INFO:  0 failed due to misreads, 23 not detected
+INFO:  36 of 52 images passed with try harder (36 required)
+INFO:  2 failed due to misreads, 14 not detected
+INFO: Decoded 129 images out of 208 (62%, 129 required)
+INFO: Rotation 0 degrees:
+INFO:  21 of 23 images passed (21 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO:  23 of 23 images passed with try harder (23 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  21 of 23 images passed (21 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO:  23 of 23 images passed with try harder (23 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 88 images out of 92 (95%, 88 required)
+INFO: Starting src\test\resources\blackbox\upca-4\13.png
+INFO: Starting src\test\resources\blackbox\upca-4\14.png
+INFO: Starting src\test\resources\blackbox\upca-5\01.png
+INFO: Starting src\test\resources\blackbox\upca-6\01.png
+INFO: Content mismatch: expected '854818000116' but got '854818003629' (try harder, rotation: 0)
+INFO: Content mismatch: expected '854818000116' but got '854818003629' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-3\17.png
+INFO: Starting src\test\resources\blackbox\upca-3\18.png
+INFO: Starting src\test\resources\blackbox\upca-3\19.png
+INFO: Starting src\test\resources\blackbox\upca-3\20.png
+INFO: Starting src\test\resources\blackbox\upca-3\21.png
+INFO: Rotation 0 degrees:
+INFO:  7 of 21 images passed (7 required)
+INFO:  0 failed due to misreads, 14 not detected
+INFO:  9 of 21 images passed with try harder (9 required)
+INFO:  2 failed due to misreads, 10 not detected
+INFO: Rotation 180 degrees:
+INFO:  8 of 21 images passed (8 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO:  9 of 21 images passed with try harder (9 required)
+INFO:  2 failed due to misreads, 10 not detected
+INFO: Decoded 33 images out of 84 (39%, 33 required)
+INFO: Starting src\test\resources\blackbox\upca-4\15.png
+INFO: Starting src\test\resources\blackbox\upcean-extension-1\1.png
+INFO: Starting src\test\resources\blackbox\upcean-extension-1\2.png
+INFO: Starting src\test\resources\blackbox\upca-6\02.png
+INFO: Starting src\test\resources\blackbox\upca-6\03.png
+INFO: Rotation 0 degrees:
+INFO:  2 of 2 images passed (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  2 of 2 images passed with try harder (2 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 4 images out of 4 (100%, 4 required)
+INFO: Starting src\test\resources\blackbox\upca-4\16.png
+INFO: Starting src\test\resources\blackbox\upce-1\1.png
+INFO: Starting src\test\resources\blackbox\upce-1\2.png
+INFO: Starting src\test\resources\blackbox\upce-1\4.png
+INFO: Rotation 0 degrees:
+INFO:  3 of 3 images passed (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  3 of 3 images passed with try harder (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  3 of 3 images passed (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  3 of 3 images passed with try harder (3 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 12 images out of 12 (100%, 12 required)
+INFO: Starting src\test\resources\blackbox\upca-6\04.png
+INFO: Starting src\test\resources\blackbox\upce-2\01.png
+INFO: Starting src\test\resources\blackbox\upce-2\02.png
+INFO: Starting src\test\resources\blackbox\upca-4\17.png
+INFO: Starting src\test\resources\blackbox\upca-5\02.png
+INFO: Starting src\test\resources\blackbox\upca-4\18.png
+INFO: Starting src\test\resources\blackbox\upca-6\05.png
+INFO: Starting src\test\resources\blackbox\upce-2\03.png
+INFO: Starting src\test\resources\blackbox\upca-4\19.png
+INFO: Starting src\test\resources\blackbox\upce-2\04.png
+INFO: Starting src\test\resources\blackbox\upce-2\05.png
+INFO: Starting src\test\resources\blackbox\upce-2\06.png
+INFO: Starting src\test\resources\blackbox\upce-2\07.png
+INFO: Starting src\test\resources\blackbox\upce-2\08.png
+INFO: Starting src\test\resources\blackbox\upce-2\09.png
+INFO: Starting src\test\resources\blackbox\upca-6\06.png
+INFO: Starting src\test\resources\blackbox\upca-5\03.png
+INFO: Starting src\test\resources\blackbox\upca-4\2.png
+INFO: Starting src\test\resources\blackbox\upce-2\10.png
+INFO: Starting src\test\resources\blackbox\upce-2\11.png
+INFO: Starting src\test\resources\blackbox\upce-2\12.png
+INFO: Starting src\test\resources\blackbox\upce-2\13.png
+INFO: Starting src\test\resources\blackbox\upce-2\14.png
+INFO: Content mismatch: expected '04963406' but got '04904144' (try harder, rotation: 0)
+INFO: Content mismatch: expected '04963406' but got '04904144' (rotation: 180)
+INFO: Starting src\test\resources\blackbox\upca-6\07.png
+INFO: Starting src\test\resources\blackbox\upca-6\08.png
+INFO: Starting src\test\resources\blackbox\upca-5\04.png
+INFO: Starting src\test\resources\blackbox\upca-6\09.png
+INFO: Content mismatch: expected '04963406' but got '04904144' (try harder, rotation: 180)
+INFO: Starting src\test\resources\blackbox\upce-2\15.png
+INFO: Starting src\test\resources\blackbox\upce-2\16.png
+INFO: Starting src\test\resources\blackbox\upce-2\17.png
+INFO: Starting src\test\resources\blackbox\upce-2\18.png
+INFO: Starting src\test\resources\blackbox\upce-2\19.png
+INFO: Starting src\test\resources\blackbox\upce-2\20.png
+INFO: Starting src\test\resources\blackbox\upca-4\3.png
+INFO: Starting src\test\resources\blackbox\upca-5\05.png
+INFO: Starting src\test\resources\blackbox\upca-5\06.png
+INFO: Starting src\test\resources\blackbox\upca-6\10.png
+INFO: Starting src\test\resources\blackbox\upce-2\21.png
+INFO: Starting src\test\resources\blackbox\upce-2\22.png
+INFO: Starting src\test\resources\blackbox\upca-6\11.png
+INFO: Starting src\test\resources\blackbox\upca-6\12.png
+INFO: Starting src\test\resources\blackbox\upce-2\23.png
+INFO: Starting src\test\resources\blackbox\upce-2\24.png
+INFO: Starting src\test\resources\blackbox\upce-2\25.png
+INFO: Starting src\test\resources\blackbox\upce-2\26.png
+INFO: Starting src\test\resources\blackbox\upce-2\27.png
+INFO: Starting src\test\resources\blackbox\upce-2\28.png
+INFO: Starting src\test\resources\blackbox\upca-5\07.png
+INFO: Starting src\test\resources\blackbox\upca-6\13.png
+INFO: Starting src\test\resources\blackbox\upce-2\29.png
+INFO: Starting src\test\resources\blackbox\upce-2\30.png
+INFO: Starting src\test\resources\blackbox\upce-2\31.png
+INFO: Starting src\test\resources\blackbox\upce-2\32.png
+INFO: Starting src\test\resources\blackbox\upce-2\33.png
+INFO: Starting src\test\resources\blackbox\upce-2\34.png
+INFO: Starting src\test\resources\blackbox\upce-2\35.png
+INFO: Starting src\test\resources\blackbox\upca-6\14.png
+INFO: Starting src\test\resources\blackbox\upca-6\15.png
+INFO: Starting src\test\resources\blackbox\upce-2\36.png
+INFO: Starting src\test\resources\blackbox\upce-2\37.png
+INFO: Starting src\test\resources\blackbox\upce-2\38.png
+INFO: Starting src\test\resources\blackbox\upca-4\4.png
+INFO: Starting src\test\resources\blackbox\upca-5\08.png
+INFO: Starting src\test\resources\blackbox\upce-2\39.png
+INFO: Starting src\test\resources\blackbox\upca-6\16.png
+INFO: Starting src\test\resources\blackbox\upca-5\09.png
+INFO: Starting src\test\resources\blackbox\upca-5\10.png
+INFO: Starting src\test\resources\blackbox\upca-5\11.png
+INFO: Starting src\test\resources\blackbox\upca-4\5.png
+INFO: Starting src\test\resources\blackbox\upca-6\17.png
+INFO: Starting src\test\resources\blackbox\upca-6\18.png
+INFO: Starting src\test\resources\blackbox\upce-2\40.png
+INFO: Starting src\test\resources\blackbox\upce-2\41.png
+INFO: Rotation 0 degrees:
+INFO:  31 of 41 images passed (31 required)
+INFO:  0 failed due to misreads, 10 not detected
+INFO:  35 of 41 images passed with try harder (35 required)
+INFO:  1 failed due to misreads, 5 not detected
+INFO: Rotation 180 degrees:
+INFO:  31 of 41 images passed (31 required)
+INFO:  1 failed due to misreads, 9 not detected
+INFO:  35 of 41 images passed with try harder (35 required)
+INFO:  1 failed due to misreads, 5 not detected
+INFO: Decoded 132 images out of 164 (80%, 132 required)
+INFO: Starting src\test\resources\blackbox\upca-5\12.png
+INFO: Starting src\test\resources\blackbox\upca-5\13.png
+INFO: Starting src\test\resources\blackbox\upca-5\14.png
+INFO: Starting src\test\resources\blackbox\upca-6\19.png
+INFO: Rotation 0 degrees:
+INFO:  0 of 19 images passed (0 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO:  0 of 19 images passed with try harder (0 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO: Rotation 180 degrees:
+INFO:  0 of 19 images passed (0 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO:  0 of 19 images passed with try harder (0 required)
+INFO:  0 failed due to misreads, 19 not detected
+INFO: Decoded 0 images out of 76 (0%, 0 required)
+INFO: Starting src\test\resources\blackbox\upce-3\01.png
+INFO: Starting src\test\resources\blackbox\upce-3\02.png
+INFO: Starting src\test\resources\blackbox\upce-3\03.png
+INFO: Starting src\test\resources\blackbox\upce-3\04.png
+INFO: Starting src\test\resources\blackbox\upca-5\15.png
+INFO: Starting src\test\resources\blackbox\upca-5\16.png
+INFO: Starting src\test\resources\blackbox\upca-4\6.png
+INFO: Starting src\test\resources\blackbox\upce-3\05.png
+INFO: Starting src\test\resources\blackbox\upce-3\06.png
+INFO: Starting src\test\resources\blackbox\upce-3\07.png
+INFO: Starting src\test\resources\blackbox\upce-3\08.png
+INFO: Starting src\test\resources\blackbox\upce-3\09.png
+INFO: Starting src\test\resources\blackbox\upce-3\10.png
+INFO: Starting src\test\resources\blackbox\upce-3\11.png
+INFO: Starting src\test\resources\blackbox\upca-4\7.png
+INFO: Starting src\test\resources\blackbox\upca-4\8.png
+INFO: Rotation 0 degrees:
+INFO:  6 of 11 images passed (6 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  8 of 11 images passed with try harder (8 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Rotation 180 degrees:
+INFO:  6 of 11 images passed (6 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  8 of 11 images passed with try harder (8 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Decoded 28 images out of 44 (63%, 28 required)
+INFO: Starting src\test\resources\blackbox\upca-4\9.png
+INFO: Starting src\test\resources\blackbox\upca-5\17.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\01.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\02.png
+INFO: Starting src\test\resources\blackbox\upca-5\18.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\03.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\04.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\05.png
+INFO: Starting src\test\resources\blackbox\upca-5\19.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\06.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\07.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\09.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\10.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\11.png
+INFO: Starting src\test\resources\blackbox\pdf417-1\12.png
+INFO: Rotation 0 degrees:
+INFO:  9 of 19 images passed (9 required)
+INFO:  0 failed due to misreads, 10 not detected
+INFO:  11 of 19 images passed with try harder (11 required)
+INFO:  1 failed due to misreads, 7 not detected
+INFO: Rotation 180 degrees:
+INFO:  9 of 19 images passed (9 required)
+INFO:  0 failed due to misreads, 10 not detected
+INFO:  11 of 19 images passed with try harder (11 required)
+INFO:  1 failed due to misreads, 7 not detected
+INFO: Decoded 40 images out of 76 (52%, 40 required)
+INFO: Starting src\test\resources\blackbox\pdf417-2\01.png
+INFO: Starting src\test\resources\blackbox\upca-5\20.png
+INFO: Starting src\test\resources\blackbox\upca-5\21.png
+INFO: Starting src\test\resources\blackbox\upca-5\22.png
+INFO: Starting src\test\resources\blackbox\upca-5\23.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\02.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\03.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\04.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\05.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\06.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\07.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\08.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\09.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\10.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\11.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\12.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\13.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\14.png
+INFO: Starting src\test\resources\blackbox\upca-5\24.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\15.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\16.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\17.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\18.png
+INFO: Starting src\test\resources\blackbox\upca-5\25.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\19.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\20.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\21.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\22.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\23.png
+INFO: Starting src\test\resources\blackbox\upca-5\26.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\24.png
+INFO: Starting src\test\resources\blackbox\pdf417-2\25.png
+INFO: Rotation 0 degrees:
+INFO:  25 of 25 images passed (25 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  25 of 25 images passed with try harder (25 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  25 of 25 images passed (25 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  25 of 25 images passed with try harder (25 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 100 images out of 100 (100%, 100 required)
+INFO: Starting src\test\resources\blackbox\pdf417-3\01.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\02.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\03.png
+INFO: Starting src\test\resources\blackbox\upca-5\27.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\04.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\05.png
+INFO: Starting src\test\resources\blackbox\upca-5\28.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\06.png
+INFO: Starting src\test\resources\blackbox\upca-5\29.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\07.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\08.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\09.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\10.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\11.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\12.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\13.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\14.png
+INFO: Starting src\test\resources\blackbox\upca-5\30.png
+INFO: Starting src\test\resources\blackbox\upca-5\31.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\15.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\16.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\17.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\18.png
+INFO: Starting src\test\resources\blackbox\upca-5\32.png
+INFO: Starting src\test\resources\blackbox\pdf417-3\19.png
+INFO: Rotation 0 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 76 images out of 76 (100%, 76 required)
+INFO: Starting src\test\resources\blackbox\pdf417-1\13.png
+INFO: Starting src\test\resources\blackbox\upca-5\33.png
+INFO: Starting src\test\resources\blackbox\upca-5\34.png
+INFO: Rotation 0 degrees:
+INFO:  3 of 3 images passed (3 required)
+INFO:  3 of 3 images passed with try harder (3 required)
+INFO: Decoded 6 images out of 6 (100%, 6 required)
+INFO: Starting src\test\resources\blackbox\upca-5\35.png
+INFO: Rotation 0 degrees:
+INFO:  20 of 35 images passed (20 required)
+INFO:  0 failed due to misreads, 15 not detected
+INFO:  23 of 35 images passed with try harder (23 required)
+INFO:  0 failed due to misreads, 12 not detected
+INFO: Rotation 180 degrees:
+INFO:  22 of 35 images passed (22 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO:  23 of 35 images passed with try harder (23 required)
+INFO:  0 failed due to misreads, 12 not detected
+INFO: Decoded 88 images out of 140 (62%, 88 required)
+INFO: Starting src\test\resources\blackbox\pdf417-1\14.png
+INFO: Rotation 0 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  13 of 13 images passed (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  13 of 13 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 104 images out of 104 (100%, 104 required)
+INFO: Starting src\test\resources\blackbox\qrcode-2\1.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\01.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\1.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\02.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\03.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\04.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\05.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\06.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\07.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\08.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\09.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\16.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\17.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\18.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\19.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\2.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\16.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\17.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\18.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\20.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\18.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\21.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\19.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\19.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-1\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\22.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\20.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\20.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\23.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\21.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\21.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\24.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\25.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\26.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\22.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\22.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\27.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\28.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\16.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\23.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\23.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\29.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\30.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\24.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\24.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-2\31.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\17.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\25.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-3\25.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-3\26.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\01.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\02.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\32.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\33.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\27.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\28.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\34.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\35.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\36.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\03.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\18.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\4.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\29.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\04.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\30.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\05.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\31.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\06.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\5.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\32.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\33.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\07.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\34.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\08.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\19.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\35.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\09.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\2.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\36.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\37.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\6.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\38.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\20.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\39.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\40.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\41.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\3.png
+INFO: Starting src\test\resources\blackbox\qrcode-3\42.png
+INFO: Rotation 0 degrees:
+INFO:  38 of 42 images passed (38 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  38 of 42 images passed with try harder (38 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO: Rotation 90 degrees:
+INFO:  39 of 42 images passed (39 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  39 of 42 images passed with try harder (39 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Rotation 180 degrees:
+INFO:  36 of 42 images passed (36 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO:  36 of 42 images passed with try harder (36 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO: Rotation 270 degrees:
+INFO:  39 of 42 images passed (39 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  39 of 42 images passed with try harder (39 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Decoded 304 images out of 336 (90%, 304 required)
+INFO: Starting src\test\resources\blackbox\qrcode-5\01.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\02.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\16.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\7.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\4.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\17.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\8.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\03.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\04.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\18.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\19.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\5.png
+INFO: Starting src\test\resources\blackbox\qrcode-2\9.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\05.png
+INFO: Rotation 0 degrees:
+INFO:  32 of 35 images passed (32 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  32 of 35 images passed with try harder (32 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Rotation 90 degrees:
+INFO:  30 of 35 images passed (30 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO:  30 of 35 images passed with try harder (30 required)
+INFO:  0 failed due to misreads, 5 not detected
+INFO: Rotation 180 degrees:
+INFO:  31 of 35 images passed (31 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  31 of 35 images passed with try harder (31 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO: Rotation 270 degrees:
+INFO:  31 of 35 images passed (31 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO:  31 of 35 images passed with try harder (31 required)
+INFO:  0 failed due to misreads, 4 not detected
+INFO: Decoded 248 images out of 280 (88%, 248 required)
+INFO: Starting src\test\resources\blackbox\qrcode-6\1.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\06.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\20.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\07.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\21.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\08.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\6.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\22.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\09.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\23.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\10.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\7.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\24.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\11.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\25.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\26.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\12.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\8.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\27.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\28.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\13.png
+INFO: Starting src\test\resources\blackbox\qrcode-1\9.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\29.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\16.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-5\16.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-4\30.png
+INFO: Rotation 0 degrees:
+INFO:  17 of 20 images passed (17 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  17 of 20 images passed with try harder (17 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Rotation 90 degrees:
+INFO:  14 of 20 images passed (14 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO:  14 of 20 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO: Rotation 180 degrees:
+INFO:  17 of 20 images passed (17 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO:  17 of 20 images passed with try harder (17 required)
+INFO:  0 failed due to misreads, 3 not detected
+INFO: Rotation 270 degrees:
+INFO:  14 of 20 images passed (14 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO:  14 of 20 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 6 not detected
+INFO: Decoded 124 images out of 160 (77%, 124 required)
+INFO: Starting src\test\resources\blackbox\qrcode-5\17.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-5\17.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-6\14.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\31.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\18.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-5\18.txt end with a newline. This may not be intended and cause a test failure
+INFO: Starting src\test\resources\blackbox\qrcode-4\32.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\15.png
+INFO: Starting src\test\resources\blackbox\qrcode-5\19.png
+INFO: String contents of file src\test\resources\blackbox\qrcode-5\19.txt end with a newline. This may not be intended and cause a test failure
+INFO: Rotation 0 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 180 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 270 degrees:
+INFO:  19 of 19 images passed (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  19 of 19 images passed with try harder (19 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Decoded 152 images out of 152 (100%, 152 required)
+INFO: Starting src\test\resources\blackbox\qrcode-4\33.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\34.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\35.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\2.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\36.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\37.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\38.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\3.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\39.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\4.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\40.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\41.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\5.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\42.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\43.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\6.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\44.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\45.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\7.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\46.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\47.png
+INFO: Starting src\test\resources\blackbox\qrcode-4\48.png
+INFO: Rotation 0 degrees:
+INFO:  36 of 48 images passed (36 required)
+INFO:  0 failed due to misreads, 12 not detected
+INFO:  36 of 48 images passed with try harder (36 required)
+INFO:  0 failed due to misreads, 12 not detected
+INFO: Rotation 90 degrees:
+INFO:  35 of 48 images passed (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO:  35 of 48 images passed with try harder (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO: Rotation 180 degrees:
+INFO:  35 of 48 images passed (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO:  35 of 48 images passed with try harder (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO: Rotation 270 degrees:
+INFO:  35 of 48 images passed (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO:  35 of 48 images passed with try harder (35 required)
+INFO:  0 failed due to misreads, 13 not detected
+INFO: Decoded 282 images out of 384 (73%, 282 required)
+INFO: Starting src\test\resources\blackbox\qrcode-6\8.png
+INFO: Starting src\test\resources\blackbox\qrcode-6\9.png
+INFO: Rotation 0 degrees:
+INFO:  15 of 15 images passed (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO:  15 of 15 images passed with try harder (15 required)
+INFO:  0 failed due to misreads, 0 not detected
+INFO: Rotation 90 degrees:
+INFO:  14 of 15 images passed (14 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO:  14 of 15 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO: Rotation 180 degrees:
+INFO:  13 of 15 images passed (13 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO:  13 of 15 images passed with try harder (13 required)
+INFO:  0 failed due to misreads, 2 not detected
+INFO: Rotation 270 degrees:
+INFO:  14 of 15 images passed (14 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO:  14 of 15 images passed with try harder (14 required)
+INFO:  0 failed due to misreads, 1 not detected
+INFO: Decoded 112 images out of 120 (93%, 112 required)
+
+2025-07-11 13:52:22,224 [INFO] Build output saved to logs\builds\build_output_1.log
+2025-07-11 13:52:22,227 [WARNING] Build result: TEST_FAILURE
+2025-07-11 13:52:22,228 [INFO] Build analysis result: TEST_FAILURE
+2025-07-11 13:52:22,229 [INFO] Restoring original class from backup: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/encoder/MinimalEncoder.java
+2025-07-11 13:52:22,440 [INFO] Restore completed successfully.
+2025-07-11 13:52:22,440 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:53:51,510 [INFO] Build completed successfully.
+2025-07-11 13:53:51,510 [INFO] Build output after restore saved to logs\builds\build_output_1_restore.log
+2025-07-11 13:53:51,510 [INFO] Build result: SUCCESS
+2025-07-11 13:53:51,510 [INFO] Build analysis result after restore: SUCCESS
+2025-07-11 13:53:51,510 [INFO] Starting extraction of issue descriptions from: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,510 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,510 [INFO] Found 3 '.txt' files
+2025-07-11 13:53:51,510 [INFO] Found 3 text files to process.
+2025-07-11 13:53:51,510 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:53:51,510 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_1.txt
+2025-07-11 13:53:51,510 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:53:51,510 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_2.txt
+2025-07-11 13:53:51,510 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:53:51,510 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_3.txt
+2025-07-11 13:53:51,517 [INFO] Starting extraction of refactored code from: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,517 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,517 [INFO] Found 3 '.txt' files
+2025-07-11 13:53:51,518 [INFO] Found 3 files to process.
+2025-07-11 13:53:51,518 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:53:51,519 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_1.java
+2025-07-11 13:53:51,519 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:53:51,521 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_2.java
+2025-07-11 13:53:51,521 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:53:51,522 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_3.java
+2025-07-11 13:53:51,522 [INFO] Starting extraction of refactoring explanations from directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,522 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:53:51,522 [INFO] Found 3 '.txt' files
+2025-07-11 13:53:51,522 [INFO] Found 3 files to process.
+2025-07-11 13:53:51,522 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:53:51,522 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_1.txt
+2025-07-11 13:53:51,522 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:53:51,522 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_2.txt
+2025-07-11 13:53:51,522 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:53:51,522 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_3.txt
+2025-07-11 13:53:51,526 [INFO] Creating backup for class file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/DataMatrixWriter.java
+2025-07-11 13:53:51,670 [INFO] Backup completed successfully.
+2025-07-11 13:53:51,670 [INFO] Replacing method in file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/DataMatrixWriter.java at line: 128 using refactored snippet: outputs/codellama7binstruct/refactorings/refactored_code_2.java
+2025-07-11 13:53:52,071 [INFO] Method replacement completed successfully.
+2025-07-11 13:53:52,071 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:55:24,484 [INFO] Build completed successfully.
+2025-07-11 13:55:24,500 [INFO] Build output saved to logs\builds\build_output_2.log
+2025-07-11 13:55:24,500 [INFO] Build result: SUCCESS
+2025-07-11 13:55:24,500 [INFO] Build analysis result: SUCCESS
+2025-07-11 13:55:24,500 [INFO] Restoring original class from backup: data/repositories/zxing-master/core/src/main/java/com/google/zxing/datamatrix/DataMatrixWriter.java
+2025-07-11 13:55:24,664 [INFO] Restore completed successfully.
+2025-07-11 13:55:24,664 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:56:56,099 [INFO] Build completed successfully.
+2025-07-11 13:56:56,099 [INFO] Build output after restore saved to logs\builds\build_output_2_restore.log
+2025-07-11 13:56:56,115 [INFO] Build result: SUCCESS
+2025-07-11 13:56:56,115 [INFO] Build analysis result after restore: SUCCESS
+2025-07-11 13:56:56,115 [INFO] Starting extraction of issue descriptions from: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,115 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,116 [INFO] Found 3 '.txt' files
+2025-07-11 13:56:56,116 [INFO] Found 3 text files to process.
+2025-07-11 13:56:56,116 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:56:56,117 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_1.txt
+2025-07-11 13:56:56,117 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:56:56,120 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_2.txt
+2025-07-11 13:56:56,120 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:56:56,121 [INFO] Issue description extracted and saved to outputs/codellama7binstruct/issues_description\issue_identification_3.txt
+2025-07-11 13:56:56,121 [INFO] Starting extraction of refactored code from: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,121 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,123 [INFO] Found 3 '.txt' files
+2025-07-11 13:56:56,123 [INFO] Found 3 files to process.
+2025-07-11 13:56:56,123 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:56:56,124 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_1.java
+2025-07-11 13:56:56,124 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:56:56,124 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_2.java
+2025-07-11 13:56:56,124 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:56:56,128 [INFO] Refactored code extracted and saved to outputs/codellama7binstruct/refactorings\refactored_code_3.java
+2025-07-11 13:56:56,128 [INFO] Starting extraction of refactoring explanations from directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,128 [INFO] Listing .txt files in directory: outputs/codellama7binstruct/outputs
+2025-07-11 13:56:56,128 [INFO] Found 3 '.txt' files
+2025-07-11 13:56:56,129 [INFO] Found 3 files to process.
+2025-07-11 13:56:56,129 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_1.txt
+2025-07-11 13:56:56,130 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_1.txt
+2025-07-11 13:56:56,130 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_2.txt
+2025-07-11 13:56:56,130 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_2.txt
+2025-07-11 13:56:56,130 [INFO] Processing file: outputs/codellama7binstruct/outputs\output_3.txt
+2025-07-11 13:56:56,130 [INFO] Extracted refactoring explanation saved to: outputs/codellama7binstruct/explanation\refactoring_explanation_3.txt
+2025-07-11 13:56:56,130 [INFO] Creating backup for class file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/qrcode/encoder/MaskUtil.java
+2025-07-11 13:56:56,263 [INFO] Backup completed successfully.
+2025-07-11 13:56:56,263 [INFO] Replacing method in file: data/repositories/zxing-master/core/src/main/java/com/google/zxing/qrcode/encoder/MaskUtil.java at line: 197 using refactored snippet: outputs/codellama7binstruct/refactorings/refactored_code_3.java
+2025-07-11 13:56:56,756 [INFO] Method replacement completed successfully.
+2025-07-11 13:56:56,756 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:57:10,998 [ERROR] Build failed with return code 1.
+2025-07-11 13:57:10,998 [ERROR] STDERR: 
+2025-07-11 13:57:10,998 [INFO] Build output saved to logs\builds\build_output_3.log
+2025-07-11 13:57:10,998 [WARNING] Build result: COMPILATION_ERROR
+2025-07-11 13:57:10,998 [INFO] Build analysis result: COMPILATION_ERROR
+2025-07-11 13:57:10,998 [INFO] Restoring original class from backup: data/repositories/zxing-master/core/src/main/java/com/google/zxing/qrcode/encoder/MaskUtil.java
+2025-07-11 13:57:11,144 [INFO] Restore completed successfully.
+2025-07-11 13:57:11,144 [INFO] Starting Maven build in: data/repositories/zxing-master/
+2025-07-11 13:58:43,068 [INFO] Build completed successfully.
+2025-07-11 13:58:43,084 [INFO] Build output after restore saved to logs\builds\build_output_3_restore.log
+2025-07-11 13:58:43,084 [INFO] Build result: SUCCESS
+2025-07-11 13:58:43,085 [INFO] Build analysis result after restore: SUCCESS
+2025-07-11 13:58:43,086 [INFO] Execution finished in 442.58 seconds

@@ -1,0 +1,7 @@
+The code was refactored by extracting the logic for filling the top, right, and bottom edges of the matrix into separate methods. This made the code more readable and maintainable by reducing the cognitive complexity.
+
+The `fillTopEdge` method was extracted to handle the logic for filling the top edge of the matrix with alternate 0 / 1 values. The `fillRightEdge` method was extracted to handle the logic for filling the right edge of the matrix with full 1 values. The `fillBottomEdge` method was extracted to handle the logic for filling the bottom edge of the matrix with full 1 values.
+
+The `encodeLowLevel` method was then refactored to call these three methods instead of having the logic for filling the edges inlined. This made the code more readable and maintainable by reducing the cognitive complexity.
+
+The resulting code is more modular and easier to understand, making it easier to identify and fix bugs.

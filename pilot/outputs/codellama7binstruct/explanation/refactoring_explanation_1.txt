@@ -1,0 +1,5 @@
+The code was refactored by extracting the logic for adding edges into a separate method. This made the code more readable and easier to understand, as the logic for adding edges is now in a separate method that is called multiple times. Additionally, the code was simplified by removing the nested loops and using a single loop to iterate over the edges. This made the code more efficient and easier to maintain.
+
+The refactoring also improved the code's Cognitive Complexity, as the code is now easier to understand and follow. The code is also more modular, as the logic for adding edges is now in a separate method that can be reused in other parts of the codebase.
+
+Overall, the refactoring improved the code's readability, maintainability, and efficiency, making it a better codebase overall.
