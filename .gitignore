@@ -1,2 +1,4 @@
 pilot/data/repositories
+pilot/.env
+pilot/logs
 refminer-app/tmp

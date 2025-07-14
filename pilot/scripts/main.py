@@ -82,6 +82,18 @@ if __name__ == "__main__":
 
             build_status = analyze_build_output(build_output)
             logger.info(f"Build analysis result: {build_status}")
+            
+            if(build_status == "SUCCESS"):
+                ### START COMMIT AND ROLLBACK
+                modified_file = sample['repository'] + sample['path']
+                repo_path = sample['repository']
+
+                commit_repository(modified_file, repo_path, sample['id'])
+
+                # ... run RefactoringMiner ...
+
+                rollback_commit(repo_path)
+                ### END COMMIT AND ROLLBACK
 
             restore_original_class(sample['repository'] + sample['path'])
 

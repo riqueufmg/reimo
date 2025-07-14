@@ -42,21 +42,21 @@ def analyze_build_output(output):
         logger.warning("Build result: UNKNOWN")
         return "UNKNOWN"
 
-def commit_repository(modified_file, sample_id):
+def commit_repository(modified_file, repo_path, sample_id):
     try:
         logger.info(f"Staging file for commit: {modified_file}")
 
-        subprocess.run(['git', 'add', modified_file], check=True)
+        subprocess.run(['git', 'add', modified_file], check=True, cwd=repo_path)
         commit_msg = f"Refactored method {sample_id} for analysis"
-        subprocess.run(['git', 'commit', '-m', commit_msg], check=True)
+        subprocess.run(['git', 'commit', '-m', commit_msg], check=True, cwd=repo_path)
 
         logger.info(f"Committed change: {commit_msg}")
     except Exception as e:
-        logger.error(f"Error commit change: {e}")
+        logger.error(f"Error committing change: {e}")
 
-def rollback_commit(sample_id):
+def rollback_commit(repo_path):
     try:
-        subprocess.run(['git', 'reset', '--hard', 'HEAD~1'], check=True)
+        subprocess.run(['git', 'reset', '--hard', 'HEAD~1'], check=True, cwd=repo_path)
         logger.info("Repository rolled back to previous commit.")
     except Exception as e:
-        logger.error(f"Error roolback commit: {e}")
+        logger.error(f"Error rolling back commit: {e}")
