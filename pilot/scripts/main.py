@@ -48,6 +48,11 @@ if __name__ == "__main__":
     # Compile & Test LLMs outputs
     for sample in samples:
         try:
+            i += 1
+            if(i==3):
+                break
+            if(i!=2):
+                continue
             directory_path = "outputs/codellama7binstruct/"
 
             extract_issue_description(
@@ -104,10 +109,6 @@ if __name__ == "__main__":
 
             build_status_2 = analyze_build_output(build_output_2)
             logger.info(f"Build analysis result after restore: {build_status_2}")
-            
-            i += 1
-            if(i==3):
-                break
 
         except Exception as e:
             logger.error(f"Error processing sample {sample['id']}: {e}")
