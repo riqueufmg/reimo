@@ -5,7 +5,6 @@ import os
 
 def get_validated_refactorings(refactoring_type, MaRV_path):
     refactorings = []
-    print(MaRV_path)
 
     with open(MaRV_path, "r", encoding="utf-8") as f:
         data = json.load(f)
