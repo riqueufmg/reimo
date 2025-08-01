@@ -1,8 +1,11 @@
 import json
 import pandas as pd
+import csv
+import os
 
 def get_validated_refactorings(refactoring_type, MaRV_path):
     refactorings = []
+    print(MaRV_path)
 
     with open(MaRV_path, "r", encoding="utf-8") as f:
         data = json.load(f)
@@ -39,6 +42,29 @@ print(len(extract_method_list), "Extract Method refactorings")
 print(len(rename_method_list), "Rename Method refactorings")
 print(len(rename_variable_list), "Rename Variable refactorings")
 print(len(remove_parameter_list), "Remove Parameter refactorings")
+
+# Gather refactoring lists.
+all_refactorings = (
+    extract_method_list +
+    rename_method_list +
+    rename_variable_list +
+    remove_parameter_list
+)
+
+# Create the output path to save csv file.
+output_path = "outputs/321_refactorings.csv"
+os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+# Create the csv file.
+if all_refactorings:
+    with open(output_path, mode="w", encoding="utf-8", newline="") as file:
+        writer = csv.DictWriter(file, fieldnames=all_refactorings[0].keys())
+        writer.writeheader()
+        writer.writerows(all_refactorings)
+    
+    print(f"Arquivo csv salvo em: {output_path}")
+else:
+    print(f"Nenhum dado para salvar")
 
 # Example of how to access the first refactoring's code before
 #print(extract_method_list[0]["code_before"])
