@@ -5,9 +5,6 @@ import os
 import logging
 logger = logging.getLogger(__name__)
 
-API_URL = "https://otnk6c3y6fae8bgb.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
-API_TOKEN = "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"
-
 def zeroshot_prompt(code_snippet):
     
     template = """The following code snippet have high Cognitive Complexity. Refactor it using Extract Method.
