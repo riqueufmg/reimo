@@ -2,4 +2,5 @@ pilot/data/repositories
 pilot/.env
 pilot/logs
 pilot/outputs
+pilot/tmp
 refminer-app/tmp
