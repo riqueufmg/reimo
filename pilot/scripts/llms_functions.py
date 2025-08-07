@@ -4,6 +4,7 @@ import json
 import random
 import os
 import logging
+from transformers import AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
@@ -70,30 +71,54 @@ def select_samples_from_examples(examples, num_samples=15):
 
     return random.sample(examples, min(num_samples, len(examples)))
 
+def estimate_token_count(prompt):
+    num_words = len(prompt.split())
+    return int(num_words / 0.75)
+
+def create_fewshot_prompt(samples):
+    return 0
+
+def create_cot_prompt():
+    return 0
+
 def create_fewshot_prompt(samples):
     if not samples:
         logger.warning("No samples provided for creating few-shot prompt.")
-        return ""
+        return "", 0
 
-    fewshot_prompt = "You are an expert in refactoring code snippets to reduce Cognitive Complexity. Below are some examples of refactoring using the Extract Method technique.\n\n"
-
-    for sample in samples:
-        fewshot_prompt += f"Refactoring ID: {sample['refactoring_id']}\n"
-        fewshot_prompt += f"Code Before:\n{sample['code_before']}\n"
-        fewshot_prompt += f"Code After:\n{sample['code_after']}\n"
-        fewshot_prompt += f"Issue Identification: {sample['description']}\n"
-        fewshot_prompt += "----------------------------------------\n"
-    
-    output_dir = "outputs/codellama7binstruct/prompts"
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, "fewshot_prompt.txt")
-    
     try:
+        base_prompt = (
+            "You are an expert in refactoring code snippets to reduce Cognitive Complexity. "
+            "Below are some examples of refactoring using the Extract Method technique.\n\n"
+        )
+
+        for sample in samples:
+            try:
+                base_prompt += f"Refactoring ID: {sample['refactoring_id']}\n"
+                base_prompt += f"Code Before:\n{sample['code_before']}\n"
+                base_prompt += f"Code After:\n{sample['code_after']}\n"
+                base_prompt += f"Issue Identification: {sample['description']}\n"
+                base_prompt += "----------------------------------------\n"
+            except KeyError as e:
+                logger.error(f"Missing key in sample: {e}. Sample: {sample}")
+                continue
+
+        output_dir = "outputs/codellama7binstruct/prompts"
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, "fewshot_prompt.txt")
+
         with open(output_path, "w", encoding="utf-8") as f:
-            f.write(fewshot_prompt)
+            f.write(base_prompt)
         logger.info(f"Few-shot prompt saved to '{output_path}'.")
+
+        num_tokens = estimate_token_count(base_prompt)
+        logger.info(f"Prompt contains approximately {num_tokens} tokens.")
+
+        return base_prompt, num_tokens
+
     except Exception as e:
-        logger.error(f"Failed to write few-shot prompt file '{output_path}': {e}")
+        logger.exception(f"Error while creating few-shot prompt: {e}")
+        return "", 0
 
 def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     headers = {
@@ -152,4 +177,6 @@ MaRV_path = "data/MaRV.json"
 
 samples = select_samples_from_examples(filter_marv_validated_examples(refactoring_type, MaRV_path), num_samples=15)
 
-create_fewshot_prompt(samples)
+prompt, tokens = create_fewshot_prompt(samples)
+
+print(f"Few-shot prompt created with {tokens} tokens.")
