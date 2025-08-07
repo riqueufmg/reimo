@@ -1,4 +1,3 @@
-import pandas as pd
 import subprocess
 import time
 import os
@@ -42,21 +41,38 @@ def analyze_build_output(output):
         logger.warning("Build result: UNKNOWN")
         return "UNKNOWN"
 
-def commit_repository(modified_file, repo_path, sample_id):
+def commit_repository(repo_path, sample_id):
     try:
-        logger.info(f"Staging file for commit: {modified_file}")
+        repo_path = os.path.abspath(repo_path)
+        logger.info("Staging all changes in repository: %s", repo_path)
 
-        subprocess.run(['git', 'add', modified_file], check=True, cwd=repo_path)
+        subprocess.run(['git', 'add', '.'], check=True, cwd=repo_path)
+        
+        staged = subprocess.run(
+            ['git', 'diff', '--cached', '--name-only'],
+            check=True, cwd=repo_path,
+            capture_output=True, text=True
+        ).stdout.strip()
+
+        if not staged:
+            logger.info("No changes to commit.")
+            return False
+
         commit_msg = f"Refactored method {sample_id} for analysis"
         subprocess.run(['git', 'commit', '-m', commit_msg], check=True, cwd=repo_path)
+        logger.info("Committed change: %s", commit_msg)
+        return True
 
-        logger.info(f"Committed change: {commit_msg}")
+    except subprocess.CalledProcessError as e:
+        logger.error("Git command failed (returncode=%s): %s", e.returncode, e.stderr)
     except Exception as e:
-        logger.error(f"Error committing change: {e}")
+        logger.error("Error committing change: %s", e)
+
+    return False
 
 def rollback_commit(repo_path):
     try:
-        subprocess.run(['git', 'reset', '--hard', 'HEAD~1'], check=True, cwd=repo_path)
+        subprocess.run(['git', 'reset', '--hard', 'original'], check=True, cwd=repo_path)
         logger.info("Repository rolled back to previous commit.")
     except Exception as e:
         logger.error(f"Error rolling back commit: {e}")

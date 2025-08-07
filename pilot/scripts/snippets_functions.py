@@ -23,7 +23,7 @@ def get_snippet(path, line):
             ['java', '-jar', 'tools/method-toolkit-1.0.jar', 'extract', path, str(line)],
             capture_output=True,
             text=True,
-            check=True  # levanta CalledProcessError se falhar
+            check=True
         )
         logger.info("Snippet extraction completed successfully.")
         return result.stdout
