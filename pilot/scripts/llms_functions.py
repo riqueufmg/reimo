@@ -1,8 +1,10 @@
 import pandas as pd
 import requests
-import subprocess
+import json
+import random
 import os
 import logging
+
 logger = logging.getLogger(__name__)
 
 def zeroshot_prompt(code_snippet):
@@ -26,6 +28,72 @@ def zeroshot_prompt(code_snippet):
     </refactoring explanation>
     """
     return template.format(code_snippet=code_snippet)
+
+def filter_marv_validated_examples(refactoring_type, MaRV_path):
+    try:
+        refactorings = []
+
+        with open(MaRV_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        extract_method_data = data.get(refactoring_type, [])
+
+        df = pd.DataFrame(extract_method_data)
+
+        for index, row in df.iterrows():
+            sum = 0
+            for vote in row.evaluations:
+                sum += vote["vote"]
+            
+            if sum == 2:
+                refactoring = {
+                    "refactoring_id": row.refactoring_id,
+                    "commit_sha": row.commit_sha,
+                    "commit_link": row.commit_link,
+                    "file_path": row.file_path,
+                    "description": row.description,
+                    "code_before": row.code_before,
+                    "code_after": row.code_after
+                }
+                refactorings.append(refactoring)
+
+        return refactorings
+    
+    except requests.RequestException as e:
+        logger.error(f"Load MaRV examples failed: {e}")
+        return
+
+def select_samples_from_examples(examples, num_samples=15):
+    if not examples:
+        logger.warning("No examples available for sampling.")
+        return []
+
+    return random.sample(examples, min(num_samples, len(examples)))
+
+def create_fewshot_prompt(samples):
+    if not samples:
+        logger.warning("No samples provided for creating few-shot prompt.")
+        return ""
+
+    fewshot_prompt = "You are an expert in refactoring code snippets to reduce Cognitive Complexity. Below are some examples of refactoring using the Extract Method technique.\n\n"
+
+    for sample in samples:
+        fewshot_prompt += f"Refactoring ID: {sample['refactoring_id']}\n"
+        fewshot_prompt += f"Code Before:\n{sample['code_before']}\n"
+        fewshot_prompt += f"Code After:\n{sample['code_after']}\n"
+        fewshot_prompt += f"Issue Identification: {sample['description']}\n"
+        fewshot_prompt += "----------------------------------------\n"
+    
+    output_dir = "outputs/codellama7binstruct/prompts"
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, "fewshot_prompt.txt")
+    
+    try:
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(fewshot_prompt)
+        logger.info(f"Few-shot prompt saved to '{output_path}'.")
+    except Exception as e:
+        logger.error(f"Failed to write few-shot prompt file '{output_path}': {e}")
 
 def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     headers = {
@@ -78,4 +146,10 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
         logger.info(f"Output saved to '{output_path}'.")
     except Exception as e:
         logger.error(f"Failed to write output file '{output_path}': {e}")
-    
+
+refactoring_type = "Extract Method"
+MaRV_path = "data/MaRV.json"
+
+samples = select_samples_from_examples(filter_marv_validated_examples(refactoring_type, MaRV_path), num_samples=15)
+
+create_fewshot_prompt(samples)
