@@ -75,50 +75,59 @@ def estimate_token_count(prompt):
     num_words = len(prompt.split())
     return int(num_words / 0.75)
 
-def create_fewshot_prompt(samples):
-    return 0
+def create_fewshot_prompt(examples):
+    n = 1
+    fewshot_prompt = ""
+    for example in examples:
+        fewshot_prompt += f"Example {n}:\n\n"
+        fewshot_prompt += f"Refactoring Description: {example['description']}\n\n"
+        fewshot_prompt += f"Code Before:\n------------\n{example['code_before']}\n"
+        fewshot_prompt += f"Code After:\n------------\n{example['code_after']}\n"
+        fewshot_prompt += "----------------------------------------\n"
+        n = n + 1
+    return fewshot_prompt
 
-def create_cot_prompt():
-    return 0
+def create_cot_prompt(refactoring_type):
+    return 
 
-def create_fewshot_prompt(samples):
-    if not samples:
-        logger.warning("No samples provided for creating few-shot prompt.")
-        return "", 0
+def create_incontext_prompt(refactoring_type, examples):
+    if not examples:
+        logger.warning("No examples provided for creating in-context prompt.")
+        return
 
     try:
-        base_prompt = (
-            "You are an expert in refactoring code snippets to reduce Cognitive Complexity. "
-            "Below are some examples of refactoring using the Extract Method technique.\n\n"
-        )
-
-        for sample in samples:
-            try:
-                base_prompt += f"Refactoring ID: {sample['refactoring_id']}\n"
-                base_prompt += f"Code Before:\n{sample['code_before']}\n"
-                base_prompt += f"Code After:\n{sample['code_after']}\n"
-                base_prompt += f"Issue Identification: {sample['description']}\n"
-                base_prompt += "----------------------------------------\n"
-            except KeyError as e:
-                logger.error(f"Missing key in sample: {e}. Sample: {sample}")
-                continue
-
-        output_dir = "outputs/codellama7binstruct/prompts"
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, "fewshot_prompt.txt")
-
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(base_prompt)
-        logger.info(f"Few-shot prompt saved to '{output_path}'.")
-
-        num_tokens = estimate_token_count(base_prompt)
-        logger.info(f"Prompt contains approximately {num_tokens} tokens.")
-
-        return base_prompt, num_tokens
-
+        prompt = f"You are an expert in refactoring code snippets. Here are some examples of refactoring using the {refactoring_type} technique.\n\n"
+        prompt += create_fewshot_prompt(examples)
+        return prompt
     except Exception as e:
         logger.exception(f"Error while creating few-shot prompt: {e}")
-        return "", 0
+        return ""
+
+def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3):
+    if not samples:
+        logger.warning("No samples provided for creating multiple prompts.")
+        return
+
+    try:
+        for i in range(0, len(samples), n_examples):
+            
+            cont = (int)(i // n_examples)+1
+            
+            prompt = create_incontext_prompt(refactoring_type, samples[i:i + n_examples])
+            output_path = os.path.join(output_dir, f"fewshot_prompt_{cont}.txt")
+
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(prompt)
+            logger.info(f"Few-shot prompt {cont} saved to '{output_path}'.")
+
+            num_tokens = estimate_token_count(prompt)
+            logger.info(f"Prompt {cont} contains approximately {num_tokens} tokens.")
+            print(f"Prompt {cont} contains approximately {num_tokens} tokens.")
+
+    except Exception as e:
+        logger.exception(f"Error while creating multiple prompts: {e}")
+
+    return
 
 def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     headers = {
@@ -174,9 +183,7 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
 
 refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
+output_dir = "outputs/codellama7binstruct/prompts"
 
 samples = select_samples_from_examples(filter_marv_validated_examples(refactoring_type, MaRV_path), num_samples=15)
-
-prompt, tokens = create_fewshot_prompt(samples)
-
-print(f"Few-shot prompt created with {tokens} tokens.")
+create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3)

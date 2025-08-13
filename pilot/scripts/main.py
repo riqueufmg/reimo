@@ -58,6 +58,7 @@ if __name__ == "__main__":
             logger.error(f"Error processing sample {sample['id']}: {e}")
     
     ## FORMAT LLM OUTPUT
+    ## TODO: is necessary the loop?
     for sample in samples:
         try:
             if not os.path.exists(f"{directory_path}/outputs/output_{sample['id']}.txt"):
