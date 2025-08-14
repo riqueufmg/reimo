@@ -1,0 +1,7 @@
+Expected output:
+<refactored code>
+The code after the refactoring should be between these tags.
+</refactored code>
+<refactoring explanation>
+The explanation of the refactoring should be between these tags.
+</refactoring explanation>

@@ -109,7 +109,29 @@ def create_fewshot_prompt(examples):
     return fewshot_prompt
 
 def create_cot_prompt(refactoring_type):
-    return 
+    if refactoring_type == "Extract Method":
+        refactoring_mechanic = "extract_method"
+    else:
+        refactoring_mechanic = "unknown"
+
+    file = open(f"data/prompt/refactoring_mechanics/{refactoring_mechanic}.txt")
+    if file:
+        refactoring_mechanic_description = file.read()
+        file.close()
+    else:
+        refactoring_mechanic_description = "Description not found."
+
+    return refactoring_mechanic_description
+
+def create_output_prompt():
+    file = open(f"data/prompt/output.txt")
+    if file:
+        refactoring_output = file.read()
+        file.close()
+    else:
+        refactoring_output = "Description not found."
+
+    return refactoring_output
 
 def create_incontext_prompt(refactoring_type, examples):
     if not examples:
@@ -119,6 +141,13 @@ def create_incontext_prompt(refactoring_type, examples):
     try:
         prompt = f"You are an expert in refactoring code snippets. Here are some examples of refactoring using the {refactoring_type} technique.\n\n"
         prompt += create_fewshot_prompt(examples)
+        prompt += f"Please provide a refactored version of the code snippets above using the {refactoring_type} technique, following these mechanics: \n\n"
+        prompt += create_cot_prompt(refactoring_type)
+        prompt += "\n\n"
+        prompt += "Code to refactor:\n------------\n"
+        prompt += "\n" #TODO
+        prompt += "\nReturn the result strictly using the format below:\n"
+        prompt += create_output_prompt()
         return prompt
     except Exception as e:
         logger.exception(f"Error while creating few-shot prompt: {e}")
@@ -204,16 +233,18 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     except Exception as e:
         logger.error(f"Failed to write output file '{output_path}': {e}")
 
-'''refactoring_type = "Extract Method"
+refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
 output_dir = "outputs/codellama7binstruct/prompts"
+
+print(create_cot_prompt(refactoring_type))
 
 examples = filter_marv_validated_examples(refactoring_type, MaRV_path)
 usage_count = {}
 for example in examples:
     usage_count[example['refactoring_id']] = 0
 
-num_instances = 30
+num_instances = 1
 for instance_id in range(num_instances):
     samples = select_samples_global_limit(examples, usage_count, num_samples=15)
-    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)'''
+    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)
