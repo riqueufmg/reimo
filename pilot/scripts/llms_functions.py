@@ -71,6 +71,27 @@ def select_samples_from_examples(examples, num_samples=15):
 
     return random.sample(examples, min(num_samples, len(examples)))
 
+def select_samples_global_limit(examples, usage_count, num_samples=15, max_usage=8):
+    if not examples:
+        logger.warning("No examples provided for sampling.")
+        return []
+
+    available_examples = []
+    for example in examples:
+        if usage_count[example['refactoring_id']] < max_usage:
+            available_examples.append(example)
+
+    if not available_examples:
+        logger.warning("No examples available respecting max usage limit.")
+        return []
+    
+    selected = random.sample(available_examples, min(num_samples, len(available_examples)))
+
+    for example in selected:
+        usage_count[example['refactoring_id']] += 1
+
+    return selected
+
 def estimate_token_count(prompt):
     num_words = len(prompt.split())
     return int(num_words / 0.75)
@@ -109,6 +130,8 @@ def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3)
         return
 
     try:
+        os.makedirs(output_dir, exist_ok=True)
+        
         for i in range(0, len(samples), n_examples):
             
             cont = (int)(i // n_examples)+1
@@ -185,5 +208,12 @@ refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
 output_dir = "outputs/codellama7binstruct/prompts"
 
-samples = select_samples_from_examples(filter_marv_validated_examples(refactoring_type, MaRV_path), num_samples=15)
-create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3)
+examples = filter_marv_validated_examples(refactoring_type, MaRV_path)
+usage_count = {}
+for example in examples:
+    usage_count[example['refactoring_id']] = 0
+
+num_instances = 30
+for instance_id in range(num_instances):
+    samples = select_samples_global_limit(examples, usage_count, num_samples=15)
+    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)
