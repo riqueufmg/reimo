@@ -71,7 +71,7 @@ def select_samples_from_examples(examples, num_samples=15):
 
     return random.sample(examples, min(num_samples, len(examples)))
 
-def select_samples_global_limit(examples, usage_count, num_samples=15, max_usage=8):
+def select_samples_global_limit(examples, usage_count, num_samples, max_usage):
     if not examples:
         logger.warning("No examples provided for sampling.")
         return []
@@ -98,13 +98,12 @@ def estimate_token_count(prompt):
 
 def create_fewshot_prompt(examples):
     n = 1
-    fewshot_prompt = ""
+    fewshot_prompt = "================= EXAMPLES =================\n\n"
     for example in examples:
         fewshot_prompt += f"Example {n}:\n\n"
         fewshot_prompt += f"Refactoring Description: {example['description']}\n\n"
         fewshot_prompt += f"Code Before:\n------------\n{example['code_before']}\n"
         fewshot_prompt += f"Code After:\n------------\n{example['code_after']}\n"
-        fewshot_prompt += "----------------------------------------\n"
         n = n + 1
     return fewshot_prompt
 
@@ -114,26 +113,32 @@ def create_cot_prompt(refactoring_type):
     else:
         refactoring_mechanic = "unknown"
 
+    refactoring_mechanic_description = "================= REFACTORING MECHANICS =================\n\n"
+    refactoring_mechanic_description += f"Please provide a refactored version of the code snippets above using the {refactoring_type} technique, following these mechanics: \n\n"
+
     file = open(f"data/prompt/refactoring_mechanics/{refactoring_mechanic}.txt")
     if file:
-        refactoring_mechanic_description = file.read()
+        refactoring_mechanic_description += file.read()
         file.close()
     else:
-        refactoring_mechanic_description = "Description not found."
+        refactoring_mechanic_description += "Description not found."
 
     return refactoring_mechanic_description
 
 def create_output_prompt():
+    refactoring_output = "================= OUTPUT FORMAT =================\n\n"
+    refactoring_output += "\nReturn the result strictly using the format below:\n"
+
     file = open(f"data/prompt/output.txt")
     if file:
-        refactoring_output = file.read()
+        refactoring_output += file.read()
         file.close()
     else:
-        refactoring_output = "Description not found."
+        refactoring_output += "Description not found."
 
     return refactoring_output
 
-def create_incontext_prompt(refactoring_type, examples):
+def create_incontext_prompt(refactoring_type, examples, target_method):
     if not examples:
         logger.warning("No examples provided for creating in-context prompt.")
         return
@@ -141,19 +146,17 @@ def create_incontext_prompt(refactoring_type, examples):
     try:
         prompt = f"You are an expert in refactoring code snippets. Here are some examples of refactoring using the {refactoring_type} technique.\n\n"
         prompt += create_fewshot_prompt(examples)
-        prompt += f"Please provide a refactored version of the code snippets above using the {refactoring_type} technique, following these mechanics: \n\n"
         prompt += create_cot_prompt(refactoring_type)
         prompt += "\n\n"
-        prompt += "Code to refactor:\n------------\n"
-        prompt += "\n" #TODO
-        prompt += "\nReturn the result strictly using the format below:\n"
+        prompt += "================= CODE TO REFACTOR =================\n\n"
+        prompt += f"{target_method}\n"
         prompt += create_output_prompt()
         return prompt
     except Exception as e:
         logger.exception(f"Error while creating few-shot prompt: {e}")
         return ""
 
-def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3):
+def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples, target_method):
     if not samples:
         logger.warning("No samples provided for creating multiple prompts.")
         return
@@ -164,13 +167,13 @@ def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples=3)
         for i in range(0, len(samples), n_examples):
             
             cont = (int)(i // n_examples)+1
-            
-            prompt = create_incontext_prompt(refactoring_type, samples[i:i + n_examples])
-            output_path = os.path.join(output_dir, f"fewshot_prompt_{cont}.txt")
+
+            prompt = create_incontext_prompt(refactoring_type, samples[i:i + n_examples], target_method)
+            output_path = os.path.join(output_dir, f"prompt_{cont}.txt")
 
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(prompt)
-            logger.info(f"Few-shot prompt {cont} saved to '{output_path}'.")
+            logger.info(f"Prompt {cont} saved to '{output_path}'.")
 
             num_tokens = estimate_token_count(prompt)
             logger.info(f"Prompt {cont} contains approximately {num_tokens} tokens.")
@@ -236,8 +239,14 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
 refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
 output_dir = "outputs/codellama7binstruct/prompts"
-
-print(create_cot_prompt(refactoring_type))
+n_examples = 3
+num_samples = 15
+max_usage=8
+target_method = """
+public function foo(){
+    // TODO: Implement the method
+}
+"""
 
 examples = filter_marv_validated_examples(refactoring_type, MaRV_path)
 usage_count = {}
@@ -246,5 +255,5 @@ for example in examples:
 
 num_instances = 1
 for instance_id in range(num_instances):
-    samples = select_samples_global_limit(examples, usage_count, num_samples=15)
-    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)
+    samples = select_samples_global_limit(examples, usage_count, num_samples, max_usage)
+    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples, target_method)
