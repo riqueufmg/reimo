@@ -204,7 +204,7 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     except Exception as e:
         logger.error(f"Failed to write output file '{output_path}': {e}")
 
-refactoring_type = "Extract Method"
+'''refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
 output_dir = "outputs/codellama7binstruct/prompts"
 
@@ -216,4 +216,4 @@ for example in examples:
 num_instances = 30
 for instance_id in range(num_instances):
     samples = select_samples_global_limit(examples, usage_count, num_samples=15)
-    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)
+    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples=3)'''
