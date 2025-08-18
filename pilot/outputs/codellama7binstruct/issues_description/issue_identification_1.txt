@@ -1,1 +1,0 @@
-The code has a high Cognitive Complexity of 155, which is a sign of a codebase that is difficult to understand and maintain. The code is also very long, with over 100 lines of code.

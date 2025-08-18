@@ -1,5 +1,5 @@
 from snippets_functions import get_samples, get_snippet, snippet_to_file, backup_original_class, replace_method, restore_original_class, build_repository, analyze_build_output
-from llms_functions import hf_inference_endpoint, zeroshot_prompt
+from llms_functions import hf_inference_endpoint, zeroshot_prompt, filter_marv_validated_examples, select_samples_global_limit, create_multiple_prompts
 from parser_llm_output import extract_issue_description, extract_refactored_code, extract_refactoring_explanation
 from repository_functions import commit_repository, rollback_commit
 from refactoring_miner import run_refactoringminer
@@ -15,6 +15,11 @@ load_dotenv()
 API_URL = os.getenv("API_URL")
 API_TOKEN = os.getenv("API_TOKEN")
 MODEL_NAME = os.getenv("MODEL_NAME")
+OUTPUT_PATH = os.getenv("OUTPUT_DIRECTORY") + f"/{MODEL_NAME}/"
+MARV_PATH = os.getenv("MARV_PATH")
+NUMBER_EXAMPLES = os.getenv("NUMBER_EXAMPLES")
+NUMBER_SAMPLES = os.getenv("NUMBER_SAMPLES")
+MAX_USAGE = os.getenv("MAX_USAGE")
 
 os.makedirs("logs", exist_ok=True)
 log_filename = datetime.now().strftime("process_%Y-%m-%d_%H-%M-%S.log")
@@ -37,46 +42,87 @@ if __name__ == "__main__":
     samples = get_samples('data/samples.csv', ',')
     logger.info(f"Loaded {len(samples)} samples")
     
-    directory_path = f"outputs/{MODEL_NAME}/"
-
-    ## GENERATE LLM OUTPUT
+    refactoring_type = "Extract Method" # TODO: Implement dynamic refactoring type detection
+    number_prompts = int(NUMBER_SAMPLES) // int(NUMBER_EXAMPLES) # TODO: Implement the evaluation of exact division
+          
+    ## 1. EXTRACT AND 2. FILTER EXAMPLES
+    examples = filter_marv_validated_examples(refactoring_type, MARV_PATH)
+    usage_count = {}
+    for example in examples:
+        usage_count[example['refactoring_id']] = 0
+    
     for sample in samples:
         try:
-            break # REMOVE IT!!! I added it just do not run API again.
-            snippet = get_snippet(sample['repository'] + sample['path'], sample['line'])
-            snippet_to_file(snippet, sample['id'])
+            break ## TODO: REMOVE AFTER TESTS
+            target_method = get_snippet(sample['repository'] + sample['path'], sample['line'])
+            snippet_to_file(target_method, sample['id'])
 
-            prompt = zeroshot_prompt(code_snippet=snippet)
-            hf_inference_endpoint(
-                prompt=prompt,
-                api_url=API_URL,
-                api_token=API_TOKEN,
-                sample_id=sample['id']
+            ## 3. SELECT SAMPLES
+            selected_examples = select_samples_global_limit(
+                examples,
+                usage_count,
+                int(NUMBER_SAMPLES),
+                int(MAX_USAGE)
             )
-            
+
+            ## 4. CREATE PROMPTS
+            create_multiple_prompts(
+                refactoring_type,
+                selected_examples,
+                f"{OUTPUT_PATH}prompts/{sample['id']}",
+                int(NUMBER_EXAMPLES),
+                target_method)
         except Exception as e:
             logger.error(f"Error processing sample {sample['id']}: {e}")
+
+    ## 5. LLM-BASED REFACTORING
+    for sample in samples:
+        try:
+            
+            for i in range(1, number_prompts + 1):
+                prompt = ""
+                file = open(f"{OUTPUT_PATH}prompts/{sample['id']}/prompt_{i}.txt", "r", encoding="utf-8")
+                prompt = file.read()
+                file.close()
+                
+                prompt = zeroshot_prompt(code_snippet="Olá tudo bem?")
+
+                hf_inference_endpoint(
+                    prompt=prompt,
+                    api_url=API_URL,
+                    api_token=API_TOKEN,
+                    sample_id=sample['id'],
+                    prompt_id=i
+                )
+                
+                exit()
+            
+            exit()
+        except Exception as e:
+            logger.error(f"Error processing sample {sample['id']}: {e}")
+    
+    exit() ## I WILL REMOVE AFTER THE TESTS
     
     ## FORMAT LLM OUTPUT
     ## TODO: is necessary the loop?
     for sample in samples:
         try:
-            if not os.path.exists(f"{directory_path}/outputs/output_{sample['id']}.txt"):
+            if not os.path.exists(f"{OUTPUT_PATH}/outputs/output_{sample['id']}.txt"):
                 continue
 
             extract_issue_description(
-                f"{directory_path}outputs",
-                f"{directory_path}issues_description"
+                f"{OUTPUT_PATH}outputs",
+                f"{OUTPUT_PATH}issues_description"
             )
             
             extract_refactored_code(
-                f"{directory_path}outputs",
-                f"{directory_path}refactorings"
+                f"{OUTPUT_PATH}outputs",
+                f"{OUTPUT_PATH}refactorings"
             )
             
             extract_refactoring_explanation(
-                f"{directory_path}outputs",
-                f"{directory_path}explanation"
+                f"{OUTPUT_PATH}outputs",
+                f"{OUTPUT_PATH}explanation"
             )
         except Exception as e:
             logger.error(f"Error processing sample {sample['id']}: {e}")
@@ -88,7 +134,7 @@ if __name__ == "__main__":
             replace_method(
                 sample['repository'] + sample['path'],
                 sample['line'],
-                f"{directory_path}refactorings/refactored_code_{sample['id']}.java"
+                f"{OUTPUT_PATH}refactorings/refactored_code_{sample['id']}.java"
             )
             build_output = build_repository(sample['repository'])
             

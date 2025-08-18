@@ -1,1 +1,0 @@
-The code has a high Cognitive Complexity of 15, which is a sign of a code smell. The function is doing too many things and has a lot of nested loops, making it difficult to understand and maintain.

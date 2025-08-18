@@ -177,14 +177,12 @@ def create_multiple_prompts(refactoring_type, samples, output_dir, n_examples, t
 
             num_tokens = estimate_token_count(prompt)
             logger.info(f"Prompt {cont} contains approximately {num_tokens} tokens.")
-            print(f"Prompt {cont} contains approximately {num_tokens} tokens.")
-
     except Exception as e:
         logger.exception(f"Error while creating multiple prompts: {e}")
 
     return
 
-def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
+def hf_inference_endpoint(prompt, api_url, api_token, sample_id, prompt_id):
     headers = {
         "Authorization": f"Bearer {api_token}",
         "Content-Type": "application/json"
@@ -225,9 +223,9 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     content = choices[0].get("message", {}).get("content", "")
     logger.info("Model output received.")
 
-    output_dir = "outputs/codellama7binstruct/outputs"
+    output_dir = f"outputs/codellama7binstruct/outputs/{sample_id}/" # TODO: Implement dynamic path
     os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, f"output_{sample_id}.txt")
+    output_path = os.path.join(output_dir, f"output_{prompt_id}.txt")
 
     try:
         with open(output_path, "w", encoding="utf-8") as f:
@@ -236,7 +234,7 @@ def hf_inference_endpoint(prompt, api_url, api_token, sample_id):
     except Exception as e:
         logger.error(f"Failed to write output file '{output_path}': {e}")
 
-refactoring_type = "Extract Method"
+'''refactoring_type = "Extract Method"
 MaRV_path = "data/MaRV.json"
 output_dir = "outputs/codellama7binstruct/prompts"
 n_examples = 3
@@ -256,4 +254,4 @@ for example in examples:
 num_instances = 1
 for instance_id in range(num_instances):
     samples = select_samples_global_limit(examples, usage_count, num_samples, max_usage)
-    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples, target_method)
+    create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples, target_method)'''

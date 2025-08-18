@@ -1,1 +1,0 @@
-The code was refactored by extracting the logic for adding edges to a separate method, and by using a more descriptive variable name for the input length. The code was also simplified by removing unnecessary comments and by using a more concise syntax for the for loop.
