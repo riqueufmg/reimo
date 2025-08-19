@@ -1,0 +1,480 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private maybeAddConstJSDoc(srcDeclaration Node, srcParent Node, srcName Node, destDeclaration Node) : void extracted from private varify() : void in class com.google.javascript.jscomp.Es6RewriteBlockScopedDeclaration
+
+Code Before:
+------------
+@@ -156,39 +156,48 @@ public boolean apply(Node n) {
+     }
+   };
+ 
+   private void varify() {
+     if (!letConsts.isEmpty()) {
+       for (Node n : letConsts) {
+         if (n.isConst()) {
+-          // Normalize declarations like "const x = 1, y = 2;" so that inline
+-          // type annotations are preserved.
+-          Node insertPoint = n;
+-          for (Node child : n.children()) {
+-            Node declaration = IR.var(child.detachFromParent());
+-            declaration.useSourceInfoFrom(n);
+-            JSDocInfo existingInfo = n.getJSDocInfo();
+-            if (existingInfo == null) {
+-              existingInfo = child.getJSDocInfo();
+-              child.setJSDocInfo(null);
+-            }
+-
+-            if (NodeUtil.isForIn(n.getParent()) && n == n.getParent().getFirstChild()) {
+-              // Don't add @const for the left side of a for/in. If we do we get warnings
+-              // from the NTI.
+-              declaration.setJSDocInfo(existingInfo);
+-            } else {
+-              JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
+-              builder.recordConstancy();
+-              JSDocInfo info = builder.build();
+-              declaration.setJSDocInfo(info);
+-            }
+-            n.getParent().addChildAfter(declaration, insertPoint);
+-            insertPoint = declaration;
+-          }
+-          n.detachFromParent();
+-        } else {
+-          n.setType(Token.VAR);
+         }
+       }
+       compiler.reportCodeChange();
+     }
+@@ -368,33 +377,16 @@ private void transformLoopClosure() {
+               if (NodeUtil.isNameDeclaration(reference.getParent())) {
+                 Node declaration = reference.getParent();
+                 Node grandParent = declaration.getParent();
+-                // Normalize: "let i = 0, j = 0;" becomes "let i = 0; let j = 0;"
+-                while (declaration.getChildCount() > 1) {
+-                  Node name = declaration.getLastChild();
+-                  grandParent.addChildAfter(
+-                      IR.declaration(
+-                          name.detachFromParent(), declaration.getType())
+-                          .useSourceInfoIfMissingFromForTree(declaration),
+-                      declaration);
+-                }
+-
+                 declaration = reference.getParent(); // Might have changed after normalization.
+                 // Change declaration to assignment, or just drop it if there's
+                 // no initial value.
+                 if (reference.hasChildren()) {
+-                  JSDocInfo existingInfo = declaration.getJSDocInfo();
+-                  if (existingInfo == null) {
+-                    existingInfo = reference.getJSDocInfo();
+-                    reference.setJSDocInfo(null);
+-                  }
+-                  JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
+-                  if (declaration.isConst()) {
+-                    builder.recordConstancy();
+-                  }
+-
+                   Node newReference = reference.cloneNode();
+                   Node assign = IR.assign(newReference, reference.removeFirstChild());
+-                  assign.setJSDocInfo(builder.build());
+ 
+                   Node replacement = IR.exprResult(assign)
+                       .useSourceInfoIfMissingFromForTree(declaration);
+
+Code After:
+------------
+@@ -156,39 +156,48 @@ public boolean apply(Node n) {
+     }
+   };
+ 
++  private static void extractInlineJSDoc(Node srcDeclaration, Node srcName, Node destDeclaration) {
++    JSDocInfo existingInfo = srcDeclaration.getJSDocInfo();
++    if (existingInfo == null) {
++      // Extract inline JSDoc from "src" and add it to the "dest" node.
++      existingInfo = srcName.getJSDocInfo();
++      srcName.setJSDocInfo(null);
++    }
++    JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
++    destDeclaration.setJSDocInfo(builder.build());
++  }
++
++  private static void maybeAddConstJSDoc(Node srcDeclaration, Node srcParent, Node srcName,
++      Node destDeclaration) {
++    if (srcDeclaration.isConst()
++        // Don't add @const for the left side of a for/in. If we do we get warnings from the NTI.
++        && !(NodeUtil.isForIn(srcParent) && srcDeclaration == srcParent.getFirstChild())) {
++      extractInlineJSDoc(srcDeclaration, srcName, destDeclaration);
++      JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(destDeclaration.getJSDocInfo());
++      builder.recordConstancy();
++      destDeclaration.setJSDocInfo(builder.build());
++    }
++  }
++
++  private static void handleDeclarationList(Node declarationList, Node parent) {
++    // Normalize: "const i = 0, j = 0;" becomes "/** @const */ var i = 0; /** @const */ var j = 0;"
++    while (declarationList.hasMoreThanOneChild()) {
++      Node name = declarationList.getLastChild();
++      Node newDeclaration = IR.var(name.detachFromParent()).useSourceInfoFrom(declarationList);
++      maybeAddConstJSDoc(declarationList, parent, name, newDeclaration);
++      parent.addChildAfter(newDeclaration, declarationList);
++    }
++    maybeAddConstJSDoc(declarationList, parent, declarationList.getFirstChild(), declarationList);
++    declarationList.setType(Token.VAR);
++  }
++
+   private void varify() {
+     if (!letConsts.isEmpty()) {
+       for (Node n : letConsts) {
+         if (n.isConst()) {
++          handleDeclarationList(n, n.getParent());
+         }
++        n.setType(Token.VAR);
+       }
+       compiler.reportCodeChange();
+     }
+@@ -368,33 +377,16 @@ private void transformLoopClosure() {
+               if (NodeUtil.isNameDeclaration(reference.getParent())) {
+                 Node declaration = reference.getParent();
+                 Node grandParent = declaration.getParent();
++                handleDeclarationList(declaration, grandParent);
+                 declaration = reference.getParent(); // Might have changed after normalization.
+                 // Change declaration to assignment, or just drop it if there's
+                 // no initial value.
+                 if (reference.hasChildren()) {
+                   Node newReference = reference.cloneNode();
+                   Node assign = IR.assign(newReference, reference.removeFirstChild());
++                  extractInlineJSDoc(declaration, reference, declaration);
++                  maybeAddConstJSDoc(declaration, grandParent, reference, declaration);
++                  assign.setJSDocInfo(declaration.getJSDocInfo());
+ 
+                   Node replacement = IR.exprResult(assign)
+                       .useSourceInfoIfMissingFromForTree(declaration);
+
+Example 2:
+
+Refactoring Description: Extract Method private checkOnCollisionsSSK(useSlotFilter boolean) : void extracted from public testOnCollisionsSSK() : void in class freenet.store.CachingFreenetStoreTest
+
+Code Before:
+------------
+@@ -352,9 +352,16 @@ public void testTimeExpireSSK() throws IOException, SSKEncodeException, InvalidC
+ 		
+ 		cachingStore.close();
+ 	}
+ 	
+ 	/* Test collisions on SSK */
+-	public void testOnCollisionsSSK() throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
+ 		File f = new File(tempDir, "saltstore");
+ 		FileUtil.removeAll(f);
+ 
+@@ -363,7 +370,7 @@ public void testOnCollisionsSSK() throws IOException, SSKEncodeException, Invali
+ 		new RAMFreenetStore<DSAPublicKey>(pk, keys);
+ 		GetPubkey pubkeyCache = new SimpleGetPubkey(pk);
+ 		SSKStore store = new SSKStore(pubkeyCache);
+-		SaltedHashFreenetStore<SSKBlock> saltStore = SaltedHashFreenetStore.construct(f, "testCachingFreenetStoreOnCloseSSK", store, weakPRNG, 10, false, SemiOrderedShutdownHook.get(), true, true, ticker, null);
+ 		CachingFreenetStore<SSKBlock> cachingStore = new CachingFreenetStore<SSKBlock>(store, cachingFreenetStoreMaxSize, cachingFreenetStorePeriod, saltStore, ticker);
+ 		cachingStore.start(null, true);
+ 		RandomSource random = new DummyRandomSource(12345);
+
+Code After:
+------------
+@@ -352,9 +352,16 @@ public void testTimeExpireSSK() throws IOException, SSKEncodeException, InvalidC
+ 		
+ 		cachingStore.close();
+ 	}
++
++	public void testOnCollisionsSSK() throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
++		// With slot filters turned off, it goes straight to disk, because probablyInStore() always returns true.
++		checkOnCollisionsSSK(false);
++		// With slot filters turned on, it should be cached, it should compare it, and still not throw if it's the same block.
++		checkOnCollisionsSSK(true);
++	}
+ 	
+ 	/* Test collisions on SSK */
++	private void checkOnCollisionsSSK(boolean useSlotFilter) throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
+ 		File f = new File(tempDir, "saltstore");
+ 		FileUtil.removeAll(f);
+ 
+@@ -363,7 +370,7 @@ public void testOnCollisionsSSK() throws IOException, SSKEncodeException, Invali
+ 		new RAMFreenetStore<DSAPublicKey>(pk, keys);
+ 		GetPubkey pubkeyCache = new SimpleGetPubkey(pk);
+ 		SSKStore store = new SSKStore(pubkeyCache);
++		SaltedHashFreenetStore<SSKBlock> saltStore = SaltedHashFreenetStore.construct(f, "testCachingFreenetStoreOnCloseSSK", store, weakPRNG, 10, true, SemiOrderedShutdownHook.get(), true, true, ticker, null);
+ 		CachingFreenetStore<SSKBlock> cachingStore = new CachingFreenetStore<SSKBlock>(store, cachingFreenetStoreMaxSize, cachingFreenetStorePeriod, saltStore, ticker);
+ 		cachingStore.start(null, true);
+ 		RandomSource random = new DummyRandomSource(12345);
+
+Example 3:
+
+Refactoring Description: Extract Method private getActionNameStringFromField(field Field) : String extracted from public printReference() : String in class teammates.ui.controller.AdminActivityLogPageData
+
+Code Before:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
+-    public String printReference(){
+         
+-        List<String> instructorActions = new ArrayList<String>();
+-        List<String> studentActions = new ArrayList<String>();
+-        List<String> adminActions = new ArrayList<String>();
+-        List<String> systemActions = new ArrayList<String>();
+         
+-       
+-        for(Field field : Const.ActionURIs.class.getFields()){
+-            
+-            String rawActionString = "";
+-            try {
+-                rawActionString = field.get(Const.ActionURIs.class).toString();
+-            } catch (IllegalArgumentException | IllegalAccessException e) {
+-                e.printStackTrace();
+-            }
+-            
+-            String[] splitedString = rawActionString.split("/");
+-            String actionString = splitedString[splitedString.length - 1];
+             
+-            if(actionString.startsWith("instructor")){
+-                instructorActions.add(actionString);
+-            }else if(actionString.startsWith("student")){
+-                studentActions.add(actionString);    
+-            }else if(actionString.startsWith("admin")){
+-                adminActions.add(actionString);
+-            }else{
+-                systemActions.add(actionString);    
+             }
+-            
+         }
+         
+-        return assemblyReferenceString(instructorActions, 
+-                                       studentActions,
+-                                       adminActions, 
+-                                       systemActions);
+-             
+     }
+     
+     
+-    String assemblyReferenceString(List<String> instructorActions, List<String> studentActions, 
+-                                   List<String> adminActions, List<String> systemActions){
+         
+-        String outPut="";
+         
+-        int size = instructorActions.size();
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(0, size / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size / 6, size * 2 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 2 / 6, size * 3 / 6), null);
+-        outPut += "</tr>";
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 3 / 6, size * 4 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 4 / 6, size * 5 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 5 / 6, size), null);
+-        outPut += "</tr>";          
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(studentActions, "success"); 
+-        outPut += getReferenceGroupFromList(systemActions, "warning"); 
+-        outPut += getReferenceGroupFromList(adminActions, "danger"); 
+-        outPut += "</tr>";        
+-        return outPut;    
+     
+     }
+     
+     
+-    String getReferenceGroupFromList(List<String> actionList, String styleName){
+         
+-        String outPut = "";
+         
+-        String style = styleName != null ? "list-group-item-" + styleName : "";
+         
+-        outPut += "<td>";
+-        outPut += "<ul class=\"list-group\">";
+-        for(String action : actionList){        
+-            outPut += "<li class=\"list-group-item " + style + "\">" + action + "</li>";
+-                                                              
+-        } 
+-        outPut += "</ul>";
+-        outPut += "</td>";    
+-        return outPut;
+     }
+     
+     /**
+
+Code After:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
++import teammates.common.util.Assumption;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
++    
++    /** 
++     * @return possible servlet requests list as html 
++     */
++    public String getActionListAsHtml(){       
++        List<String> allActionNames = getAllActionNames();   
+         
++        int rowsPerCol = calculateRowsPerCol(allActionNames.size());
++        return convertActionListToHtml(allActionNames, rowsPerCol);
++    }
++    
++    
++    private String convertActionListToHtml(List<String> allActionNames, int rowsPerCol){
+         
++        String outputHtml = "<tr>";      
++        int count = 0;      
++        for (int i = 0; i < Const.TOTAL_COLUMNS; i++) {
+             
++            outputHtml += "<td>";
++            outputHtml += "<ul class=\"list-group\">";
++            for (int j = 0; j < rowsPerCol; j++) {
++                
++                if(count >= allActionNames.size()){
++                    break;
++                }
++                
++                outputHtml += "<li class=\"list-group-item " 
++                              + getStyleForListGroupItem(allActionNames.get(count))
++                              + "\">" + allActionNames.get(count) + "</li>";
++                              
++                count++;
+             }
++            outputHtml += "</ul>";
++            outputHtml += "</td>";
+         }
+         
++       
++        return outputHtml;    
++
+     }
+     
+     
++    private String getStyleForListGroupItem(String actionName){
++        
++        String style = "";
++        
++        if(actionName.startsWith("instructor")){
++            style = "list-group-item";
++        }else if(actionName.startsWith("student")){
++            style = "list-group-item-success";
++        }else if(actionName.startsWith("admin")){
++            style = "list-group-item-warning";
++        }else{
++            style = "list-group-item-danger";
++        }
++        
++        return style;
++    }
++    
++    private int calculateRowsPerCol(int totalNumOfActions){
++        
++        int rowsPerCol = totalNumOfActions / Const.TOTAL_COLUMNS;
++        int remainder = totalNumOfActions % Const.TOTAL_COLUMNS;
+         
++        if(remainder > 0){
++            rowsPerCol ++;
++        }
+         
++        return rowsPerCol;
++    }
+     
++     
++    private List<String> getAllActionNames(){
++       
++        List<String> actionNameList = new ArrayList<String>();
++        
++        for(Field field : Const.ActionURIs.class.getFields()){
++
++            String actionString = getActionNameStringFromField(field);
++            actionNameList.add(actionString);        
++        }
++        
++        return actionNameList;            
+     }
+     
+     
++    private String getActionNameStringFromField(Field field){
+         
++        String rawActionString = "";
++        
++        try {
++            rawActionString = field.get(Const.ActionURIs.class).toString();
++        } catch (IllegalArgumentException | IllegalAccessException e) {
++            Assumption.fail("Fail to get action URI");
++        }
+         
++        String[] splitedString = rawActionString.split("/");
++        String actionString = splitedString[splitedString.length - 1];
+         
++        return actionString;
+     }
+     
+     /**
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

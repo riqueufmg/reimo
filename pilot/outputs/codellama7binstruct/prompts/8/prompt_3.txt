@@ -1,0 +1,404 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public createInstanceManager() : InstanceManager extracted from protected startInternal() : void in class org.apache.catalina.core.StandardContext
+
+Code Before:
+------------
+@@ -5109,14 +5109,7 @@ public String mutate(String inputCredentials) {
+ 
+             if (ok ) {
+                 if (getInstanceManager() == null) {
+-                    javax.naming.Context context = null;
+-                    if (isUseNaming() && getNamingContextListener() != null) {
+-                        context = getNamingContextListener().getEnvContext();
+-                    }
+-                    Map<String, Map<String, String>> injectionMap = buildInjectionMap(
+-                            getIgnoreAnnotations() ? new NamingResourcesImpl(): getNamingResources());
+-                    setInstanceManager(new DefaultInstanceManager(context,
+-                            injectionMap, this, this.getClass().getClassLoader()));
+                 }
+                 getServletContext().setAttribute(
+                         InstanceManager.class.getName(), getInstanceManager());
+@@ -5248,6 +5241,18 @@ private void setClassLoaderProperty(String name, boolean value) {
+         }
+     }
+ 
+     private Map<String, Map<String, String>> buildInjectionMap(NamingResourcesImpl namingResources) {
+         Map<String, Map<String, String>> injectionMap = new HashMap<>();
+         for (Injectable resource: namingResources.findLocalEjbs()) {
+
+Code After:
+------------
+@@ -5109,14 +5109,7 @@ public String mutate(String inputCredentials) {
+ 
+             if (ok ) {
+                 if (getInstanceManager() == null) {
++                    setInstanceManager(createInstanceManager());
+                 }
+                 getServletContext().setAttribute(
+                         InstanceManager.class.getName(), getInstanceManager());
+@@ -5248,6 +5241,18 @@ private void setClassLoaderProperty(String name, boolean value) {
+         }
+     }
+ 
++    @Override
++    public InstanceManager createInstanceManager() {
++        javax.naming.Context context = null;
++        if (isUseNaming() && getNamingContextListener() != null) {
++            context = getNamingContextListener().getEnvContext();
++        }
++        Map<String, Map<String, String>> injectionMap = buildInjectionMap(
++                getIgnoreAnnotations() ? new NamingResourcesImpl(): getNamingResources());
++       return new DefaultInstanceManager(context, injectionMap,
++               this, this.getClass().getClassLoader());
++    }
++
+     private Map<String, Map<String, String>> buildInjectionMap(NamingResourcesImpl namingResources) {
+         Map<String, Map<String, String>> injectionMap = new HashMap<>();
+         for (Injectable resource: namingResources.findLocalEjbs()) {
+
+Example 2:
+
+Refactoring Description: Extract Method private getActionNameStringFromField(field Field) : String extracted from public printReference() : String in class teammates.ui.controller.AdminActivityLogPageData
+
+Code Before:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
+-    public String printReference(){
+         
+-        List<String> instructorActions = new ArrayList<String>();
+-        List<String> studentActions = new ArrayList<String>();
+-        List<String> adminActions = new ArrayList<String>();
+-        List<String> systemActions = new ArrayList<String>();
+         
+-       
+-        for(Field field : Const.ActionURIs.class.getFields()){
+-            
+-            String rawActionString = "";
+-            try {
+-                rawActionString = field.get(Const.ActionURIs.class).toString();
+-            } catch (IllegalArgumentException | IllegalAccessException e) {
+-                e.printStackTrace();
+-            }
+-            
+-            String[] splitedString = rawActionString.split("/");
+-            String actionString = splitedString[splitedString.length - 1];
+             
+-            if(actionString.startsWith("instructor")){
+-                instructorActions.add(actionString);
+-            }else if(actionString.startsWith("student")){
+-                studentActions.add(actionString);    
+-            }else if(actionString.startsWith("admin")){
+-                adminActions.add(actionString);
+-            }else{
+-                systemActions.add(actionString);    
+             }
+-            
+         }
+         
+-        return assemblyReferenceString(instructorActions, 
+-                                       studentActions,
+-                                       adminActions, 
+-                                       systemActions);
+-             
+     }
+     
+     
+-    String assemblyReferenceString(List<String> instructorActions, List<String> studentActions, 
+-                                   List<String> adminActions, List<String> systemActions){
+         
+-        String outPut="";
+         
+-        int size = instructorActions.size();
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(0, size / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size / 6, size * 2 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 2 / 6, size * 3 / 6), null);
+-        outPut += "</tr>";
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 3 / 6, size * 4 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 4 / 6, size * 5 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 5 / 6, size), null);
+-        outPut += "</tr>";          
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(studentActions, "success"); 
+-        outPut += getReferenceGroupFromList(systemActions, "warning"); 
+-        outPut += getReferenceGroupFromList(adminActions, "danger"); 
+-        outPut += "</tr>";        
+-        return outPut;    
+     
+     }
+     
+     
+-    String getReferenceGroupFromList(List<String> actionList, String styleName){
+         
+-        String outPut = "";
+         
+-        String style = styleName != null ? "list-group-item-" + styleName : "";
+         
+-        outPut += "<td>";
+-        outPut += "<ul class=\"list-group\">";
+-        for(String action : actionList){        
+-            outPut += "<li class=\"list-group-item " + style + "\">" + action + "</li>";
+-                                                              
+-        } 
+-        outPut += "</ul>";
+-        outPut += "</td>";    
+-        return outPut;
+     }
+     
+     /**
+
+Code After:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
++import teammates.common.util.Assumption;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
++    
++    /** 
++     * @return possible servlet requests list as html 
++     */
++    public String getActionListAsHtml(){       
++        List<String> allActionNames = getAllActionNames();   
+         
++        int rowsPerCol = calculateRowsPerCol(allActionNames.size());
++        return convertActionListToHtml(allActionNames, rowsPerCol);
++    }
++    
++    
++    private String convertActionListToHtml(List<String> allActionNames, int rowsPerCol){
+         
++        String outputHtml = "<tr>";      
++        int count = 0;      
++        for (int i = 0; i < Const.TOTAL_COLUMNS; i++) {
+             
++            outputHtml += "<td>";
++            outputHtml += "<ul class=\"list-group\">";
++            for (int j = 0; j < rowsPerCol; j++) {
++                
++                if(count >= allActionNames.size()){
++                    break;
++                }
++                
++                outputHtml += "<li class=\"list-group-item " 
++                              + getStyleForListGroupItem(allActionNames.get(count))
++                              + "\">" + allActionNames.get(count) + "</li>";
++                              
++                count++;
+             }
++            outputHtml += "</ul>";
++            outputHtml += "</td>";
+         }
+         
++       
++        return outputHtml;    
++
+     }
+     
+     
++    private String getStyleForListGroupItem(String actionName){
++        
++        String style = "";
++        
++        if(actionName.startsWith("instructor")){
++            style = "list-group-item";
++        }else if(actionName.startsWith("student")){
++            style = "list-group-item-success";
++        }else if(actionName.startsWith("admin")){
++            style = "list-group-item-warning";
++        }else{
++            style = "list-group-item-danger";
++        }
++        
++        return style;
++    }
++    
++    private int calculateRowsPerCol(int totalNumOfActions){
++        
++        int rowsPerCol = totalNumOfActions / Const.TOTAL_COLUMNS;
++        int remainder = totalNumOfActions % Const.TOTAL_COLUMNS;
+         
++        if(remainder > 0){
++            rowsPerCol ++;
++        }
+         
++        return rowsPerCol;
++    }
+     
++     
++    private List<String> getAllActionNames(){
++       
++        List<String> actionNameList = new ArrayList<String>();
++        
++        for(Field field : Const.ActionURIs.class.getFields()){
++
++            String actionString = getActionNameStringFromField(field);
++            actionNameList.add(actionString);        
++        }
++        
++        return actionNameList;            
+     }
+     
+     
++    private String getActionNameStringFromField(Field field){
+         
++        String rawActionString = "";
++        
++        try {
++            rawActionString = field.get(Const.ActionURIs.class).toString();
++        } catch (IllegalArgumentException | IllegalAccessException e) {
++            Assumption.fail("Fail to get action URI");
++        }
+         
++        String[] splitedString = rawActionString.split("/");
++        String actionString = splitedString[splitedString.length - 1];
+         
++        return actionString;
+     }
+     
+     /**
+
+Example 3:
+
+Refactoring Description: Extract Method public getTimestampedSnapshotName(clientSuppliedName String) : String extracted from public snapshot(clientSuppliedName String) : void in class org.apache.cassandra.db.Table
+
+Code Before:
+------------
+@@ -152,20 +152,30 @@ public void forceCleanup()
+      * @param clientSuppliedName the tag associated with the name of the snapshot.  This
+      *                           value can be null.
+      */
+-    public void snapshot(String clientSuppliedName) throws IOException
+     {
+-        String snapshotName = Long.toString(System.currentTimeMillis());
+-        if (clientSuppliedName != null && !clientSuppliedName.equals(""))
+-        {
+-            snapshotName = snapshotName + "-" + clientSuppliedName;
+-        }
+ 
+         for (ColumnFamilyStore cfStore : columnFamilyStores.values())
+         {
+             cfStore.snapshot(snapshotName);
+         }
+     }
+ 
+ 
+     /**
+      * Clear all the snapshots for a given table.
+
+Code After:
+------------
+@@ -152,20 +152,30 @@ public void forceCleanup()
+      * @param clientSuppliedName the tag associated with the name of the snapshot.  This
+      *                           value can be null.
+      */
++    public void snapshot(String clientSuppliedName)
+     {
++        String snapshotName = getTimestampedSnapshotName(clientSuppliedName);
+ 
+         for (ColumnFamilyStore cfStore : columnFamilyStores.values())
+         {
+             cfStore.snapshot(snapshotName);
+         }
+     }
+ 
++    /**
++     * @param clientSuppliedName; may be null.
++     * @return
++     */
++    public static String getTimestampedSnapshotName(String clientSuppliedName)
++    {
++        String snapshotName = Long.toString(System.currentTimeMillis());
++        if (clientSuppliedName != null && !clientSuppliedName.equals(""))
++        {
++            snapshotName = snapshotName + "-" + clientSuppliedName;
++        }
++        return snapshotName;
++    }
++
+ 
+     /**
+      * Clear all the snapshots for a given table.
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private void visitTagEliminateLock(Tag tagEliminateLock, IParseDictionary parseDictionary) {
+    String kind = tagEliminateLock.getAttributes().get(ATTR_KIND);
+    List<Tag> childrenJVMS = tagEliminateLock.getNamedChildren(TAG_JVMS);
+    if (childrenJVMS.size() > 0) {
+        for (Tag tagJVMS : childrenJVMS) {
+            Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+            String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+            int bciValue = 0;
+            if (attrBCI != null) {
+                try {
+                    bciValue = Integer.parseInt(attrBCI);
+                } catch (NumberFormatException nfe) {
+                    logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                    continue;
+                }
+            } else {
+                logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+            }
+            String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+            BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+            //logger.info("current {} methodID {} parseMethod {}", currentMember.toStringUnqualifiedMethodName(true, true), methodID, parseDictionary.getParseMethod());
+            if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                storeElidedLock(currentMember, bciValue, kind, bciOpcodeMap);
+            } else if (processAnnotationsForInlinedMethods) {
+                IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                if (inlinedMember != null) {
+                    storeElidedLock(inlinedMember, bciValue, kind, bciOpcodeMap);
+                } else {
+                    unhandledTags.add(tagJVMS);
+                }
+            }
+        }
+        // end for
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

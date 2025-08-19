@@ -1,0 +1,422 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private movePlayerToForeground() : void extracted from private processCommand(command Command) : void in class com.liskovsoft.smartyoutubetv2.common.app.models.playback.managers.RemoteControlManager
+
+Code Before:
+------------
+@@ -8,6 +8,7 @@
+ import com.liskovsoft.mediaserviceinterfaces.data.Command;
+ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+ import com.liskovsoft.sharedutils.mylogger.Log;
+ import com.liskovsoft.smartyoutubetv2.common.R;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
+@@ -16,7 +17,6 @@
+ import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
+-import com.liskovsoft.sharedutils.rx.RxUtils;
+ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+ import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+ import io.reactivex.android.schedulers.AndroidSchedulers;
+@@ -239,7 +239,7 @@ private void processCommand(Command command) {
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+                 }
+-                Utils.movePlayerToForeground(getActivity());
+                 Video newVideo = Video.from(command.getVideoId());
+                 newVideo.remotePlaylistId = command.getPlaylistId();
+                 newVideo.playlistIndex = command.getPlaylistIndex();
+@@ -261,7 +261,7 @@ private void processCommand(Command command) {
+             case Command.TYPE_SEEK:
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPositionMs(command.getCurrentTimeMs());
+                     postSeek(command.getCurrentTimeMs());
+                 } else {
+@@ -270,7 +270,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PLAY:
+                 if (getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPlay(true);
+                     //postStartPlaying(getController().getVideo(), true);
+                     postPlay(true);
+@@ -280,7 +280,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PAUSE:
+                 if (getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPlay(false);
+                     //postStartPlaying(getController().getVideo(), false);
+                     postPlay(false);
+@@ -290,15 +290,15 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_NEXT:
+                 if (getBridge() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     mVideoLoader.loadNext();
+                 } else {
+                     openNewVideo(mVideo);
+                 }
+                 break;
+             case Command.TYPE_PREVIOUS:
+                 if (getBridge() != null && getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     // Switch immediately. Skip position reset logic.
+                     mVideoLoader.loadPrevious();
+                 } else {
+@@ -435,4 +435,11 @@ private void setVolume(int volume) {
+             MessageHelpers.showMessageThrottled(getActivity(), getActivity().getString(R.string.volume, Utils.getGlobalVolume(getActivity())));
+         }
+     }
+ }
+
+Code After:
+------------
+@@ -8,6 +8,7 @@
+ import com.liskovsoft.mediaserviceinterfaces.data.Command;
+ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+ import com.liskovsoft.sharedutils.mylogger.Log;
++import com.liskovsoft.sharedutils.rx.RxUtils;
+ import com.liskovsoft.smartyoutubetv2.common.R;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
+@@ -16,7 +17,6 @@
+ import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
+ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+ import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+ import io.reactivex.android.schedulers.AndroidSchedulers;
+@@ -239,7 +239,7 @@ private void processCommand(Command command) {
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+                 }
++                movePlayerToForeground();
+                 Video newVideo = Video.from(command.getVideoId());
+                 newVideo.remotePlaylistId = command.getPlaylistId();
+                 newVideo.playlistIndex = command.getPlaylistIndex();
+@@ -261,7 +261,7 @@ private void processCommand(Command command) {
+             case Command.TYPE_SEEK:
+                 if (getController() != null) {
+                     getController().showOverlay(false);
++                    movePlayerToForeground();
+                     getController().setPositionMs(command.getCurrentTimeMs());
+                     postSeek(command.getCurrentTimeMs());
+                 } else {
+@@ -270,7 +270,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PLAY:
+                 if (getController() != null) {
++                    movePlayerToForeground();
+                     getController().setPlay(true);
+                     //postStartPlaying(getController().getVideo(), true);
+                     postPlay(true);
+@@ -280,7 +280,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PAUSE:
+                 if (getController() != null) {
++                    movePlayerToForeground();
+                     getController().setPlay(false);
+                     //postStartPlaying(getController().getVideo(), false);
+                     postPlay(false);
+@@ -290,15 +290,15 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_NEXT:
+                 if (getBridge() != null) {
++                    movePlayerToForeground();
+                     mVideoLoader.loadNext();
+                 } else {
+                     openNewVideo(mVideo);
+                 }
+                 break;
+             case Command.TYPE_PREVIOUS:
+                 if (getBridge() != null && getController() != null) {
++                    movePlayerToForeground();
+                     // Switch immediately. Skip position reset logic.
+                     mVideoLoader.loadPrevious();
+                 } else {
+@@ -435,4 +435,11 @@ private void setVolume(int volume) {
+             MessageHelpers.showMessageThrottled(getActivity(), getActivity().getString(R.string.volume, Utils.getGlobalVolume(getActivity())));
+         }
+     }
++
++    private void movePlayerToForeground() {
++        Utils.movePlayerToForeground(getActivity());
++        if (getController() == null || !Utils.checkActivity(getActivity())) { // player isn't started yet or closed
++            RxUtils.runAsync(() -> Utils.movePlayerToForeground(getActivity()), 5_000);
++        }
++    }
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method private calculateCapacity(elementData Object[], minCapacity int) : int extracted from private ensureCapacityInternal(minCapacity int) : void in class java.util.ArrayList
+
+Code Before:
+------------
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
+-    private void ensureCapacityInternal(int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+         }
+ 
+-        ensureExplicitCapacity(minCapacity);
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Code After:
+------------
+@@ -1,5 +1,5 @@
+ /*
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
++import sun.misc.SharedSecrets;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
++    private static int calculateCapacity(Object[] elementData, int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
++            return Math.max(DEFAULT_CAPACITY, minCapacity);
++        }
++        return minCapacity;
+         }
+ 
++    private void ensureCapacityInternal(int minCapacity) {
++        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
++            int capacity = calculateCapacity(elementData, size);
++            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Example 3:
+
+Refactoring Description: Extract Method private createLogoutRequestMatcher(httpMethod String) : RequestMatcher extracted from private getLogoutRequestMatcher(http H) : RequestMatcher in class org.springframework.security.config.annotation.web.configurers.LogoutConfigurer
+
+Code Before:
+------------
+@@ -276,7 +276,6 @@ public void init(H http) {
+ 			PermitAllSupport.permitAll(http, this.logoutSuccessUrl);
+ 			PermitAllSupport.permitAll(http, this.getLogoutRequestMatcher(http));
+ 		}
+-
+ 		DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http
+ 				.getSharedObject(DefaultLoginPageGeneratingFilter.class);
+ 		if (loginPageGeneratingFilter != null && !isCustomLogoutSuccess()) {
+@@ -334,20 +333,28 @@ private LogoutFilter createLogoutFilter(H http) {
+ 		return result;
+ 	}
+ 
+-	@SuppressWarnings("unchecked")
+ 	private RequestMatcher getLogoutRequestMatcher(H http) {
+ 		if (this.logoutRequestMatcher != null) {
+ 			return this.logoutRequestMatcher;
+ 		}
+ 		if (http.getConfigurer(CsrfConfigurer.class) != null) {
+-			this.logoutRequestMatcher = new AntPathRequestMatcher(this.logoutUrl, "POST");
+-		}
+-		else {
+-			this.logoutRequestMatcher = new OrRequestMatcher(new AntPathRequestMatcher(this.logoutUrl, "GET"),
+-					new AntPathRequestMatcher(this.logoutUrl, "POST"), new AntPathRequestMatcher(this.logoutUrl, "PUT"),
+-					new AntPathRequestMatcher(this.logoutUrl, "DELETE"));
+ 		}
+-		return this.logoutRequestMatcher;
+ 	}
+ 
+ }
+
+Code After:
+------------
+@@ -276,7 +276,6 @@ public void init(H http) {
+ 			PermitAllSupport.permitAll(http, this.logoutSuccessUrl);
+ 			PermitAllSupport.permitAll(http, this.getLogoutRequestMatcher(http));
+ 		}
+ 		DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http
+ 				.getSharedObject(DefaultLoginPageGeneratingFilter.class);
+ 		if (loginPageGeneratingFilter != null && !isCustomLogoutSuccess()) {
+@@ -334,20 +333,28 @@ private LogoutFilter createLogoutFilter(H http) {
+ 		return result;
+ 	}
+ 
+ 	private RequestMatcher getLogoutRequestMatcher(H http) {
+ 		if (this.logoutRequestMatcher != null) {
+ 			return this.logoutRequestMatcher;
+ 		}
++		this.logoutRequestMatcher = createLogoutRequestMatcher(http);
++		return this.logoutRequestMatcher;
++	}
++
++	@SuppressWarnings("unchecked")
++	private RequestMatcher createLogoutRequestMatcher(H http) {
++		RequestMatcher post = createLogoutRequestMatcher("POST");
+ 		if (http.getConfigurer(CsrfConfigurer.class) != null) {
++			return post;
+ 		}
++		RequestMatcher get = createLogoutRequestMatcher("GET");
++		RequestMatcher put = createLogoutRequestMatcher("PUT");
++		RequestMatcher delete = createLogoutRequestMatcher("DELETE");
++		return new OrRequestMatcher(get, post, put, delete);
++	}
++
++	private RequestMatcher createLogoutRequestMatcher(String httpMethod) {
++		return new AntPathRequestMatcher(this.logoutUrl, httpMethod);
+ 	}
+ 
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private Object processSingle(Page page, String html, boolean isRaw) {
+    Object o = null;
+    try {
+        o = clazz.newInstance();
+        for (FieldExtractor fieldExtractor : fieldExtractors) {
+            if (fieldExtractor.isMulti()) {
+                List<String> value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().selectList(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().selectList(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().selectList(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().selectList(html);
+                }
+                if ((value == null || value.size() == 0) && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    List<Object> converted = convert(value, fieldExtractor.getObjectFormatter());
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            } else {
+                String value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().select(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().select(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().select(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().select(html);
+                }
+                if (value == null && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    Object converted = convert(value, fieldExtractor.getObjectFormatter());
+                    if (converted == null && fieldExtractor.isNotNull()) {
+                        return null;
+                    }
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            }
+        }
+        if (AfterExtractor.class.isAssignableFrom(clazz)) {
+            ((AfterExtractor) o).afterProcess(page);
+        }
+    } catch (InstantiationException e) {
+        logger.error("extract fail", e);
+    } catch (IllegalAccessException e) {
+        logger.error("extract fail", e);
+    } catch (InvocationTargetException e) {
+        logger.error("extract fail", e);
+    }
+    return o;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

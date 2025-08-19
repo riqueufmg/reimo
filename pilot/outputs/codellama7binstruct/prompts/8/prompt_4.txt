@@ -1,0 +1,337 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public bpartnerIdIfNotNull(bpartnerId BPartnerId) : FactLineBuilder extracted from public setC_BPartner_ID_IfValid(bpartnerId int) : FactLineBuilder in class org.compiere.acct.Fact.FactLineBuilder
+
+Code Before:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
+ import org.slf4j.Logger;
+ 
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
+-		public FactLineBuilder setAccount(MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
+-		public FactLineBuilder setC_BPartner_ID(Integer bpartnerIdInt)
+ 		{
+-			final BPartnerId bpartnerId = bpartnerIdInt != null ? BPartnerId.ofRepoIdOrNull(bpartnerIdInt) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
+-		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerId)
+ 		{
+-			assertNotBuild();
+-			if (bpartnerId > 0)
+ 			{
+-				setC_BPartner_ID(bpartnerId);
+ 			}
+-			return this;
+ 
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+Code After:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
++import org.compiere.util.Env;
+ import org.slf4j.Logger;
+ 
++import de.metas.acct.api.AccountId;
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
++import de.metas.acct.api.IAccountDAO;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
++import de.metas.util.Services;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
++		public FactLineBuilder setAccount(@NonNull final AccountId accountId)
++		{
++			final IAccountDAO accountsRepo = Services.get(IAccountDAO.class);
++			return setAccount(accountsRepo.getById(Env.getCtx(), accountId));
++		}
++
++		public FactLineBuilder setAccount(final MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
++		public FactLineBuilder setC_BPartner_ID(Integer bpartnerRepoId)
+ 		{
++			final BPartnerId bpartnerId = bpartnerRepoId != null ? BPartnerId.ofRepoIdOrNull(bpartnerRepoId) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
++		public FactLineBuilder bpartnerIdIfNotNull(final BPartnerId bpartnerId)
+ 		{
++			if (bpartnerId != null)
+ 			{
++				return bpartnerId(bpartnerId);
+ 			}
++			else
++			{
++				return this;
++			}
++		}
+ 
++		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerRepoId)
++		{
++			return bpartnerIdIfNotNull(BPartnerId.ofRepoIdOrNull(bpartnerRepoId));
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+Example 2:
+
+Refactoring Description: Extract Method private getSecondsSinceMidnight(time Calendar, leg Leg) : int extracted from public rideForTransitPathLeg(leg Leg) : Ride in class org.opentripplanner.routing.fares.impl.RideMapper
+
+Code Before:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
+-        var zones = leg.intermediateStops.stream().map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString()).collect(
+-                Collectors.toSet());
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
+-        ride.startTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+-        ride.endTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
+ }
+
+Code After:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
++import java.util.Calendar;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
++        var zones = leg.intermediateStops.stream()
++                .map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString())
++                .collect(Collectors.toSet());
++
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
++        ride.startTime = getSecondsSinceMidnight(leg.startTime, leg);
++        ride.endTime = getSecondsSinceMidnight(leg.endTime, leg);
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
++    private static int getSecondsSinceMidnight(Calendar time, Leg leg) {
++        return time.toInstant()
++                .atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset))
++                .toLocalTime()
++                .toSecondOfDay();
++    }
++
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method private prefix(adr AMD64Address, reg Register, byteinst boolean) : void extracted from private prefix(adr AMD64Address, reg Register) : void in class com.oracle.graal.asm.amd64.AMD64Assembler
+
+Code Before:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
+-        prefix(dst, src); // , true)
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
+-                } else if (reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Code After:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
++        prefix(dst, src, true);
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
++        prefix(adr, reg, false);
++    }
++
++    private void prefix(AMD64Address adr, Register reg, boolean byteinst) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
++                } else if (byteinst && reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private void visitTagEliminateLock(Tag tagEliminateLock, IParseDictionary parseDictionary) {
+    String kind = tagEliminateLock.getAttributes().get(ATTR_KIND);
+    List<Tag> childrenJVMS = tagEliminateLock.getNamedChildren(TAG_JVMS);
+    if (childrenJVMS.size() > 0) {
+        for (Tag tagJVMS : childrenJVMS) {
+            Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+            String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+            int bciValue = 0;
+            if (attrBCI != null) {
+                try {
+                    bciValue = Integer.parseInt(attrBCI);
+                } catch (NumberFormatException nfe) {
+                    logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                    continue;
+                }
+            } else {
+                logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+            }
+            String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+            BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+            //logger.info("current {} methodID {} parseMethod {}", currentMember.toStringUnqualifiedMethodName(true, true), methodID, parseDictionary.getParseMethod());
+            if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                storeElidedLock(currentMember, bciValue, kind, bciOpcodeMap);
+            } else if (processAnnotationsForInlinedMethods) {
+                IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                if (inlinedMember != null) {
+                    storeElidedLock(inlinedMember, bciValue, kind, bciOpcodeMap);
+                } else {
+                    unhandledTags.add(tagJVMS);
+                }
+            }
+        }
+        // end for
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

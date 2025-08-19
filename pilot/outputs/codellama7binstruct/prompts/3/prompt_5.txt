@@ -1,0 +1,336 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private idRangeIndex(id long) : long extracted from private prepareRange(id long, addition boolean) : void in class org.neo4j.internal.id.indexed.IdRangeMarker
+
+Code Before:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
+-        key.setIdRangeIdx( id / idsPerEntry );
+         value.clear( generation, addition );
+     }
+ 
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
+-                    prepareRange( bridgeId, true );
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
+-                    writer.merge( key, value, merger );
+                 }
+             }
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+Code After:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
++        key.setIdRangeIdx( idRangeIndex( id ) );
+         value.clear( generation, addition );
+     }
+ 
++    private long idRangeIndex( long id )
++    {
++        return id / idsPerEntry;
++    }
++
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
++            key.setIdRangeIdx( -1 );
++            boolean dirty = false;
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
++                    if ( idRangeIndex( bridgeId ) != key.getIdRangeIdx() )
++                    {
++                        if ( key.getIdRangeIdx() != -1 )
++                        {
++                            writer.merge( key, value, merger );
++                        }
++                        prepareRange( bridgeId, true );
++                    }
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
++                    dirty = true;
+                 }
+             }
++
++            if ( dirty )
++            {
++                writer.merge( key, value, merger );
++            }
++
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+Example 2:
+
+Refactoring Description: Extract Method public convertDpToPixel(res Resources, dp int) : int extracted from public convertDpToPixel(ctx Context, dp int) : int in class com.liskovsoft.smartyoutubetv2.tv.ui.common.Utils
+
+Code Before:
+------------
+@@ -2,6 +2,7 @@
+ 
+ import android.app.Activity;
+ import android.content.Context;
+ import android.graphics.Point;
+ import android.media.MediaMetadataRetriever;
+ import android.os.Build;
+@@ -44,7 +45,11 @@ public static Point getDisplaySize(Context context) {
+     }
+ 
+     public static int convertDpToPixel(Context ctx, int dp) {
+-        float density = ctx.getResources().getDisplayMetrics().density;
+         return Math.round((float) dp * density);
+     }
+ 
+
+Code After:
+------------
+@@ -2,6 +2,7 @@
+ 
+ import android.app.Activity;
+ import android.content.Context;
++import android.content.res.Resources;
+ import android.graphics.Point;
+ import android.media.MediaMetadataRetriever;
+ import android.os.Build;
+@@ -44,7 +45,11 @@ public static Point getDisplaySize(Context context) {
+     }
+ 
+     public static int convertDpToPixel(Context ctx, int dp) {
++        return convertDpToPixel(ctx.getResources(), dp);
++    }
++
++    public static int convertDpToPixel(Resources res, int dp) {
++        float density = res.getDisplayMetrics().density;
+         return Math.round((float) dp * density);
+     }
+ 
+
+Example 3:
+
+Refactoring Description: Extract Method private filterByNetworkId(leg ScheduledTransitLeg, rule FareLegRule) : boolean extracted from private getLegProducts(leg ScheduledTransitLeg) : Stream<FareProduct> in class org.opentripplanner.ext.fares.impl.GtfsFaresV2Service
+
+Code Before:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
+ 
+-public final class GtfsFaresV2Service {
+ 
+   private final List<FareLegRule> legRules;
+   private final Set<String> networksWithRules;
+ 
+-  public GtfsFaresV2Service(List<FareLegRule> legRules) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
+-      // get the fare products that match the network_id
+-      // the the network id of the product is null it depends on the presence/absence of other rules
+-      // with that network id
+-      .filter(product ->
+-        (
+-          Objects.isNull(product.networkId()) &&
+-          !networksWithRules.contains(leg.getRoute().getNetworkId())
+-        ) ||
+-        Objects.equals(product.networkId(), leg.getRoute().getNetworkId())
+-      )
+       .map(FareLegRule::fareProduct);
+   }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+Code After:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
++import com.google.common.collect.Multimap;
++import java.io.Serializable;
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
++import org.opentripplanner.transit.model.framework.FeedScopedId;
+ 
++public final class GtfsFaresV2Service implements Serializable {
+ 
+   private final List<FareLegRule> legRules;
++  private final Multimap<FeedScopedId, String> stopAreas;
+   private final Set<String> networksWithRules;
++  private final Set<String> stopAreasWithRules;
+ 
++  public GtfsFaresV2Service(List<FareLegRule> legRules, Multimap<FeedScopedId, String> stopAreas) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
++    this.stopAreasWithRules = findAreasWithRules(legRules);
++    this.stopAreas = stopAreas;
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
++  private static Set<String> findAreasWithRules(List<FareLegRule> legRules) {
++    return legRules
++      .stream()
++      .flatMap(rule -> Stream.of(rule.fromAreaId(), rule.toAreadId()).filter(Objects::nonNull))
++      .collect(Collectors.toSet());
++  }
++
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
++      .filter(rule -> filterByNetworkId(leg, rule))
++      // apply only those rules which have the correct area ids
++      .filter(rule -> filterByFromArea(leg, rule))
+       .map(FareLegRule::fareProduct);
+   }
++
++  private boolean filterByFromArea(ScheduledTransitLeg leg, FareLegRule rule) {
++    var fromStopAreas = stopAreas.get(leg.getFrom().stop.getId());
++    return (
++      (
++        Objects.isNull(rule.fromAreaId()) &&
++        fromStopAreas.stream().noneMatch(stopAreasWithRules::contains)
++      ) ||
++      (Objects.nonNull(rule.fromAreaId()) && fromStopAreas.contains(rule.fromAreaId()))
++    );
++  }
++
++  /**
++   * Get the fare products that match the network_id. If the network id of the product is null it
++   * depends on the presence/absence of other rules with that network id.
++   */
++  private boolean filterByNetworkId(ScheduledTransitLeg leg, FareLegRule rule) {
++    return (
++      (
++        Objects.isNull(rule.networkId()) &&
++        !networksWithRules.contains(leg.getRoute().getNetworkId())
++      ) ||
++      Objects.equals(rule.networkId(), leg.getRoute().getNetworkId())
++    );
++  }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Helper function for applyMaskPenaltyRule1. We need this for doing this calculation in both
+ * vertical and horizontal orders respectively.
+ */
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

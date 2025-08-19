@@ -1,0 +1,371 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private getSourceSection(context LazyContext) : SourceSection extracted from public getSourceSection() : SourceSection in class com.oracle.truffle.llvm.runtime.debug.scope.LLVMSourceLocation
+
+Code Before:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
+     public abstract static class LazySourceSection {
+-        public abstract SourceSection get();
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
+-    public synchronized SourceSection getSourceSection() {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
+-            sourceSection = lazySourceSection.get();
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+Code After:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
++import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
++import com.oracle.truffle.llvm.runtime.LLVMContext;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
++    @FunctionalInterface
++    public interface LazyContext {
++
++        LLVMContext get();
++    }
++
+     public abstract static class LazySourceSection {
++        public abstract SourceSection get(LazyContext context);
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
++    public synchronized SourceSection getSourceSection(ContextReference<LLVMContext> ctxRef) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> {
++            try {
++                return ctxRef.get();
++            } catch (Throwable t) {
++                return null;
++            }
++        });
++    }
++
++    public SourceSection getSourceSection(LLVMContext context) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> context);
++    }
++
++    private synchronized SourceSection getSourceSection(LazyContext context) {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
++            sourceSection = lazySourceSection.get(context);
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+Example 2:
+
+Refactoring Description: Extract Method package wrappedBuffer(maxNumComponents int, wrapper ByteWrapper<T>, array T[]) : ByteBuf extracted from public wrappedBuffer(maxNumComponents int, buffers ByteBuffer...) : ByteBuf in class io.netty.buffer.Unpooled
+
+Code Before:
+------------
+@@ -15,15 +15,14 @@
+  */
+ package io.netty.buffer;
+ 
+ import io.netty.util.internal.PlatformDependent;
+ 
+ import java.nio.ByteBuffer;
+ import java.nio.ByteOrder;
+ import java.nio.CharBuffer;
+ import java.nio.charset.Charset;
+-import java.util.ArrayList;
+ import java.util.Arrays;
+-import java.util.List;
+ 
+ 
+ /**
+@@ -262,40 +261,39 @@ public static ByteBuf wrappedBuffer(ByteBuffer... buffers) {
+         return wrappedBuffer(buffers.length, buffers);
+     }
+ 
+-    /**
+-     * Creates a new big-endian composite buffer which wraps the specified
+-     * arrays without copying them.  A modification on the specified arrays'
+-     * content will be visible to the returned buffer.
+-     */
+-    public static ByteBuf wrappedBuffer(int maxNumComponents, byte[]... arrays) {
+-        switch (arrays.length) {
+         case 0:
+             break;
+         case 1:
+-            if (arrays[0].length != 0) {
+-                return wrappedBuffer(arrays[0]);
+             }
+             break;
+         default:
+-            // Get the list of the component, while guessing the byte order.
+-            final List<ByteBuf> components = new ArrayList<ByteBuf>(arrays.length);
+-            for (byte[] a: arrays) {
+-                if (a == null) {
+-                    break;
+                 }
+-                if (a.length > 0) {
+-                    components.add(wrappedBuffer(a));
+                 }
+             }
+-
+-            if (!components.isEmpty()) {
+-                return new CompositeByteBuf(ALLOC, false, maxNumComponents, components);
+-            }
+         }
+ 
+         return EMPTY_BUFFER;
+     }
+ 
+     /**
+      * Creates a new big-endian composite buffer which wraps the readable bytes of the
+      * specified buffers without copying them.  A modification on the content
+@@ -336,32 +334,7 @@ public static ByteBuf wrappedBuffer(int maxNumComponents, ByteBuf... buffers) {
+      * specified buffers will be visible to the returned buffer.
+      */
+     public static ByteBuf wrappedBuffer(int maxNumComponents, ByteBuffer... buffers) {
+-        switch (buffers.length) {
+-        case 0:
+-            break;
+-        case 1:
+-            if (buffers[0].hasRemaining()) {
+-                return wrappedBuffer(buffers[0].order(BIG_ENDIAN));
+-            }
+-            break;
+-        default:
+-            // Get the list of the component, while guessing the byte order.
+-            final List<ByteBuf> components = new ArrayList<ByteBuf>(buffers.length);
+-            for (ByteBuffer b: buffers) {
+-                if (b == null) {
+-                    break;
+-                }
+-                if (b.remaining() > 0) {
+-                    components.add(wrappedBuffer(b.order(BIG_ENDIAN)));
+-                }
+-            }
+-
+-            if (!components.isEmpty()) {
+-                return new CompositeByteBuf(ALLOC, false, maxNumComponents, components);
+-            }
+-        }
+-
+-        return EMPTY_BUFFER;
+     }
+ 
+     /**
+
+Code After:
+------------
+@@ -15,15 +15,14 @@
+  */
+ package io.netty.buffer;
+ 
++import io.netty.buffer.CompositeByteBuf.ByteWrapper;
+ import io.netty.util.internal.PlatformDependent;
+ 
+ import java.nio.ByteBuffer;
+ import java.nio.ByteOrder;
+ import java.nio.CharBuffer;
+ import java.nio.charset.Charset;
+ import java.util.Arrays;
+ 
+ 
+ /**
+@@ -262,40 +261,39 @@ public static ByteBuf wrappedBuffer(ByteBuffer... buffers) {
+         return wrappedBuffer(buffers.length, buffers);
+     }
+ 
++    static <T> ByteBuf wrappedBuffer(int maxNumComponents, ByteWrapper<T> wrapper, T[] array) {
++        switch (array.length) {
+         case 0:
+             break;
+         case 1:
++            if (!wrapper.isEmpty(array[0])) {
++                return wrapper.wrap(array[0]);
+             }
+             break;
+         default:
++            for (int i = 0, len = array.length; i < len; i++) {
++                T bytes = array[i];
++                if (bytes == null) {
++                    return EMPTY_BUFFER;
+                 }
++                if (!wrapper.isEmpty(bytes)) {
++                    return new CompositeByteBuf(ALLOC, false, maxNumComponents, wrapper, array, i);
+                 }
+             }
+         }
+ 
+         return EMPTY_BUFFER;
+     }
+ 
++    /**
++     * Creates a new big-endian composite buffer which wraps the specified
++     * arrays without copying them.  A modification on the specified arrays'
++     * content will be visible to the returned buffer.
++     */
++    public static ByteBuf wrappedBuffer(int maxNumComponents, byte[]... arrays) {
++        return wrappedBuffer(maxNumComponents, CompositeByteBuf.BYTE_ARRAY_WRAPPER, arrays);
++    }
++
+     /**
+      * Creates a new big-endian composite buffer which wraps the readable bytes of the
+      * specified buffers without copying them.  A modification on the content
+@@ -336,32 +334,7 @@ public static ByteBuf wrappedBuffer(int maxNumComponents, ByteBuf... buffers) {
+      * specified buffers will be visible to the returned buffer.
+      */
+     public static ByteBuf wrappedBuffer(int maxNumComponents, ByteBuffer... buffers) {
++        return wrappedBuffer(maxNumComponents, CompositeByteBuf.BYTE_BUFFER_WRAPPER, buffers);
+     }
+ 
+     /**
+
+Example 3:
+
+Refactoring Description: Extract Method public renderPng(out OutputStream, width int, height int, hideLegend boolean, hideGrid boolean, hideTitle boolean, showEvents boolean, periodCount int, end int, showCredit boolean, lsnr2 SummaryListener, titleOverride String) : void extracted from public renderPng(out OutputStream, width int, height int, hideLegend boolean, hideGrid boolean, hideTitle boolean, showEvents boolean, periodCount int, end int, showCredit boolean) : void in class net.i2p.router.web.SummaryListener
+
+Code Before:
+------------
+@@ -187,14 +187,31 @@ public void stopListening() {
+     }
+ 
+     /**
+      *  @param end number of periods before now
+      */
+     public void renderPng(OutputStream out, int width, int height, boolean hideLegend, boolean hideGrid,
+                           boolean hideTitle, boolean showEvents, int periodCount,
+                           int end, boolean showCredit) throws IOException {
+         if (_renderer == null || _db == null)
+             throw new IOException("No RRD, check logs for previous errors");
+-        _renderer.render(out, width, height, hideLegend, hideGrid, hideTitle, showEvents, periodCount, end, showCredit); 
+     }
+ 
+     public void renderPng(OutputStream out) throws IOException {
+
+Code After:
+------------
+@@ -187,14 +187,31 @@ public void stopListening() {
+     }
+ 
+     /**
++     *  Single graph.
++     *
+      *  @param end number of periods before now
+      */
+     public void renderPng(OutputStream out, int width, int height, boolean hideLegend, boolean hideGrid,
+                           boolean hideTitle, boolean showEvents, int periodCount,
+                           int end, boolean showCredit) throws IOException {
++        renderPng(out, width, height, hideLegend, hideGrid, hideTitle, showEvents, periodCount,
++                  end, showCredit, null, null); 
++    }
++
++    /**
++     *  Single or two-data-source graph.
++     *
++     *  @param lsnr2 2nd data source to plot on same graph, or null. Not recommended for events.
++     *  @param titleOverride If non-null, overrides the title
++     *  @since 0.9.6
++     */
++    public void renderPng(OutputStream out, int width, int height, boolean hideLegend, boolean hideGrid,
++                          boolean hideTitle, boolean showEvents, int periodCount,
++                          int end, boolean showCredit, SummaryListener lsnr2, String titleOverride) throws IOException {
+         if (_renderer == null || _db == null)
+             throw new IOException("No RRD, check logs for previous errors");
++        _renderer.render(out, width, height, hideLegend, hideGrid, hideTitle, showEvents, periodCount,
++                         end, showCredit, lsnr2, titleOverride); 
+     }
+ 
+     public void renderPng(OutputStream out) throws IOException {
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Helper function for applyMaskPenaltyRule1. We need this for doing this calculation in both
+ * vertical and horizontal orders respectively.
+ */
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

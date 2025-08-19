@@ -1,0 +1,339 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private prefix(adr AMD64Address, reg Register, byteinst boolean) : void extracted from private prefix(adr AMD64Address, reg Register) : void in class com.oracle.graal.asm.amd64.AMD64Assembler
+
+Code Before:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
+-        prefix(dst, src); // , true)
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
+-                } else if (reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Code After:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
++        prefix(dst, src, true);
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
++        prefix(adr, reg, false);
++    }
++
++    private void prefix(AMD64Address adr, Register reg, boolean byteinst) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
++                } else if (byteinst && reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Example 2:
+
+Refactoring Description: Extract Method private checkOnCollisionsSSK(useSlotFilter boolean) : void extracted from public testOnCollisionsSSK() : void in class freenet.store.CachingFreenetStoreTest
+
+Code Before:
+------------
+@@ -352,9 +352,16 @@ public void testTimeExpireSSK() throws IOException, SSKEncodeException, InvalidC
+ 		
+ 		cachingStore.close();
+ 	}
+ 	
+ 	/* Test collisions on SSK */
+-	public void testOnCollisionsSSK() throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
+ 		File f = new File(tempDir, "saltstore");
+ 		FileUtil.removeAll(f);
+ 
+@@ -363,7 +370,7 @@ public void testOnCollisionsSSK() throws IOException, SSKEncodeException, Invali
+ 		new RAMFreenetStore<DSAPublicKey>(pk, keys);
+ 		GetPubkey pubkeyCache = new SimpleGetPubkey(pk);
+ 		SSKStore store = new SSKStore(pubkeyCache);
+-		SaltedHashFreenetStore<SSKBlock> saltStore = SaltedHashFreenetStore.construct(f, "testCachingFreenetStoreOnCloseSSK", store, weakPRNG, 10, false, SemiOrderedShutdownHook.get(), true, true, ticker, null);
+ 		CachingFreenetStore<SSKBlock> cachingStore = new CachingFreenetStore<SSKBlock>(store, cachingFreenetStoreMaxSize, cachingFreenetStorePeriod, saltStore, ticker);
+ 		cachingStore.start(null, true);
+ 		RandomSource random = new DummyRandomSource(12345);
+
+Code After:
+------------
+@@ -352,9 +352,16 @@ public void testTimeExpireSSK() throws IOException, SSKEncodeException, InvalidC
+ 		
+ 		cachingStore.close();
+ 	}
++
++	public void testOnCollisionsSSK() throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
++		// With slot filters turned off, it goes straight to disk, because probablyInStore() always returns true.
++		checkOnCollisionsSSK(false);
++		// With slot filters turned on, it should be cached, it should compare it, and still not throw if it's the same block.
++		checkOnCollisionsSSK(true);
++	}
+ 	
+ 	/* Test collisions on SSK */
++	private void checkOnCollisionsSSK(boolean useSlotFilter) throws IOException, SSKEncodeException, InvalidCompressionCodecException, SSKVerifyException, KeyDecodeException, KeyCollisionException {
+ 		File f = new File(tempDir, "saltstore");
+ 		FileUtil.removeAll(f);
+ 
+@@ -363,7 +370,7 @@ public void testOnCollisionsSSK() throws IOException, SSKEncodeException, Invali
+ 		new RAMFreenetStore<DSAPublicKey>(pk, keys);
+ 		GetPubkey pubkeyCache = new SimpleGetPubkey(pk);
+ 		SSKStore store = new SSKStore(pubkeyCache);
++		SaltedHashFreenetStore<SSKBlock> saltStore = SaltedHashFreenetStore.construct(f, "testCachingFreenetStoreOnCloseSSK", store, weakPRNG, 10, true, SemiOrderedShutdownHook.get(), true, true, ticker, null);
+ 		CachingFreenetStore<SSKBlock> cachingStore = new CachingFreenetStore<SSKBlock>(store, cachingFreenetStoreMaxSize, cachingFreenetStorePeriod, saltStore, ticker);
+ 		cachingStore.start(null, true);
+ 		RandomSource random = new DummyRandomSource(12345);
+
+Example 3:
+
+Refactoring Description: Extract Method private doPassivate(key Object, entry InternalCacheEntry) : boolean extracted from public passivate(entry InternalCacheEntry) : void in class org.infinispan.eviction.impl.PassivationManagerImpl
+
+Code Before:
+------------
+@@ -3,6 +3,7 @@
+ import static org.infinispan.commons.util.Util.toStr;
+ import static org.infinispan.persistence.manager.PersistenceManager.AccessMode.BOTH;
+ 
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+@@ -20,10 +21,12 @@
+ import org.infinispan.factories.annotations.Inject;
+ import org.infinispan.factories.annotations.Start;
+ import org.infinispan.notifications.cachelistener.CacheNotifier;
+ import org.infinispan.persistence.manager.PersistenceManager;
+ import org.infinispan.persistence.spi.MarshallableEntry;
+ import org.infinispan.persistence.spi.MarshallableEntryFactory;
+ import org.infinispan.persistence.spi.PersistenceException;
+ import org.infinispan.util.logging.Log;
+ import org.infinispan.util.logging.LogFactory;
+ 
+@@ -64,25 +67,38 @@ private boolean isL1Key(Object key) {
+       return distributionManager != null && !distributionManager.getCacheTopology().isWriteOwner(key);
+    }
+ 
+    @Override
+-   public void passivate(InternalCacheEntry entry) {
+       Object key;
+       if (enabled && entry != null && !isL1Key(key = entry.getKey())) {
+-         // notify listeners that this entry is about to be passivated
+-         notifier.notifyCacheEntryPassivated(key, entry.getValue(), true,
+-               ImmutableContext.INSTANCE, null);
+-         if (trace) log.tracef("Passivating entry %s", toStr(key));
+-         try {
+-            MarshallableEntry marshalledEntry = marshalledEntryFactory.create(key, entry.getValue(), entry.getMetadata(),
+-                  entry.getExpiryTime(), entry.getLastUsed());
+-            persistenceManager.writeToAllNonTxStores(marshalledEntry, keyPartitioner.getSegment(key), BOTH);
+-            if (statsEnabled) passivations.getAndIncrement();
+-         } catch (CacheException e) {
+-            log.unableToPassivateEntry(key, e);
+          }
+-         notifier.notifyCacheEntryPassivated(key, null, false,
+-               ImmutableContext.INSTANCE, null);
+       }
+    }
+ 
+    @Override
+
+Code After:
+------------
+@@ -3,6 +3,7 @@
+ import static org.infinispan.commons.util.Util.toStr;
+ import static org.infinispan.persistence.manager.PersistenceManager.AccessMode.BOTH;
+ 
++import java.util.concurrent.CompletionStage;
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+@@ -20,10 +21,12 @@
+ import org.infinispan.factories.annotations.Inject;
+ import org.infinispan.factories.annotations.Start;
+ import org.infinispan.notifications.cachelistener.CacheNotifier;
++import org.infinispan.notifications.cachelistener.annotation.CacheEntryPassivated;
+ import org.infinispan.persistence.manager.PersistenceManager;
+ import org.infinispan.persistence.spi.MarshallableEntry;
+ import org.infinispan.persistence.spi.MarshallableEntryFactory;
+ import org.infinispan.persistence.spi.PersistenceException;
++import org.infinispan.util.concurrent.CompletableFutures;
+ import org.infinispan.util.logging.Log;
+ import org.infinispan.util.logging.LogFactory;
+ 
+@@ -64,25 +67,38 @@ private boolean isL1Key(Object key) {
+       return distributionManager != null && !distributionManager.getCacheTopology().isWriteOwner(key);
+    }
+ 
++   private boolean doPassivate(Object key, InternalCacheEntry entry) {
++      if (trace) log.tracef("Passivating entry %s", toStr(key));
++      try {
++         MarshallableEntry marshalledEntry = marshalledEntryFactory.create(key, entry.getValue(), entry.getMetadata(),
++               entry.getExpiryTime(), entry.getLastUsed());
++         persistenceManager.writeToAllNonTxStores(marshalledEntry, keyPartitioner.getSegment(key), BOTH);
++         if (statsEnabled) passivations.getAndIncrement();
++      } catch (CacheException e) {
++         log.unableToPassivateEntry(key, e);
++         return false;
++      }
++      return true;
++   }
++
+    @Override
++   public CompletionStage<Void> passivateAsync(InternalCacheEntry entry) {
+       Object key;
+       if (enabled && entry != null && !isL1Key(key = entry.getKey())) {
++         if (notifier.hasListener(CacheEntryPassivated.class)) {
++            return notifier.notifyCacheEntryPassivated(key, entry.getValue(), true, ImmutableContext.INSTANCE, null)
++                  .thenCompose(v -> {
++                     if (doPassivate(key, entry)) {
++                        return notifier.notifyCacheEntryPassivated(key, null, false, ImmutableContext.INSTANCE, null);
++                     }
++                     return CompletableFutures.completedNull();
++                  });
++         } else {
++            // Ignore result
++            doPassivate(key, entry);
+          }
+       }
++      return CompletableFutures.completedNull();
+    }
+ 
+    @Override
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private Object processSingle(Page page, String html, boolean isRaw) {
+    Object o = null;
+    try {
+        o = clazz.newInstance();
+        for (FieldExtractor fieldExtractor : fieldExtractors) {
+            if (fieldExtractor.isMulti()) {
+                List<String> value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().selectList(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().selectList(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().selectList(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().selectList(html);
+                }
+                if ((value == null || value.size() == 0) && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    List<Object> converted = convert(value, fieldExtractor.getObjectFormatter());
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            } else {
+                String value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().select(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().select(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().select(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().select(html);
+                }
+                if (value == null && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    Object converted = convert(value, fieldExtractor.getObjectFormatter());
+                    if (converted == null && fieldExtractor.isNotNull()) {
+                        return null;
+                    }
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            }
+        }
+        if (AfterExtractor.class.isAssignableFrom(clazz)) {
+            ((AfterExtractor) o).afterProcess(page);
+        }
+    } catch (InstantiationException e) {
+        logger.error("extract fail", e);
+    } catch (IllegalAccessException e) {
+        logger.error("extract fail", e);
+    } catch (InvocationTargetException e) {
+        logger.error("extract fail", e);
+    }
+    return o;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

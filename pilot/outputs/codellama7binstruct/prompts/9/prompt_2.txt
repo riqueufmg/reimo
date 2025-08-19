@@ -1,0 +1,540 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private restore(env Environment, operatorIdentifier String, keyGroupRange KeyGroupRange, ttlTimeProvider TtlTimeProvider, stateHandles Collection<KeyedStateHandle>, baseBackendBuilder BaseBackendBuilder<K>) : ChangelogKeyedStateBackend<K> extracted from public createKeyedStateBackend(env Environment, jobID JobID, operatorIdentifier String, keySerializer TypeSerializer<K>, numberOfKeyGroups int, keyGroupRange KeyGroupRange, kvStateRegistry TaskKvStateRegistry, ttlTimeProvider TtlTimeProvider, metricGroup MetricGroup, stateHandles Collection<KeyedStateHandle>, cancelStreamRegistry CloseableRegistry, managedMemoryFraction double) : CheckpointableKeyedStateBackend<K> in class org.apache.flink.state.changelog.ChangelogStateBackend
+
+Code Before:
+------------
+@@ -39,6 +39,8 @@
+ import org.apache.flink.runtime.state.changelog.inmemory.InMemoryStateChangelogStorage;
+ import org.apache.flink.runtime.state.delegate.DelegatingStateBackend;
+ import org.apache.flink.runtime.state.ttl.TtlTimeProvider;
+ import org.apache.flink.util.Preconditions;
+ 
+ import org.slf4j.Logger;
+@@ -47,7 +49,6 @@
+ import javax.annotation.Nonnull;
+ 
+ import java.util.Collection;
+-import java.util.Objects;
+ import java.util.stream.Collectors;
+ 
+ /**
+@@ -96,28 +97,26 @@ public <K> ChangelogKeyedStateBackend<K> createKeyedStateBackend(
+             @Nonnull Collection<KeyedStateHandle> stateHandles,
+             CloseableRegistry cancelStreamRegistry)
+             throws Exception {
+-        AbstractKeyedStateBackend<K> keyedStateBackend =
+-                (AbstractKeyedStateBackend<K>)
+-                        delegatedStateBackend.createKeyedStateBackend(
+-                                env,
+-                                jobID,
+-                                operatorIdentifier,
+-                                keySerializer,
+-                                numberOfKeyGroups,
+-                                keyGroupRange,
+-                                kvStateRegistry,
+-                                ttlTimeProvider,
+-                                metricGroup,
+-                                extractMaterializedState(stateHandles),
+-                                cancelStreamRegistry);
+-        // todo: FLINK-21804 get from Environment.getTaskStateManager
+-        InMemoryStateChangelogStorage changelogWriterFactory = new InMemoryStateChangelogStorage();
+-        // todo: apply state changes from non-materialized part of stateHandles
+-        return new ChangelogKeyedStateBackend<>(
+-                keyedStateBackend,
+-                env.getExecutionConfig(),
+                 ttlTimeProvider,
+-                changelogWriterFactory.createWriter(operatorIdentifier, keyGroupRange));
+     }
+ 
+     @Override
+@@ -135,31 +134,27 @@ public <K> CheckpointableKeyedStateBackend<K> createKeyedStateBackend(
+             CloseableRegistry cancelStreamRegistry,
+             double managedMemoryFraction)
+             throws Exception {
+-
+-        AbstractKeyedStateBackend<K> keyedStateBackend =
+-                (AbstractKeyedStateBackend<K>)
+-                        delegatedStateBackend.createKeyedStateBackend(
+-                                env,
+-                                jobID,
+-                                operatorIdentifier,
+-                                keySerializer,
+-                                numberOfKeyGroups,
+-                                keyGroupRange,
+-                                kvStateRegistry,
+-                                ttlTimeProvider,
+-                                metricGroup,
+-                                extractMaterializedState(stateHandles),
+-                                cancelStreamRegistry,
+-                                managedMemoryFraction);
+-
+-        // todo: FLINK-21804 get from Environment.getTaskStateManager
+-        InMemoryStateChangelogStorage changelogWriterFactory = new InMemoryStateChangelogStorage();
+-        // todo: apply state changes from non-materialized part of stateHandles
+-        return new ChangelogKeyedStateBackend<>(
+-                keyedStateBackend,
+-                env.getExecutionConfig(),
+                 ttlTimeProvider,
+-                changelogWriterFactory.createWriter(operatorIdentifier, keyGroupRange));
+     }
+ 
+     @Override
+@@ -196,15 +191,35 @@ public StateBackend configure(ReadableConfig config, ClassLoader classLoader)
+         return this;
+     }
+ 
+-    private static Collection<KeyedStateHandle> extractMaterializedState(
+             Collection<KeyedStateHandle> stateHandles) {
+         return stateHandles.stream()
+-                .flatMap(
+-                        keyedStateHandle ->
+-                                ((ChangelogStateBackendHandle.ChangelogStateBackendHandleImpl)
+-                                                keyedStateHandle)
+-                                        .getMaterializedStateHandles().stream())
+-                .filter(Objects::nonNull)
+                 .collect(Collectors.toList());
+     }
+ }
+
+Code After:
+------------
+@@ -39,6 +39,8 @@
+ import org.apache.flink.runtime.state.changelog.inmemory.InMemoryStateChangelogStorage;
+ import org.apache.flink.runtime.state.delegate.DelegatingStateBackend;
+ import org.apache.flink.runtime.state.ttl.TtlTimeProvider;
++import org.apache.flink.state.changelog.restore.ChangelogBackendRestoreOperation;
++import org.apache.flink.state.changelog.restore.ChangelogBackendRestoreOperation.BaseBackendBuilder;
+ import org.apache.flink.util.Preconditions;
+ 
+ import org.slf4j.Logger;
+@@ -47,7 +49,6 @@
+ import javax.annotation.Nonnull;
+ 
+ import java.util.Collection;
+ import java.util.stream.Collectors;
+ 
+ /**
+@@ -96,28 +97,26 @@ public <K> ChangelogKeyedStateBackend<K> createKeyedStateBackend(
+             @Nonnull Collection<KeyedStateHandle> stateHandles,
+             CloseableRegistry cancelStreamRegistry)
+             throws Exception {
++        return restore(
++                env,
++                operatorIdentifier,
++                keyGroupRange,
+                 ttlTimeProvider,
++                stateHandles,
++                baseHandles ->
++                        (AbstractKeyedStateBackend<K>)
++                                delegatedStateBackend.createKeyedStateBackend(
++                                        env,
++                                        jobID,
++                                        operatorIdentifier,
++                                        keySerializer,
++                                        numberOfKeyGroups,
++                                        keyGroupRange,
++                                        kvStateRegistry,
++                                        ttlTimeProvider,
++                                        metricGroup,
++                                        baseHandles,
++                                        cancelStreamRegistry));
+     }
+ 
+     @Override
+@@ -135,31 +134,27 @@ public <K> CheckpointableKeyedStateBackend<K> createKeyedStateBackend(
+             CloseableRegistry cancelStreamRegistry,
+             double managedMemoryFraction)
+             throws Exception {
++        return restore(
++                env,
++                operatorIdentifier,
++                keyGroupRange,
+                 ttlTimeProvider,
++                stateHandles,
++                baseHandles ->
++                        (AbstractKeyedStateBackend<K>)
++                                delegatedStateBackend.createKeyedStateBackend(
++                                        env,
++                                        jobID,
++                                        operatorIdentifier,
++                                        keySerializer,
++                                        numberOfKeyGroups,
++                                        keyGroupRange,
++                                        kvStateRegistry,
++                                        ttlTimeProvider,
++                                        metricGroup,
++                                        baseHandles,
++                                        cancelStreamRegistry,
++                                        managedMemoryFraction));
+     }
+ 
+     @Override
+@@ -196,15 +191,35 @@ public StateBackend configure(ReadableConfig config, ClassLoader classLoader)
+         return this;
+     }
+ 
++    @SuppressWarnings({"unchecked", "rawtypes"})
++    private <K> ChangelogKeyedStateBackend<K> restore(
++            Environment env,
++            String operatorIdentifier,
++            KeyGroupRange keyGroupRange,
++            TtlTimeProvider ttlTimeProvider,
++            Collection<KeyedStateHandle> stateHandles,
++            BaseBackendBuilder<K> baseBackendBuilder)
++            throws Exception {
++        // todo: FLINK-21804 get from Environment.getTaskStateManager
++        InMemoryStateChangelogStorage changelogStorage = new InMemoryStateChangelogStorage();
++        return ChangelogBackendRestoreOperation.restore(
++                changelogStorage.createReader(),
++                env.getUserCodeClassLoader().asClassLoader(),
++                castHandles(stateHandles),
++                baseBackendBuilder,
++                (baseBackend, baseState) ->
++                        new ChangelogKeyedStateBackend(
++                                baseBackend,
++                                env.getExecutionConfig(),
++                                ttlTimeProvider,
++                                changelogStorage.createWriter(operatorIdentifier, keyGroupRange),
++                                baseState));
++    }
++
++    private Collection<ChangelogStateBackendHandle> castHandles(
+             Collection<KeyedStateHandle> stateHandles) {
+         return stateHandles.stream()
++                .map(keyedStateHandle -> (ChangelogStateBackendHandle) keyedStateHandle)
+                 .collect(Collectors.toList());
+     }
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method private isEmpty(uri Uri) : boolean extracted from public openForWrite(uri Uri, append boolean) : OutputStream in class cgeo.geocaching.storage.ContentStorage
+
+Code Before:
+------------
+@@ -184,7 +184,7 @@ public Uri create(final Folder folder, final FileNameCreator nameCreator, final
+     }
+      /** Deletes the file represented by given Uri */
+     public boolean delete(final Uri uri) {
+-        if (uri == null) {
+             return false;
+         }
+         try {
+@@ -312,7 +312,7 @@ public String getName(final Uri uri) {
+      * Unfortunately it is not possible to retrieve this info from an Uri alone.
+      * */
+     public FileInformation getFileInfo(final Uri uri) {
+-        if (uri == null) {
+             return null;
+         }
+ 
+@@ -331,7 +331,7 @@ public OutputStream openForWrite(final Uri uri) {
+     }
+ 
+     public OutputStream openForWrite(final Uri uri, final boolean append) {
+-        if (uri == null) {
+             return null;
+         }
+ 
+@@ -375,7 +375,7 @@ public InputStream openForRead(final Uri uri) {
+      * @param suppressWarningForUser if true then failure to open will NOT result in a toast to user
+      */
+     public InputStream openForRead(final Uri uri, final boolean suppressWarningForUser) {
+-        if (uri == null) {
+             return null;
+         }
+ 
+@@ -580,4 +580,8 @@ private void reportProblem(@StringRes final int messageId, final Exception ex, f
+         }
+         reportRunningFlag.set(false);
+     }
+ }
+
+Code After:
+------------
+@@ -184,7 +184,7 @@ public Uri create(final Folder folder, final FileNameCreator nameCreator, final
+     }
+      /** Deletes the file represented by given Uri */
+     public boolean delete(final Uri uri) {
++        if (isEmpty(uri)) {
+             return false;
+         }
+         try {
+@@ -312,7 +312,7 @@ public String getName(final Uri uri) {
+      * Unfortunately it is not possible to retrieve this info from an Uri alone.
+      * */
+     public FileInformation getFileInfo(final Uri uri) {
++        if (isEmpty(uri)) {
+             return null;
+         }
+ 
+@@ -331,7 +331,7 @@ public OutputStream openForWrite(final Uri uri) {
+     }
+ 
+     public OutputStream openForWrite(final Uri uri, final boolean append) {
++        if (isEmpty(uri)) {
+             return null;
+         }
+ 
+@@ -375,7 +375,7 @@ public InputStream openForRead(final Uri uri) {
+      * @param suppressWarningForUser if true then failure to open will NOT result in a toast to user
+      */
+     public InputStream openForRead(final Uri uri, final boolean suppressWarningForUser) {
++        if (isEmpty(uri)) {
+             return null;
+         }
+ 
+@@ -580,4 +580,8 @@ private void reportProblem(@StringRes final int messageId, final Exception ex, f
+         }
+         reportRunningFlag.set(false);
+     }
++
++    private static boolean isEmpty(final Uri uri) {
++        return uri == null || uri.equals(Uri.EMPTY);
++    }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method public bpartnerIdIfNotNull(bpartnerId BPartnerId) : FactLineBuilder extracted from public setC_BPartner_ID_IfValid(bpartnerId int) : FactLineBuilder in class org.compiere.acct.Fact.FactLineBuilder
+
+Code Before:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
+ import org.slf4j.Logger;
+ 
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
+-		public FactLineBuilder setAccount(MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
+-		public FactLineBuilder setC_BPartner_ID(Integer bpartnerIdInt)
+ 		{
+-			final BPartnerId bpartnerId = bpartnerIdInt != null ? BPartnerId.ofRepoIdOrNull(bpartnerIdInt) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
+-		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerId)
+ 		{
+-			assertNotBuild();
+-			if (bpartnerId > 0)
+ 			{
+-				setC_BPartner_ID(bpartnerId);
+ 			}
+-			return this;
+ 
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+Code After:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
++import org.compiere.util.Env;
+ import org.slf4j.Logger;
+ 
++import de.metas.acct.api.AccountId;
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
++import de.metas.acct.api.IAccountDAO;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
++import de.metas.util.Services;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
++		public FactLineBuilder setAccount(@NonNull final AccountId accountId)
++		{
++			final IAccountDAO accountsRepo = Services.get(IAccountDAO.class);
++			return setAccount(accountsRepo.getById(Env.getCtx(), accountId));
++		}
++
++		public FactLineBuilder setAccount(final MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
++		public FactLineBuilder setC_BPartner_ID(Integer bpartnerRepoId)
+ 		{
++			final BPartnerId bpartnerId = bpartnerRepoId != null ? BPartnerId.ofRepoIdOrNull(bpartnerRepoId) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
++		public FactLineBuilder bpartnerIdIfNotNull(final BPartnerId bpartnerId)
+ 		{
++			if (bpartnerId != null)
+ 			{
++				return bpartnerId(bpartnerId);
+ 			}
++			else
++			{
++				return this;
++			}
++		}
+ 
++		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerRepoId)
++		{
++			return bpartnerIdIfNotNull(BPartnerId.ofRepoIdOrNull(bpartnerRepoId));
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+public void handleLine(final String inLine) {
+    // JMH ???
+    String line = inLine.replaceFirst("^ +", "");
+    line = StringUtil.replaceXMLEntities(line);
+    String trimmedLine = line.trim();
+    if (DEBUG_LOGGING_ASSEMBLY) {
+        logger.debug("handleLine:{}", line);
+    }
+    if (line.startsWith("[Disassembling for mach")) {
+        architecture = Architecture.parseFromLogLine(line);
+        if (architecture == null) {
+            logger.error("Could not determine architecture from '{}'", line);
+        } else {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Detected architecture: {}", architecture);
+            }
+        }
+    }
+    if (S_HASH.equals(previousLine) && line.startsWith("{method}")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("fixup mangled {method} line");
+        }
+        line = S_HASH + S_SPACE + line;
+    }
+    if (trimmedLine.startsWith("total in heap")) {
+        String possibleNativeAddress = getStartAddress(line);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith(" bytes") || trimmedLine.startsWith("main code")) {
+        String possibleEntryAddress = getStartAddress(line);
+        if (possibleEntryAddress != null) {
+            entryAddress = possibleEntryAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith("</print_nmethod>")) {
+        complete();
+    }
+    if (line.startsWith(NATIVE_CODE_START) || line.startsWith("Compiled method") || line.startsWith("----------------------------------------------------------------------")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("Assembly started");
+        }
+        assemblyStarted = true;
+        if (builder.length() > 0) {
+            complete();
+        }
+        String possibleNativeAddress = StringUtil.getSubstringBetween(line, NATIVE_CODE_START, S_COLON);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    } else if (assemblyStarted) {
+        boolean couldBeNativeMethodMark = false;
+        couldBeNativeMethodMark = line.startsWith(NATIVE_CODE_METHOD_MARK);
+        if (couldBeNativeMethodMark) {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Assembly method started");
+            }
+            methodStarted = true;
+            if (!line.endsWith(S_APOSTROPHE)) {
+                if (DEBUG_LOGGING_ASSEMBLY) {
+                    logger.debug("Method signature interrupted");
+                }
+                methodInterrupted = true;
+            }
+        } else if (methodInterrupted && line.endsWith(S_APOSTROPHE)) {
+            methodInterrupted = false;
+        }
+        if (methodStarted && line.length() > 0) {
+            builder.append(line);
+            if (!methodInterrupted) {
+                builder.append(S_NEWLINE);
+            }
+        }
+    }
+    previousLine = line;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

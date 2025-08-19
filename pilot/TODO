@@ -2,12 +2,6 @@
 TODO:
 -----
 
-Get 15 Extract Method Examples
-
-Create 15 prompts.
-
-Commit and rollback the changes
-
 Calculate Standard Error
 
 ---------
@@ -16,8 +10,4 @@ PROBLEMS:
 
 Need manual intervention to resume and pause the inference endpoint.
 
-Some inferences does not finish (eg. IDs 8 and 10).
-
-The LLM give as output the same code before refactoring (Improve prompt?).
-
-How to calculate the max tokens?
+Some inferences fail (overload?).

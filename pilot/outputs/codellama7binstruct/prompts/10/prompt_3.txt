@@ -1,0 +1,625 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public maybeStart() : void extracted from public FCPServer(ipToBindTo String, allowedHosts String, port int, node Node, persistentDownloadsEnabled boolean, persistentDownloadsDir String, persistenceInterval long, isEnabled boolean) in class freenet.node.fcp.FCPServer
+
+Code Before:
+------------
+@@ -40,7 +40,7 @@
+  */
+ public class FCPServer implements Runnable {
+ 
+-	final NetworkInterface networkInterface;
+ 	final Node node;
+ 	final int port;
+ 	public final boolean enabled;
+@@ -82,21 +82,24 @@ public FCPServer(String ipToBindTo, String allowedHosts, int port, Node node, bo
+ 		this.enabled = isEnabled;
+ 		this.enablePersistentDownloads = persistentDownloadsEnabled;
+ 		setPersistentDownloadsFile(new File(persistentDownloadsDir));
+ 		
+ 		if (this.enabled) {
+-			this.node = node;
+-			clientsByName = new WeakHashMap();
+-			
+-			
+-			// This one is only used to get the default settings. Individual FCP conns
+-			// will make their own.
+-			HighLevelSimpleClient client = node.makeClient((short)0);
+-			defaultFetchContext = client.getFetcherContext();
+-			defaultInsertContext = client.getInserterContext();
+-			
+-			
+-			globalClient = new FCPClient("Global Queue", this, null, true);
+-			
+ 			
+ 			if(enablePersistentDownloads) {
+ 				loadPersistentRequests();
+@@ -124,12 +127,7 @@ public FCPServer(String ipToBindTo, String allowedHosts, int port, Node node, bo
+ 			Logger.normal(this, "Not starting FCP server as it's disabled");
+ 			System.out.println("Not starting FCP server as it's disabled");
+ 			this.networkInterface = null;
+-			this.node = null;
+-			this.clientsByName = null;
+-			this.globalClient = null;
+-			this.defaultFetchContext = null;
+ 		}
+-		
+ 	}
+ 	
+ 	public void run() {
+@@ -147,7 +145,8 @@ public void run() {
+ 	private void realRun() throws IOException {
+ 		// Accept a connection
+ 		Socket s = networkInterface.accept();
+-		new FCPConnectionHandler(s, this);
+ 	}
+ 
+ 	static class FCPPortNumberCallback implements IntCallback {
+@@ -317,6 +316,9 @@ public static FCPServer maybeCreate(Node node, Config config) throws IOException
+ 		
+ 	
+ 		fcpConfig.finishedInitialization();
+ 		return fcp;
+ 	}
+ 
+
+Code After:
+------------
+@@ -40,7 +40,7 @@
+  */
+ public class FCPServer implements Runnable {
+ 
++	NetworkInterface networkInterface;
+ 	final Node node;
+ 	final int port;
+ 	public final boolean enabled;
+@@ -82,21 +82,24 @@ public FCPServer(String ipToBindTo, String allowedHosts, int port, Node node, bo
+ 		this.enabled = isEnabled;
+ 		this.enablePersistentDownloads = persistentDownloadsEnabled;
+ 		setPersistentDownloadsFile(new File(persistentDownloadsDir));
++		this.node = node;
++		clientsByName = new WeakHashMap();
+ 		
++		
++		// This one is only used to get the default settings. Individual FCP conns
++		// will make their own.
++		HighLevelSimpleClient client = node.makeClient((short)0);
++		defaultFetchContext = client.getFetcherContext();
++		defaultInsertContext = client.getInserterContext();
++		
++		
++		globalClient = new FCPClient("Global Queue", this, null, true);
++		
++		
++	}
++	
++	public void maybeStart() throws IOException, InvalidConfigValueException {
+ 		if (this.enabled) {
+ 			
+ 			if(enablePersistentDownloads) {
+ 				loadPersistentRequests();
+@@ -124,12 +127,7 @@ public FCPServer(String ipToBindTo, String allowedHosts, int port, Node node, bo
+ 			Logger.normal(this, "Not starting FCP server as it's disabled");
+ 			System.out.println("Not starting FCP server as it's disabled");
+ 			this.networkInterface = null;
+ 		}
+ 	}
+ 	
+ 	public void run() {
+@@ -147,7 +145,8 @@ public void run() {
+ 	private void realRun() throws IOException {
+ 		// Accept a connection
+ 		Socket s = networkInterface.accept();
++		FCPConnectionHandler ch = new FCPConnectionHandler(s, this);
++		ch.start();
+ 	}
+ 
+ 	static class FCPPortNumberCallback implements IntCallback {
+@@ -317,6 +316,9 @@ public static FCPServer maybeCreate(Node node, Config config) throws IOException
+ 		
+ 	
+ 		fcpConfig.finishedInitialization();
++		if(fcp != null)
++			fcp.maybeStart();
++
+ 		return fcp;
+ 	}
+ 
+
+Example 2:
+
+Refactoring Description: Extract Method protected removeNic(vm VirtualMachineProfile<? extends VMInstanceVO>, nic NicVO) : void extracted from public cleanupNics(vm VirtualMachineProfile<? extends VMInstanceVO>) : void in class com.cloud.network.NetworkManagerImpl
+
+Code Before:
+------------
+@@ -2022,11 +2022,14 @@ public int compare(NicVO nic1, NicVO nic2) {
+     }
+ 
+     @Override
+     public NicProfile prepareNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, DeployDestination 
+             dest, ReservationContext context, long nicId, NetworkVO network)
+             throws InsufficientVirtualNetworkCapcityException, InsufficientAddressCapacityException, 
+             ConcurrentOperationException, InsufficientCapacityException, ResourceUnavailableException {
+         
+         Integer networkRate = getNetworkRate(network.getId(), vmProfile.getId());
+         NetworkGuru guru = _networkGurus.get(network.getGuruName());
+         NicVO nic = _nicDao.findById(nicId);
+@@ -2090,7 +2093,8 @@ public <T extends VMInstanceVO> void prepareNicForMigration(VirtualMachineProfil
+             Integer networkRate = getNetworkRate(network.getId(), vm.getId());
+ 
+             NetworkGuru guru = _networkGurus.get(network.getGuruName());
+-            NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), networkRate, isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+             guru.updateNicProfile(profile, network);
+             vm.addNic(profile);
+         }
+@@ -2105,6 +2109,18 @@ public void release(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, boo
+             releaseNic(vmProfile, nic, network);
+         }
+     }
+ 
+     protected void releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NicVO nic, NetworkVO network) 
+             throws ConcurrentOperationException, ResourceUnavailableException {
+@@ -2283,15 +2299,27 @@ public void cleanupNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+ 
+         List<NicVO> nics = _nicDao.listByVmId(vm.getId());
+         for (NicVO nic : nics) {
+-            nic.setState(Nic.State.Deallocating);
+-            _nicDao.update(nic.getId(), nic);
+-            NetworkVO network = _networksDao.findById(nic.getNetworkId());
+-            NicProfile profile = new NicProfile(nic, network, null, null, null, isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+-            NetworkGuru guru = _networkGurus.get(network.getGuruName());
+-            guru.deallocate(network, profile, vm);
+-            _nicDao.remove(nic.getId());
+         }
+     }
+ 
+     @Override
+     public void expungeNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+@@ -2629,21 +2657,18 @@ protected Network createVpcGuestNetwork(long ntwkOffId, String name, String disp
+             PhysicalNetwork pNtwk, long zoneId, ACLType aclType, Boolean subdomainAccess, long vpcId) 
+                     throws ConcurrentOperationException, InsufficientCapacityException, ResourceAllocationException {
+         
+         //1) Validate if network can be created for VPC
+-        _vpcMgr.validateGuestNtkwForVpc(_configMgr.getNetworkOffering(ntwkOffId), cidr, networkDomain, owner, 
+-                _vpcMgr.getVpc(vpcId));
+         
+         //2) Create network
+         Network guestNetwork = createGuestNetwork(ntwkOffId, name, displayText, gateway, cidr, vlanId, 
+                 networkDomain, owner, domainId, pNtwk, zoneId, aclType, subdomainAccess, vpcId);
+         
+-        //3) Add network to all VPC's routers
+-        List<DomainRouterVO> routers = _routerDao.listRoutersByVpcId(vpcId);
+-        for (DomainRouterVO router : routers) {
+-            s_logger.debug("Adding router " + router + " to network " + guestNetwork);
+-            _routerDao.addRouterToNetwork(router, guestNetwork);
+-        }
+-        
+         return guestNetwork;
+     }
+ 
+
+Code After:
+------------
+@@ -2022,11 +2022,14 @@ public int compare(NicVO nic1, NicVO nic2) {
+     }
+ 
+     @Override
++    @DB
+     public NicProfile prepareNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, DeployDestination 
+             dest, ReservationContext context, long nicId, NetworkVO network)
+             throws InsufficientVirtualNetworkCapcityException, InsufficientAddressCapacityException, 
+             ConcurrentOperationException, InsufficientCapacityException, ResourceUnavailableException {
+         
++        
++        
+         Integer networkRate = getNetworkRate(network.getId(), vmProfile.getId());
+         NetworkGuru guru = _networkGurus.get(network.getGuruName());
+         NicVO nic = _nicDao.findById(nicId);
+@@ -2090,7 +2093,8 @@ public <T extends VMInstanceVO> void prepareNicForMigration(VirtualMachineProfil
+             Integer networkRate = getNetworkRate(network.getId(), vm.getId());
+ 
+             NetworkGuru guru = _networkGurus.get(network.getGuruName());
++            NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), networkRate, 
++                    isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+             guru.updateNicProfile(profile, network);
+             vm.addNic(profile);
+         }
+@@ -2105,6 +2109,18 @@ public void release(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, boo
+             releaseNic(vmProfile, nic, network);
+         }
+     }
++    
++    @Override
++    public NicProfile releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NetworkVO network) 
++            throws ConcurrentOperationException, ResourceUnavailableException {
++        NicVO nic = _nicDao.findByInstanceIdAndNetworkId(network.getId(), vmProfile.getId());
++        releaseNic(vmProfile, nic, network);
++        
++        NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), null, 
++                isSecurityGroupSupportedInNetwork(network), getNetworkTag(vmProfile.getVirtualMachine().getHypervisorType(), network));
++        return profile;
++    }
++    
+ 
+     protected void releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NicVO nic, NetworkVO network) 
+             throws ConcurrentOperationException, ResourceUnavailableException {
+@@ -2283,15 +2299,27 @@ public void cleanupNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+ 
+         List<NicVO> nics = _nicDao.listByVmId(vm.getId());
+         for (NicVO nic : nics) {
++            removeNic(vm, nic);
+         }
+     }
++    
++    @Override
++    public void removeNic(VirtualMachineProfile<? extends VMInstanceVO> vm, Network network) {
++        NicVO nic = _nicDao.findByInstanceIdAndNetworkId(network.getId(), vm.getVirtualMachine().getId());
++        removeNic(vm, nic);
++    }
++
++    protected void removeNic(VirtualMachineProfile<? extends VMInstanceVO> vm, NicVO nic) {
++        nic.setState(Nic.State.Deallocating);
++        _nicDao.update(nic.getId(), nic);
++        NetworkVO network = _networksDao.findById(nic.getNetworkId());
++        NicProfile profile = new NicProfile(nic, network, null, null, null,
++                isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
++        NetworkGuru guru = _networkGurus.get(network.getGuruName());
++        guru.deallocate(network, profile, vm);
++        _nicDao.remove(nic.getId());
++        s_logger.debug("Removed nic id=" + nic.getId());
++    }
+ 
+     @Override
+     public void expungeNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+@@ -2629,21 +2657,18 @@ protected Network createVpcGuestNetwork(long ntwkOffId, String name, String disp
+             PhysicalNetwork pNtwk, long zoneId, ACLType aclType, Boolean subdomainAccess, long vpcId) 
+                     throws ConcurrentOperationException, InsufficientCapacityException, ResourceAllocationException {
+         
++        Vpc vpc = _vpcMgr.getVpc(vpcId);
+         //1) Validate if network can be created for VPC
++        _vpcMgr.validateGuestNtkwForVpc(_configMgr.getNetworkOffering(ntwkOffId), cidr, networkDomain, owner, vpc);
++        
++        if (networkDomain == null) {
++            networkDomain = vpc.getNetworkDomain();
++        }
+         
+         //2) Create network
+         Network guestNetwork = createGuestNetwork(ntwkOffId, name, displayText, gateway, cidr, vlanId, 
+                 networkDomain, owner, domainId, pNtwk, zoneId, aclType, subdomainAccess, vpcId);
+         
+         return guestNetwork;
+     }
+ 
+
+Example 3:
+
+Refactoring Description: Extract Method private getActionNameStringFromField(field Field) : String extracted from public printReference() : String in class teammates.ui.controller.AdminActivityLogPageData
+
+Code Before:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
+-    public String printReference(){
+         
+-        List<String> instructorActions = new ArrayList<String>();
+-        List<String> studentActions = new ArrayList<String>();
+-        List<String> adminActions = new ArrayList<String>();
+-        List<String> systemActions = new ArrayList<String>();
+         
+-       
+-        for(Field field : Const.ActionURIs.class.getFields()){
+-            
+-            String rawActionString = "";
+-            try {
+-                rawActionString = field.get(Const.ActionURIs.class).toString();
+-            } catch (IllegalArgumentException | IllegalAccessException e) {
+-                e.printStackTrace();
+-            }
+-            
+-            String[] splitedString = rawActionString.split("/");
+-            String actionString = splitedString[splitedString.length - 1];
+             
+-            if(actionString.startsWith("instructor")){
+-                instructorActions.add(actionString);
+-            }else if(actionString.startsWith("student")){
+-                studentActions.add(actionString);    
+-            }else if(actionString.startsWith("admin")){
+-                adminActions.add(actionString);
+-            }else{
+-                systemActions.add(actionString);    
+             }
+-            
+         }
+         
+-        return assemblyReferenceString(instructorActions, 
+-                                       studentActions,
+-                                       adminActions, 
+-                                       systemActions);
+-             
+     }
+     
+     
+-    String assemblyReferenceString(List<String> instructorActions, List<String> studentActions, 
+-                                   List<String> adminActions, List<String> systemActions){
+         
+-        String outPut="";
+         
+-        int size = instructorActions.size();
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(0, size / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size / 6, size * 2 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 2 / 6, size * 3 / 6), null);
+-        outPut += "</tr>";
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 3 / 6, size * 4 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 4 / 6, size * 5 / 6), null);
+-        outPut += getReferenceGroupFromList(instructorActions.subList(size * 5 / 6, size), null);
+-        outPut += "</tr>";          
+-        outPut += "<tr>";
+-        outPut += getReferenceGroupFromList(studentActions, "success"); 
+-        outPut += getReferenceGroupFromList(systemActions, "warning"); 
+-        outPut += getReferenceGroupFromList(adminActions, "danger"); 
+-        outPut += "</tr>";        
+-        return outPut;    
+     
+     }
+     
+     
+-    String getReferenceGroupFromList(List<String> actionList, String styleName){
+         
+-        String outPut = "";
+         
+-        String style = styleName != null ? "list-group-item-" + styleName : "";
+         
+-        outPut += "<td>";
+-        outPut += "<ul class=\"list-group\">";
+-        for(String action : actionList){        
+-            outPut += "<li class=\"list-group-item " + style + "\">" + action + "</li>";
+-                                                              
+-        } 
+-        outPut += "</ul>";
+-        outPut += "</td>";    
+-        return outPut;
+     }
+     
+     /**
+
+Code After:
+------------
+@@ -8,6 +8,7 @@
+ 
+ import teammates.common.datatransfer.AccountAttributes;
+ import teammates.common.util.ActivityLogEntry;
++import teammates.common.util.Assumption;
+ import teammates.common.util.Const;
+ 
+ public class AdminActivityLogPageData extends PageData {
+@@ -135,87 +136,106 @@ private QueryParameters parseQuery(String query) throws Exception{
+         return q;
+     }
+     
++    
++    /** 
++     * @return possible servlet requests list as html 
++     */
++    public String getActionListAsHtml(){       
++        List<String> allActionNames = getAllActionNames();   
+         
++        int rowsPerCol = calculateRowsPerCol(allActionNames.size());
++        return convertActionListToHtml(allActionNames, rowsPerCol);
++    }
++    
++    
++    private String convertActionListToHtml(List<String> allActionNames, int rowsPerCol){
+         
++        String outputHtml = "<tr>";      
++        int count = 0;      
++        for (int i = 0; i < Const.TOTAL_COLUMNS; i++) {
+             
++            outputHtml += "<td>";
++            outputHtml += "<ul class=\"list-group\">";
++            for (int j = 0; j < rowsPerCol; j++) {
++                
++                if(count >= allActionNames.size()){
++                    break;
++                }
++                
++                outputHtml += "<li class=\"list-group-item " 
++                              + getStyleForListGroupItem(allActionNames.get(count))
++                              + "\">" + allActionNames.get(count) + "</li>";
++                              
++                count++;
+             }
++            outputHtml += "</ul>";
++            outputHtml += "</td>";
+         }
+         
++       
++        return outputHtml;    
++
+     }
+     
+     
++    private String getStyleForListGroupItem(String actionName){
++        
++        String style = "";
++        
++        if(actionName.startsWith("instructor")){
++            style = "list-group-item";
++        }else if(actionName.startsWith("student")){
++            style = "list-group-item-success";
++        }else if(actionName.startsWith("admin")){
++            style = "list-group-item-warning";
++        }else{
++            style = "list-group-item-danger";
++        }
++        
++        return style;
++    }
++    
++    private int calculateRowsPerCol(int totalNumOfActions){
++        
++        int rowsPerCol = totalNumOfActions / Const.TOTAL_COLUMNS;
++        int remainder = totalNumOfActions % Const.TOTAL_COLUMNS;
+         
++        if(remainder > 0){
++            rowsPerCol ++;
++        }
+         
++        return rowsPerCol;
++    }
+     
++     
++    private List<String> getAllActionNames(){
++       
++        List<String> actionNameList = new ArrayList<String>();
++        
++        for(Field field : Const.ActionURIs.class.getFields()){
++
++            String actionString = getActionNameStringFromField(field);
++            actionNameList.add(actionString);        
++        }
++        
++        return actionNameList;            
+     }
+     
+     
++    private String getActionNameStringFromField(Field field){
+         
++        String rawActionString = "";
++        
++        try {
++            rawActionString = field.get(Const.ActionURIs.class).toString();
++        } catch (IllegalArgumentException | IllegalAccessException e) {
++            Assumption.fail("Fail to get action URI");
++        }
+         
++        String[] splitedString = rawActionString.split("/");
++        String actionString = splitedString[splitedString.length - 1];
+         
++        return actionString;
+     }
+     
+     /**
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private Object processSingle(Page page, String html, boolean isRaw) {
+    Object o = null;
+    try {
+        o = clazz.newInstance();
+        for (FieldExtractor fieldExtractor : fieldExtractors) {
+            if (fieldExtractor.isMulti()) {
+                List<String> value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().selectList(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().selectList(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().selectList(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().selectList(html);
+                }
+                if ((value == null || value.size() == 0) && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    List<Object> converted = convert(value, fieldExtractor.getObjectFormatter());
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            } else {
+                String value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().select(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().select(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().select(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().select(html);
+                }
+                if (value == null && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    Object converted = convert(value, fieldExtractor.getObjectFormatter());
+                    if (converted == null && fieldExtractor.isNotNull()) {
+                        return null;
+                    }
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            }
+        }
+        if (AfterExtractor.class.isAssignableFrom(clazz)) {
+            ((AfterExtractor) o).afterProcess(page);
+        }
+    } catch (InstantiationException e) {
+        logger.error("extract fail", e);
+    } catch (IllegalAccessException e) {
+        logger.error("extract fail", e);
+    } catch (InvocationTargetException e) {
+        logger.error("extract fail", e);
+    }
+    return o;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

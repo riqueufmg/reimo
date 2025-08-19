@@ -1,0 +1,541 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method protected getClickableColumnKeys(columnIds Collection<Object>) : String[] extracted from protected updateClickableColumnKeys() : void in class com.haulmont.cuba.web.widgets.CubaTable
+
+Code Before:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
+-            public void onClick(String columnKey, String rowKey) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
+-                if (itemId != null && cellClickListeners != null) {
+-                    CellClickListener cellClickListener = cellClickListeners.get(columnId);
+-                    if (cellClickListener != null) {
+-                        cellClickListener.onClick(itemId, columnId);
+                     }
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
+-            String[] clickableColumnKeys = new String[cellClickListeners.size()];
+-            int i = 0;
+-            for (Object columnId : cellClickListeners.keySet()) {
+-                clickableColumnKeys[i] = _columnIdMap().key(columnId);
+-                i++;
+-            }
+ 
+-            getState().clickableColumnKeys = clickableColumnKeys;
+         }
+     }
+ 
+     @Override
+
+Code After:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
++    protected List<Object> clickableTableColumnIds; // lazily initialized list
++
++    protected Registration tableCellClickListenerRegistration;
++
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
++            public void onClick(String columnKey, String rowKey, boolean isText) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
++                if (itemId != null) {
++                    if (cellClickListeners != null && isText) {
++                        CellClickListener cellClickListener = cellClickListeners.get(columnId);
++                        if (cellClickListener != null) {
++                            cellClickListener.onClick(itemId, columnId);
++                        }
+                     }
++
++                    fireEvent(new TableCellClickEvent(CubaTable.this, itemId, columnId, isText));
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
++    @Override
++    public void addTableCellClickListener(Object propertyId, TableCellClickListener listener) {
++        if (clickableTableColumnIds == null) {
++            clickableTableColumnIds = new ArrayList<>();
++        }
++        clickableTableColumnIds.add(propertyId);
++
++        // Register only one TableCellClickListener for all clickable table columns
++        if (tableCellClickListenerRegistration == null) {
++            tableCellClickListenerRegistration = addListener(TableCellClickEvent.class, listener, TableCellClickListener.clickMethod);
++        }
++    }
++
++    @Override
++    public void removeTableCellClickListener(Object propertyId) {
++        if (clickableTableColumnIds != null) {
++            clickableTableColumnIds.remove(propertyId);
++
++            if (tableCellClickListenerRegistration != null
++                    && clickableTableColumnIds.isEmpty()) {
++                tableCellClickListenerRegistration.remove();
++                tableCellClickListenerRegistration = null;
++
++                clickableTableColumnIds = null;
++            }
++        }
++    }
++
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
++        updateClickableTableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
++            getState().clickableColumnKeys = getClickableColumnKeys(cellClickListeners.keySet());
++        }
++    }
++
++    protected void updateClickableTableColumnKeys() {
++        if (clickableTableColumnIds != null) {
++            getState().clickableTableColumnKeys = getClickableColumnKeys(clickableTableColumnIds);
++        }
++    }
+ 
++    protected String[] getClickableColumnKeys(Collection<Object> columnIds) {
++        String[] clickableColumnKeys = new String[columnIds.size()];
++        int i = 0;
++        for (Object columnId : columnIds) {
++            clickableColumnKeys[i] = _columnIdMap().key(columnId);
++            i++;
+         }
++        return clickableColumnKeys;
+     }
+ 
+     @Override
+
+Example 2:
+
+Refactoring Description: Extract Method public configure() : void extracted from public TileEntityElectricBlock(name String, maxEnergy double) in class mekanism.common.tile.TileEntityElectricBlock
+
+Code Before:
+------------
+@@ -62,13 +62,18 @@ public TileEntityElectricBlock(String name, double maxEnergy)
+ 		MAX_ELECTRICITY = maxEnergy;
+ 
+ 		if(MekanismUtils.useBuildCraft())
+-		{
+-			powerHandler = new PowerHandler(this, PowerHandler.Type.STORAGE);
+-			powerHandler.configurePowerPerdition(0, 0);
+-			powerHandler.configure(0, 0, 0, 0);
+-		}
+ 	}
+ 
+ 	@Method(modid = "IC2API")
+ 	public void register()
+ 	{
+@@ -98,7 +103,8 @@ public void deregister()
+ 	@Override
+ 	public void onUpdate()
+ 	{
+-		reconfigure();
+ 	}
+ 
+ 	public EnumSet<ForgeDirection> getOutputtingSides()
+@@ -156,7 +162,7 @@ public ArrayList getNetworkedData(ArrayList data)
+ 	public void onChunkUnload()
+ 	{
+ 		if(MekanismUtils.useIC2())
+-		deregister();
+ 
+ 		super.onChunkUnload();
+ 	}
+@@ -167,7 +173,7 @@ public void invalidate()
+ 		super.invalidate();
+ 
+ 		if(MekanismUtils.useIC2())
+-		deregister();
+ 	}
+ 
+ 	@Override
+@@ -176,7 +182,9 @@ public void readFromNBT(NBTTagCompound nbtTags)
+ 		super.readFromNBT(nbtTags);
+ 
+ 		electricityStored = nbtTags.getDouble("electricityStored");
+-		reconfigure();
+ 	}
+ 
+ 	@Override
+@@ -199,12 +207,10 @@ public PowerReceiver getPowerReceiver(ForgeDirection side)
+ 		return null;
+ 	}
+ 
+ 	protected void reconfigure()
+ 	{
+-		if(MekanismUtils.useBuildCraft())
+-		{
+ 			powerHandler.configure(1, (float)((getMaxEnergy()-getEnergy())*Mekanism.TO_BC), 0, (float)(getMaxEnergy()*Mekanism.TO_BC));
+-		}
+ 	}
+ 
+ 	@Override
+
+Code After:
+------------
+@@ -62,13 +62,18 @@ public TileEntityElectricBlock(String name, double maxEnergy)
+ 		MAX_ELECTRICITY = maxEnergy;
+ 
+ 		if(MekanismUtils.useBuildCraft())
++			configure();
++	}
++
++	@Method(modid = "BuildCraftAPI|power")
++	public void configure()
++	{
++		powerHandler = new PowerHandler(this, PowerHandler.Type.STORAGE);
++		powerHandler.configurePowerPerdition(0, 0);
++		powerHandler.configure(0, 0, 0, 0);
+ 	}
+ 
++
+ 	@Method(modid = "IC2API")
+ 	public void register()
+ 	{
+@@ -98,7 +103,8 @@ public void deregister()
+ 	@Override
+ 	public void onUpdate()
+ 	{
++		if(MekanismUtils.useBuildCraft())
++			reconfigure();
+ 	}
+ 
+ 	public EnumSet<ForgeDirection> getOutputtingSides()
+@@ -156,7 +162,7 @@ public ArrayList getNetworkedData(ArrayList data)
+ 	public void onChunkUnload()
+ 	{
+ 		if(MekanismUtils.useIC2())
++			deregister();
+ 
+ 		super.onChunkUnload();
+ 	}
+@@ -167,7 +173,7 @@ public void invalidate()
+ 		super.invalidate();
+ 
+ 		if(MekanismUtils.useIC2())
++			deregister();
+ 	}
+ 
+ 	@Override
+@@ -176,7 +182,9 @@ public void readFromNBT(NBTTagCompound nbtTags)
+ 		super.readFromNBT(nbtTags);
+ 
+ 		electricityStored = nbtTags.getDouble("electricityStored");
++
++		if(MekanismUtils.useBuildCraft())
++			reconfigure();
+ 	}
+ 
+ 	@Override
+@@ -199,12 +207,10 @@ public PowerReceiver getPowerReceiver(ForgeDirection side)
+ 		return null;
+ 	}
+ 
++	@Method(modid = "BuildCraftAPI|power")
+ 	protected void reconfigure()
+ 	{
+ 			powerHandler.configure(1, (float)((getMaxEnergy()-getEnergy())*Mekanism.TO_BC), 0, (float)(getMaxEnergy()*Mekanism.TO_BC));
+ 	}
+ 
+ 	@Override
+
+Example 3:
+
+Refactoring Description: Extract Method private removeImageImpl(image Image) : void extracted from public removeImage(image Image) : void in class java.awt.MediaTracker
+
+Code Before:
+------------
+@@ -28,6 +28,7 @@
+ import java.awt.Component;
+ import java.awt.Image;
+ import java.awt.image.ImageObserver;
+ 
+ /**
+  * The <code>MediaTracker</code> class is a utility class to track
+@@ -222,10 +223,17 @@ public void addImage(Image image, int id) {
+      * @param     h    the height at which the image is rendered
+      */
+     public synchronized void addImage(Image image, int id, int w, int h) {
+         head = MediaEntry.insert(head,
+                                  new ImageMediaEntry(this, image, id, w, h));
+     }
+-
+     /**
+      * Flag indicating that media is currently being loaded.
+      * @see         java.awt.MediaTracker#statusAll
+@@ -719,6 +727,15 @@ private synchronized int statusID(int id, boolean load, boolean verify) {
+      * @since   JDK1.1
+      */
+     public synchronized void removeImage(Image image) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -735,7 +752,6 @@ public synchronized void removeImage(Image image) {
+             }
+             cur = next;
+         }
+-        notifyAll();    // Notify in case remaining images are "done".
+     }
+ 
+     /**
+@@ -750,6 +766,15 @@ public synchronized void removeImage(Image image) {
+      * @since      JDK1.1
+      */
+     public synchronized void removeImage(Image image, int id) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -766,7 +791,6 @@ public synchronized void removeImage(Image image, int id) {
+             }
+             cur = next;
+         }
+-        notifyAll();    // Notify in case remaining images are "done".
+     }
+ 
+     /**
+@@ -783,6 +807,16 @@ public synchronized void removeImage(Image image, int id) {
+      */
+     public synchronized void removeImage(Image image, int id,
+                                          int width, int height) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -801,12 +835,18 @@ public synchronized void removeImage(Image image, int id,
+             }
+             cur = next;
+         }
+-        notifyAll();    // Notify in case remaining images are "done".
+     }
+ 
+     synchronized void setDone() {
+         notifyAll();
+     }
+ }
+ 
+ abstract class MediaEntry {
+
+Code After:
+------------
+@@ -28,6 +28,7 @@
+ import java.awt.Component;
+ import java.awt.Image;
+ import java.awt.image.ImageObserver;
++import sun.awt.image.MultiResolutionToolkitImage;
+ 
+ /**
+  * The <code>MediaTracker</code> class is a utility class to track
+@@ -222,10 +223,17 @@ public void addImage(Image image, int id) {
+      * @param     h    the height at which the image is rendered
+      */
+     public synchronized void addImage(Image image, int id, int w, int h) {
++        addImageImpl(image, id, w, h);
++        Image rvImage = getResolutionVariant(image);
++        if (rvImage != null) {
++            addImageImpl(rvImage, id, 2 * w, 2 * h);
++        }
++    }
++
++    private void addImageImpl(Image image, int id, int w, int h) {
+         head = MediaEntry.insert(head,
+                                  new ImageMediaEntry(this, image, id, w, h));
+     }
+     /**
+      * Flag indicating that media is currently being loaded.
+      * @see         java.awt.MediaTracker#statusAll
+@@ -719,6 +727,15 @@ private synchronized int statusID(int id, boolean load, boolean verify) {
+      * @since   JDK1.1
+      */
+     public synchronized void removeImage(Image image) {
++        removeImageImpl(image);
++        Image rvImage = getResolutionVariant(image);
++        if (rvImage != null) {
++            removeImageImpl(rvImage);
++        }
++        notifyAll();    // Notify in case remaining images are "done".
++    }
++
++    private void removeImageImpl(Image image) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -735,7 +752,6 @@ public synchronized void removeImage(Image image) {
+             }
+             cur = next;
+         }
+     }
+ 
+     /**
+@@ -750,6 +766,15 @@ public synchronized void removeImage(Image image) {
+      * @since      JDK1.1
+      */
+     public synchronized void removeImage(Image image, int id) {
++        removeImageImpl(image, id);
++        Image rvImage = getResolutionVariant(image);
++        if (rvImage != null) {
++            removeImageImpl(rvImage, id);
++        }
++        notifyAll();    // Notify in case remaining images are "done".
++    }
++
++    private void removeImageImpl(Image image, int id) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -766,7 +791,6 @@ public synchronized void removeImage(Image image, int id) {
+             }
+             cur = next;
+         }
+     }
+ 
+     /**
+@@ -783,6 +807,16 @@ public synchronized void removeImage(Image image, int id) {
+      */
+     public synchronized void removeImage(Image image, int id,
+                                          int width, int height) {
++        removeImageImpl(image, id, width, height);
++        Image rvImage = getResolutionVariant(image);
++        if (rvImage != null) {
++            removeImageImpl(rvImage, id, 2 * width, 2 * height);
++
++        }
++        notifyAll();    // Notify in case remaining images are "done".
++    }
++
++    private void removeImageImpl(Image image, int id, int width, int height) {
+         MediaEntry cur = head;
+         MediaEntry prev = null;
+         while (cur != null) {
+@@ -801,12 +835,18 @@ public synchronized void removeImage(Image image, int id,
+             }
+             cur = next;
+         }
+     }
+ 
+     synchronized void setDone() {
+         notifyAll();
+     }
++
++    private static Image getResolutionVariant(Image image) {
++        if (image instanceof MultiResolutionToolkitImage) {
++            return ((MultiResolutionToolkitImage) image).getResolutionVariant();
++        }
++        return null;
++    }
+ }
+ 
+ abstract class MediaEntry {
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

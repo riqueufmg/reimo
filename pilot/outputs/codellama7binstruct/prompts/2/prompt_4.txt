@@ -1,0 +1,438 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method protected getClickableColumnKeys(columnIds Collection<Object>) : String[] extracted from protected updateClickableColumnKeys() : void in class com.haulmont.cuba.web.widgets.CubaTable
+
+Code Before:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
+-            public void onClick(String columnKey, String rowKey) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
+-                if (itemId != null && cellClickListeners != null) {
+-                    CellClickListener cellClickListener = cellClickListeners.get(columnId);
+-                    if (cellClickListener != null) {
+-                        cellClickListener.onClick(itemId, columnId);
+                     }
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
+-            String[] clickableColumnKeys = new String[cellClickListeners.size()];
+-            int i = 0;
+-            for (Object columnId : cellClickListeners.keySet()) {
+-                clickableColumnKeys[i] = _columnIdMap().key(columnId);
+-                i++;
+-            }
+ 
+-            getState().clickableColumnKeys = clickableColumnKeys;
+         }
+     }
+ 
+     @Override
+
+Code After:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
++    protected List<Object> clickableTableColumnIds; // lazily initialized list
++
++    protected Registration tableCellClickListenerRegistration;
++
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
++            public void onClick(String columnKey, String rowKey, boolean isText) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
++                if (itemId != null) {
++                    if (cellClickListeners != null && isText) {
++                        CellClickListener cellClickListener = cellClickListeners.get(columnId);
++                        if (cellClickListener != null) {
++                            cellClickListener.onClick(itemId, columnId);
++                        }
+                     }
++
++                    fireEvent(new TableCellClickEvent(CubaTable.this, itemId, columnId, isText));
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
++    @Override
++    public void addTableCellClickListener(Object propertyId, TableCellClickListener listener) {
++        if (clickableTableColumnIds == null) {
++            clickableTableColumnIds = new ArrayList<>();
++        }
++        clickableTableColumnIds.add(propertyId);
++
++        // Register only one TableCellClickListener for all clickable table columns
++        if (tableCellClickListenerRegistration == null) {
++            tableCellClickListenerRegistration = addListener(TableCellClickEvent.class, listener, TableCellClickListener.clickMethod);
++        }
++    }
++
++    @Override
++    public void removeTableCellClickListener(Object propertyId) {
++        if (clickableTableColumnIds != null) {
++            clickableTableColumnIds.remove(propertyId);
++
++            if (tableCellClickListenerRegistration != null
++                    && clickableTableColumnIds.isEmpty()) {
++                tableCellClickListenerRegistration.remove();
++                tableCellClickListenerRegistration = null;
++
++                clickableTableColumnIds = null;
++            }
++        }
++    }
++
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
++        updateClickableTableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
++            getState().clickableColumnKeys = getClickableColumnKeys(cellClickListeners.keySet());
++        }
++    }
++
++    protected void updateClickableTableColumnKeys() {
++        if (clickableTableColumnIds != null) {
++            getState().clickableTableColumnKeys = getClickableColumnKeys(clickableTableColumnIds);
++        }
++    }
+ 
++    protected String[] getClickableColumnKeys(Collection<Object> columnIds) {
++        String[] clickableColumnKeys = new String[columnIds.size()];
++        int i = 0;
++        for (Object columnId : columnIds) {
++            clickableColumnKeys[i] = _columnIdMap().key(columnId);
++            i++;
+         }
++        return clickableColumnKeys;
+     }
+ 
+     @Override
+
+Example 2:
+
+Refactoring Description: Extract Method public sendMessageAsync(server RaftPeerId, message Message, timeoutMs long) : CompletableFuture<RaftClientReply> extracted from public sendMessageAsync(server RaftPeerId, message Message) : CompletableFuture<RaftClientReply> in class alluxio.master.journal.raft.RaftJournalSystem
+
+Code Before:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
+-    long timeoutMs =
+-        Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT);
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
+-    RaftClient client = createClient();
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Code After:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
++    return createClient(Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  private RaftClient createClient(long timeoutMs) {
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
++    return sendMessageAsync(server, message, Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  /**
++   * Sends a message to a raft server asynchronously.
++   *
++   * @param server the raft peer id of the target server
++   * @param message the message to send
++   * @param timeoutMs the message timeout in milliseconds
++   * @return a future to be completed with the client reply
++   */
++  public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
++      RaftPeerId server, Message message, long timeoutMs) {
++    RaftClient client = createClient(timeoutMs);
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Example 3:
+
+Refactoring Description: Extract Method public configure() : void extracted from public TileEntityElectricBlock(name String, maxEnergy double) in class mekanism.common.tile.TileEntityElectricBlock
+
+Code Before:
+------------
+@@ -62,13 +62,18 @@ public TileEntityElectricBlock(String name, double maxEnergy)
+ 		MAX_ELECTRICITY = maxEnergy;
+ 
+ 		if(MekanismUtils.useBuildCraft())
+-		{
+-			powerHandler = new PowerHandler(this, PowerHandler.Type.STORAGE);
+-			powerHandler.configurePowerPerdition(0, 0);
+-			powerHandler.configure(0, 0, 0, 0);
+-		}
+ 	}
+ 
+ 	@Method(modid = "IC2API")
+ 	public void register()
+ 	{
+@@ -98,7 +103,8 @@ public void deregister()
+ 	@Override
+ 	public void onUpdate()
+ 	{
+-		reconfigure();
+ 	}
+ 
+ 	public EnumSet<ForgeDirection> getOutputtingSides()
+@@ -156,7 +162,7 @@ public ArrayList getNetworkedData(ArrayList data)
+ 	public void onChunkUnload()
+ 	{
+ 		if(MekanismUtils.useIC2())
+-		deregister();
+ 
+ 		super.onChunkUnload();
+ 	}
+@@ -167,7 +173,7 @@ public void invalidate()
+ 		super.invalidate();
+ 
+ 		if(MekanismUtils.useIC2())
+-		deregister();
+ 	}
+ 
+ 	@Override
+@@ -176,7 +182,9 @@ public void readFromNBT(NBTTagCompound nbtTags)
+ 		super.readFromNBT(nbtTags);
+ 
+ 		electricityStored = nbtTags.getDouble("electricityStored");
+-		reconfigure();
+ 	}
+ 
+ 	@Override
+@@ -199,12 +207,10 @@ public PowerReceiver getPowerReceiver(ForgeDirection side)
+ 		return null;
+ 	}
+ 
+ 	protected void reconfigure()
+ 	{
+-		if(MekanismUtils.useBuildCraft())
+-		{
+ 			powerHandler.configure(1, (float)((getMaxEnergy()-getEnergy())*Mekanism.TO_BC), 0, (float)(getMaxEnergy()*Mekanism.TO_BC));
+-		}
+ 	}
+ 
+ 	@Override
+
+Code After:
+------------
+@@ -62,13 +62,18 @@ public TileEntityElectricBlock(String name, double maxEnergy)
+ 		MAX_ELECTRICITY = maxEnergy;
+ 
+ 		if(MekanismUtils.useBuildCraft())
++			configure();
++	}
++
++	@Method(modid = "BuildCraftAPI|power")
++	public void configure()
++	{
++		powerHandler = new PowerHandler(this, PowerHandler.Type.STORAGE);
++		powerHandler.configurePowerPerdition(0, 0);
++		powerHandler.configure(0, 0, 0, 0);
+ 	}
+ 
++
+ 	@Method(modid = "IC2API")
+ 	public void register()
+ 	{
+@@ -98,7 +103,8 @@ public void deregister()
+ 	@Override
+ 	public void onUpdate()
+ 	{
++		if(MekanismUtils.useBuildCraft())
++			reconfigure();
+ 	}
+ 
+ 	public EnumSet<ForgeDirection> getOutputtingSides()
+@@ -156,7 +162,7 @@ public ArrayList getNetworkedData(ArrayList data)
+ 	public void onChunkUnload()
+ 	{
+ 		if(MekanismUtils.useIC2())
++			deregister();
+ 
+ 		super.onChunkUnload();
+ 	}
+@@ -167,7 +173,7 @@ public void invalidate()
+ 		super.invalidate();
+ 
+ 		if(MekanismUtils.useIC2())
++			deregister();
+ 	}
+ 
+ 	@Override
+@@ -176,7 +182,9 @@ public void readFromNBT(NBTTagCompound nbtTags)
+ 		super.readFromNBT(nbtTags);
+ 
+ 		electricityStored = nbtTags.getDouble("electricityStored");
++
++		if(MekanismUtils.useBuildCraft())
++			reconfigure();
+ 	}
+ 
+ 	@Override
+@@ -199,12 +207,10 @@ public PowerReceiver getPowerReceiver(ForgeDirection side)
+ 		return null;
+ 	}
+ 
++	@Method(modid = "BuildCraftAPI|power")
+ 	protected void reconfigure()
+ 	{
+ 			powerHandler.configure(1, (float)((getMaxEnergy()-getEnergy())*Mekanism.TO_BC), 0, (float)(getMaxEnergy()*Mekanism.TO_BC));
+ 	}
+ 
+ 	@Override
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Encode the given symbol info to a bit matrix.
+ *
+ * @param placement  The DataMatrix placement.
+ * @param symbolInfo The symbol info to encode.
+ * @return The bit matrix generated.
+ */
+private static BitMatrix encodeLowLevel(DefaultPlacement placement, SymbolInfo symbolInfo, int width, int height) {
+    int symbolWidth = symbolInfo.getSymbolDataWidth();
+    int symbolHeight = symbolInfo.getSymbolDataHeight();
+    ByteMatrix matrix = new ByteMatrix(symbolInfo.getSymbolWidth(), symbolInfo.getSymbolHeight());
+    int matrixY = 0;
+    for (int y = 0; y < symbolHeight; y++) {
+        // Fill the top edge with alternate 0 / 1
+        int matrixX;
+        if ((y % symbolInfo.matrixHeight) == 0) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, (x % 2) == 0);
+                matrixX++;
+            }
+            matrixY++;
+        }
+        matrixX = 0;
+        for (int x = 0; x < symbolWidth; x++) {
+            // Fill the right edge with full 1
+            if ((x % symbolInfo.matrixWidth) == 0) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrix.set(matrixX, matrixY, placement.getBit(x, y));
+            matrixX++;
+            // Fill the right edge with alternate 0 / 1
+            if ((x % symbolInfo.matrixWidth) == symbolInfo.matrixWidth - 1) {
+                matrix.set(matrixX, matrixY, (y % 2) == 0);
+                matrixX++;
+            }
+        }
+        matrixY++;
+        // Fill the bottom edge with full 1
+        if ((y % symbolInfo.matrixHeight) == symbolInfo.matrixHeight - 1) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrixY++;
+        }
+    }
+    return convertByteMatrixToBitMatrix(matrix, width, height);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

@@ -1,0 +1,361 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private isDefaultLibrary(lib ExternalLibrary) : boolean extracted from public isInternalLibrary(lib ExternalLibrary) : boolean in class com.oracle.truffle.llvm.runtime.LLVMContext
+
+Code Before:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Code After:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
++        return isDefaultLibrary(lib);
++    }
++
++    private boolean isDefaultLibrary(ExternalLibrary lib) {
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Example 2:
+
+Refactoring Description: Extract Method private isRootFolder() : boolean extracted from private onBackPressed() : void in class net.osmand.plus.myplaces.tracks.dialogs.TrackFolderFragment
+
+Code Before:
+------------
+@@ -52,6 +52,11 @@ public String getFragmentTag() {
+ 		return TAG;
+ 	}
+ 
+ 	@Override
+ 	public void onCreate(@Nullable Bundle savedInstanceState) {
+ 		super.onCreate(savedInstanceState);
+@@ -104,18 +109,27 @@ public boolean onOptionsItemSelected(MenuItem item) {
+ 			FragmentActivity activity = getActivity();
+ 			if (activity != null) {
+ 				FragmentManager manager = activity.getSupportFragmentManager();
+-				SearchMyPlacesTracksFragment.showInstance(manager, getTargetFragment(), false, isUsedOnMap());
+ 				return true;
+ 			}
+ 		}
+ 		if (itemId == R.id.action_folder_menu) {
+-			FragmentActivity activity = getActivity();
+-			TrackFoldersHelper foldersHelper = getTrackFoldersHelper();
+-			if (foldersHelper != null && activity != null) {
+-				View view = activity.findViewById(R.id.action_folder_menu);
+-				foldersHelper.showFolderOptionsMenu(selectedFolder, view, this);
+-				return true;
+-			}
+ 		}
+ 		return false;
+ 	}
+@@ -127,23 +141,31 @@ public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflat
+ 		requireMyActivity().setToolbarVisibility(false);
+ 	}
+ 
+-	private void onBackPressed() {
+-		if (rootFolder.equals(selectedFolder)) {
+ 			dismiss();
+ 		} else {
+ 			selectedFolder = selectedFolder.getParentFolder();
+ 			updateContent();
+ 		}
+ 	}
+ 
+ 	@Override
+ 	public void updateContent() {
+ 		super.updateContent();
+ 
+ 		MyPlacesActivity activity = getMyActivity();
+ 		ActionBar actionBar = activity != null ? activity.getSupportActionBar() : null;
+ 		if (actionBar != null) {
+-			actionBar.setTitle(selectedFolder.getName(app));
+ 		}
+ 	}
+ 
+@@ -195,9 +217,14 @@ public void onTracksGroupLongClick(@NonNull View view, @NonNull TracksGroup grou
+ 	private void showTracksSelection(@Nullable TrackItem trackItem, @Nullable TracksGroup tracksGroup) {
+ 		TrackFoldersHelper foldersHelper = getTrackFoldersHelper();
+ 		if (foldersHelper != null) {
+-			Set<TrackItem> trackItems = trackItem != null ? Collections.singleton(trackItem) : null;
+-			Set<TracksGroup> tracksGroups = tracksGroup != null ? Collections.singleton(tracksGroup) : null;
+-			foldersHelper.showTracksSelection(selectedFolder, this, trackItems, tracksGroups);
+ 		}
+ 	}
+ 
+@@ -213,7 +240,7 @@ public void onTracksGroupSelected(@NonNull TracksGroup group, boolean selected)
+ 	public void restoreState(Bundle bundle) {
+ 		super.restoreState(bundle);
+ 
+-		if (!Algorithms.isEmpty(selectedItemPath)) {
+ 			TrackItem trackItem = geTrackItem(rootFolder, selectedItemPath);
+ 			if (trackItem != null) {
+ 				int index = adapter.getItemPosition(trackItem);
+
+Code After:
+------------
+@@ -52,6 +52,11 @@ public String getFragmentTag() {
+ 		return TAG;
+ 	}
+ 
++	@NonNull
++	protected TracksGroup getCurrentTrackGroup() {
++		return selectedFolder;
++	}
++
+ 	@Override
+ 	public void onCreate(@Nullable Bundle savedInstanceState) {
+ 		super.onCreate(savedInstanceState);
+@@ -104,18 +109,27 @@ public boolean onOptionsItemSelected(MenuItem item) {
+ 			FragmentActivity activity = getActivity();
+ 			if (activity != null) {
+ 				FragmentManager manager = activity.getSupportFragmentManager();
++				SearchMyPlacesTracksFragment.showInstance(manager,
++						getTargetFragment(),
++						false,
++						isUsedOnMap(),
++						null);
+ 				return true;
+ 			}
+ 		}
+ 		if (itemId == R.id.action_folder_menu) {
++			if (showFolderOptionMenu()) return true;
++		}
++		return false;
++	}
++
++	protected boolean showFolderOptionMenu() {
++		FragmentActivity activity = getActivity();
++		TrackFoldersHelper foldersHelper = getTrackFoldersHelper();
++		if (foldersHelper != null && activity != null) {
++			View view = activity.findViewById(R.id.action_folder_menu);
++			foldersHelper.showFolderOptionsMenu(selectedFolder, view, this, isRootFolder());
++			return true;
+ 		}
+ 		return false;
+ 	}
+@@ -127,23 +141,31 @@ public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflat
+ 		requireMyActivity().setToolbarVisibility(false);
+ 	}
+ 
++	protected void onBackPressed() {
++		if (isRootFolder()) {
+ 			dismiss();
++			updateTitle();
+ 		} else {
+ 			selectedFolder = selectedFolder.getParentFolder();
+ 			updateContent();
+ 		}
+ 	}
+ 
++	private boolean isRootFolder() {
++		return rootFolder.equals(selectedFolder);
++	}
++
+ 	@Override
+ 	public void updateContent() {
+ 		super.updateContent();
++		updateTitle();
++	}
+ 
++	private void updateTitle() {
+ 		MyPlacesActivity activity = getMyActivity();
+ 		ActionBar actionBar = activity != null ? activity.getSupportActionBar() : null;
+ 		if (actionBar != null) {
++			actionBar.setTitle(getCurrentTrackGroup().getName(app));
+ 		}
+ 	}
+ 
+@@ -195,9 +217,14 @@ public void onTracksGroupLongClick(@NonNull View view, @NonNull TracksGroup grou
+ 	private void showTracksSelection(@Nullable TrackItem trackItem, @Nullable TracksGroup tracksGroup) {
+ 		TrackFoldersHelper foldersHelper = getTrackFoldersHelper();
+ 		if (foldersHelper != null) {
++			if (selectedFolder != null && selectedFolder instanceof TrackFolder) {
++				Set<TrackItem> trackItems = trackItem != null ? Collections.singleton(trackItem) : null;
++				Set<TracksGroup> tracksGroups = tracksGroup != null ? Collections.singleton(tracksGroup) : null;
++				foldersHelper.showTracksSelection(selectedFolder, this, trackItems, tracksGroups);
++			} else if (smartFolder != null) {
++				Set<TrackItem> trackItems = trackItem != null ? Collections.singleton(trackItem) : null;
++				foldersHelper.showTracksSelection(smartFolder, this, trackItems, null);
++			}
+ 		}
+ 	}
+ 
+@@ -213,7 +240,7 @@ public void onTracksGroupSelected(@NonNull TracksGroup group, boolean selected)
+ 	public void restoreState(Bundle bundle) {
+ 		super.restoreState(bundle);
+ 
++		if (rootFolder != null && !Algorithms.isEmpty(selectedItemPath)) {
+ 			TrackItem trackItem = geTrackItem(rootFolder, selectedItemPath);
+ 			if (trackItem != null) {
+ 				int index = adapter.getItemPosition(trackItem);
+
+Example 3:
+
+Refactoring Description: Extract Method public closeStreams(self Process) : void extracted from public getText(self Process) : String in class org.codehaus.groovy.runtime.ProcessGroovyMethods
+
+Code Before:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
+-        try { self.getErrorStream().close(); } catch (IOException ignore) {}
+-        try { self.getInputStream().close(); } catch (IOException ignore) {}
+-        try { self.getOutputStream().close(); } catch (IOException ignore) {}
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+Code After:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
++        closeStreams(self);
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
++    /**
++     * Closes all the streams associated with the process (ignoring any IOExceptions).
++     *
++     * @param self a Process
++     * @since 2.1
++     */
++    public static void closeStreams(Process self) {
++        try { self.getErrorStream().close(); } catch (IOException ignore) {}
++        try { self.getInputStream().close(); } catch (IOException ignore) {}
++        try { self.getOutputStream().close(); } catch (IOException ignore) {}
++    }
++
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private void visitTagEliminateAllocation(Tag tagEliminateAllocation, IParseDictionary parseDictionary) {
+    List<Tag> childrenJVMS = tagEliminateAllocation.getNamedChildren(TAG_JVMS);
+    String typeID = tagEliminateAllocation.getAttributes().get(ATTR_TYPE);
+    String typeOrKlassName = null;
+    if (typeID != null) {
+        typeOrKlassName = ParseUtil.lookupType(typeID, parseDictionary);
+        if (typeOrKlassName != null) {
+            for (Tag tagJVMS : childrenJVMS) {
+                Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+                String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+                int bciValue = 0;
+                if (attrBCI != null) {
+                    try {
+                        bciValue = Integer.parseInt(attrBCI);
+                    } catch (NumberFormatException nfe) {
+                        logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                        continue;
+                    }
+                } else {
+                    logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+                }
+                String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+                BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+                //logger.info("method {} {} {}", methodID, parseDictionary.getParseMethod(), bciOpcodeMap.entrySet());
+                if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                    storeEliminatedAllocation(currentMember, bciValue, typeOrKlassName, bciOpcodeMap);
+                } else if (processAnnotationsForInlinedMethods) {
+                    IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                    if (inlinedMember != null) {
+                        storeEliminatedAllocation(inlinedMember, bciValue, typeOrKlassName, bciOpcodeMap);
+                    } else {
+                        unhandledTags.add(tagJVMS);
+                    }
+                }
+            }
+        } else {
+            logger.error("Unknown type attribute {} on tag {}", typeID, tagEliminateAllocation.toString(true));
+        }
+    } else {
+        logger.error("Missing type attribute on tag {}", tagEliminateAllocation.toString(true));
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

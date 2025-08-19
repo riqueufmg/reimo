@@ -1,0 +1,337 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public getResourceAsStream(name String) : InputStream extracted from public getGroovyScriptEngine() : GroovyScriptEngine in class com.haulmont.cuba.core.global.ScriptingProvider
+
+Code Before:
+------------
+@@ -14,6 +14,9 @@
+ import groovy.util.ResourceException;
+ import groovy.util.ScriptException;
+ import groovy.lang.Binding;
+ 
+ public abstract class ScriptingProvider {
+ 
+@@ -42,15 +45,17 @@ private static ScriptingProvider getInstance() {
+         return instance;
+     }
+ 
+-    public static GroovyScriptEngine getGroovyScriptEngine() {
+-        return getInstance().__getGroovyScriptEngine();
+-    }
+-
+     public static void runGroovyScript(String name, Binding binding) {
+         getInstance().__runGroovyScript(name, binding);
+     }
+ 
+-    protected abstract GroovyScriptEngine __getGroovyScriptEngine();
+ 
+     protected void __runGroovyScript(String name, Binding binding) {
+         try {
+@@ -61,4 +66,20 @@ protected void __runGroovyScript(String name, Binding binding) {
+             throw new RuntimeException(e);
+         }
+     }
+ }
+
+Code After:
+------------
+@@ -14,6 +14,9 @@
+ import groovy.util.ResourceException;
+ import groovy.util.ScriptException;
+ import groovy.lang.Binding;
++import groovy.lang.GroovyClassLoader;
++
++import java.io.InputStream;
+ 
+ public abstract class ScriptingProvider {
+ 
+@@ -42,15 +45,17 @@ private static ScriptingProvider getInstance() {
+         return instance;
+     }
+ 
+     public static void runGroovyScript(String name, Binding binding) {
+         getInstance().__runGroovyScript(name, binding);
+     }
+ 
++    public static Class loadGroovyClass(String name) {
++        return getInstance().__loadGroovyClass(name);
++    }
++
++    public static InputStream getResourceAsStream(String name) {
++        return getInstance().__getResourceAsStream(name);
++    }
+ 
+     protected void __runGroovyScript(String name, Binding binding) {
+         try {
+@@ -61,4 +66,20 @@ protected void __runGroovyScript(String name, Binding binding) {
+             throw new RuntimeException(e);
+         }
+     }
++
++    private Class __loadGroovyClass(String name) {
++        try {
++            return __getGroovyClassLoader().loadClass(name, true, false);
++        } catch (ClassNotFoundException e) {
++            return null;
++        }
++    }
++
++    private InputStream __getResourceAsStream(String name) {
++        return __getGroovyClassLoader().getResourceAsStream(name);
++    }
++
++    protected abstract GroovyScriptEngine __getGroovyScriptEngine();
++
++    protected abstract GroovyClassLoader __getGroovyClassLoader();
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method public visitPhysicalJoin(node PhysicalJoinOperator, context ExpressionContext) : PhysicalPropertySet extracted from public visitPhysicalHashJoin(node PhysicalHashJoinOperator, context ExpressionContext) : PhysicalPropertySet in class com.starrocks.sql.optimizer.OutputPropertyDeriver
+
+Code Before:
+------------
+@@ -25,7 +25,9 @@
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalFilterOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashAggregateOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalLimitOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalNoCTEOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalProjectOperator;
+@@ -105,7 +107,7 @@ private PhysicalPropertySet computeColocateJoinOutputProperty(HashDistributionSp
+     }
+ 
+     // compute the distribution property info, just compute the nullable columns now
+-    private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHashJoinOperator node,
+                                                                         PhysicalPropertySet physicalPropertySet,
+                                                                         List<Integer> leftOnPredicateColumns,
+                                                                         List<Integer> rightOnPredicateColumns,
+@@ -137,6 +139,15 @@ private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHash
+ 
+     @Override
+     public PhysicalPropertySet visitPhysicalHashJoin(PhysicalHashJoinOperator node, ExpressionContext context) {
+         Preconditions.checkState(childrenOutputProperties.size() == 2);
+         PhysicalPropertySet leftChildOutputProperty = childrenOutputProperties.get(0);
+         PhysicalPropertySet rightChildOutputProperty = childrenOutputProperties.get(1);
+
+Code After:
+------------
+@@ -25,7 +25,9 @@
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalFilterOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashAggregateOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashJoinOperator;
++import com.starrocks.sql.optimizer.operator.physical.PhysicalJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalLimitOperator;
++import com.starrocks.sql.optimizer.operator.physical.PhysicalMergeJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalNoCTEOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalProjectOperator;
+@@ -105,7 +107,7 @@ private PhysicalPropertySet computeColocateJoinOutputProperty(HashDistributionSp
+     }
+ 
+     // compute the distribution property info, just compute the nullable columns now
++    private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalJoinOperator node,
+                                                                         PhysicalPropertySet physicalPropertySet,
+                                                                         List<Integer> leftOnPredicateColumns,
+                                                                         List<Integer> rightOnPredicateColumns,
+@@ -137,6 +139,15 @@ private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHash
+ 
+     @Override
+     public PhysicalPropertySet visitPhysicalHashJoin(PhysicalHashJoinOperator node, ExpressionContext context) {
++        return visitPhysicalJoin(node, context);
++    }
++
++    @Override
++    public PhysicalPropertySet visitPhysicalMergeJoin(PhysicalMergeJoinOperator node, ExpressionContext context) {
++        return visitPhysicalJoin(node, context);
++    }
++
++    public PhysicalPropertySet visitPhysicalJoin(PhysicalJoinOperator node, ExpressionContext context) {
+         Preconditions.checkState(childrenOutputProperties.size() == 2);
+         PhysicalPropertySet leftChildOutputProperty = childrenOutputProperties.get(0);
+         PhysicalPropertySet rightChildOutputProperty = childrenOutputProperties.get(1);
+
+Example 3:
+
+Refactoring Description: Extract Method private idRangeIndex(id long) : long extracted from private prepareRange(id long, addition boolean) : void in class org.neo4j.internal.id.indexed.IdRangeMarker
+
+Code Before:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
+-        key.setIdRangeIdx( id / idsPerEntry );
+         value.clear( generation, addition );
+     }
+ 
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
+-                    prepareRange( bridgeId, true );
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
+-                    writer.merge( key, value, merger );
+                 }
+             }
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+Code After:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
++        key.setIdRangeIdx( idRangeIndex( id ) );
+         value.clear( generation, addition );
+     }
+ 
++    private long idRangeIndex( long id )
++    {
++        return id / idsPerEntry;
++    }
++
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
++            key.setIdRangeIdx( -1 );
++            boolean dirty = false;
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
++                    if ( idRangeIndex( bridgeId ) != key.getIdRangeIdx() )
++                    {
++                        if ( key.getIdRangeIdx() != -1 )
++                        {
++                            writer.merge( key, value, merger );
++                        }
++                        prepareRange( bridgeId, true );
++                    }
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
++                    dirty = true;
+                 }
+             }
++
++            if ( dirty )
++            {
++                writer.merge( key, value, merger );
++            }
++
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ *     Run a depth-first filtered traversal of the root and all of its descendants.
+ *     @param filter NodeFilter visitor.
+ *     @param root the root node point to traverse.
+ *     @return The filter result of the root node, or {@link FilterResult#STOP}.
+ *
+ *     @see NodeFilter
+ */
+public static FilterResult filter(NodeFilter filter, Node root) {
+    Node node = root;
+    int depth = 0;
+    while (node != null) {
+        FilterResult result = filter.head(node, depth);
+        if (result == FilterResult.STOP)
+            return result;
+        // Descend into child nodes:
+        if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+            node = node.childNode(0);
+            ++depth;
+            continue;
+        }
+        // No siblings, move upwards:
+        while (true) {
+            // depth > 0, so has parent
+            assert node != null;
+            if (!(node.nextSibling() == null && depth > 0))
+                break;
+            // 'tail' current node:
+            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+                result = filter.tail(node, depth);
+                if (result == FilterResult.STOP)
+                    return result;
+            }
+            // In case we need to remove it below.
+            Node prev = node;
+            node = node.parentNode();
+            depth--;
+            if (result == FilterResult.REMOVE)
+                // Remove AFTER finding parent.
+                prev.remove();
+            // Parent was not pruned.
+            result = FilterResult.CONTINUE;
+        }
+        // 'tail' current node, then proceed with siblings:
+        if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+            result = filter.tail(node, depth);
+            if (result == FilterResult.STOP)
+                return result;
+        }
+        if (node == root)
+            return result;
+        // In case we need to remove it below.
+        Node prev = node;
+        node = node.nextSibling();
+        if (result == FilterResult.REMOVE)
+            // Remove AFTER finding sibling.
+            prev.remove();
+    }
+    // root == null?
+    return FilterResult.CONTINUE;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

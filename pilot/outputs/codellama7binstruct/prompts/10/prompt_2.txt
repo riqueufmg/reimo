@@ -1,0 +1,370 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public createInstanceManager() : InstanceManager extracted from protected startInternal() : void in class org.apache.catalina.core.StandardContext
+
+Code Before:
+------------
+@@ -5109,14 +5109,7 @@ public String mutate(String inputCredentials) {
+ 
+             if (ok ) {
+                 if (getInstanceManager() == null) {
+-                    javax.naming.Context context = null;
+-                    if (isUseNaming() && getNamingContextListener() != null) {
+-                        context = getNamingContextListener().getEnvContext();
+-                    }
+-                    Map<String, Map<String, String>> injectionMap = buildInjectionMap(
+-                            getIgnoreAnnotations() ? new NamingResourcesImpl(): getNamingResources());
+-                    setInstanceManager(new DefaultInstanceManager(context,
+-                            injectionMap, this, this.getClass().getClassLoader()));
+                 }
+                 getServletContext().setAttribute(
+                         InstanceManager.class.getName(), getInstanceManager());
+@@ -5248,6 +5241,18 @@ private void setClassLoaderProperty(String name, boolean value) {
+         }
+     }
+ 
+     private Map<String, Map<String, String>> buildInjectionMap(NamingResourcesImpl namingResources) {
+         Map<String, Map<String, String>> injectionMap = new HashMap<>();
+         for (Injectable resource: namingResources.findLocalEjbs()) {
+
+Code After:
+------------
+@@ -5109,14 +5109,7 @@ public String mutate(String inputCredentials) {
+ 
+             if (ok ) {
+                 if (getInstanceManager() == null) {
++                    setInstanceManager(createInstanceManager());
+                 }
+                 getServletContext().setAttribute(
+                         InstanceManager.class.getName(), getInstanceManager());
+@@ -5248,6 +5241,18 @@ private void setClassLoaderProperty(String name, boolean value) {
+         }
+     }
+ 
++    @Override
++    public InstanceManager createInstanceManager() {
++        javax.naming.Context context = null;
++        if (isUseNaming() && getNamingContextListener() != null) {
++            context = getNamingContextListener().getEnvContext();
++        }
++        Map<String, Map<String, String>> injectionMap = buildInjectionMap(
++                getIgnoreAnnotations() ? new NamingResourcesImpl(): getNamingResources());
++       return new DefaultInstanceManager(context, injectionMap,
++               this, this.getClass().getClassLoader());
++    }
++
+     private Map<String, Map<String, String>> buildInjectionMap(NamingResourcesImpl namingResources) {
+         Map<String, Map<String, String>> injectionMap = new HashMap<>();
+         for (Injectable resource: namingResources.findLocalEjbs()) {
+
+Example 2:
+
+Refactoring Description: Extract Method public bpartnerIdIfNotNull(bpartnerId BPartnerId) : FactLineBuilder extracted from public setC_BPartner_ID_IfValid(bpartnerId int) : FactLineBuilder in class org.compiere.acct.Fact.FactLineBuilder
+
+Code Before:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
+ import org.slf4j.Logger;
+ 
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
+-		public FactLineBuilder setAccount(MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
+-		public FactLineBuilder setC_BPartner_ID(Integer bpartnerIdInt)
+ 		{
+-			final BPartnerId bpartnerId = bpartnerIdInt != null ? BPartnerId.ofRepoIdOrNull(bpartnerIdInt) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
+-		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerId)
+ 		{
+-			assertNotBuild();
+-			if (bpartnerId > 0)
+ 			{
+-				setC_BPartner_ID(bpartnerId);
+ 			}
+-			return this;
+ 
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+Code After:
+------------
+@@ -31,21 +31,25 @@
+ import org.compiere.model.I_C_ElementValue;
+ import org.compiere.model.MAccount;
+ import org.compiere.model.MFactAcct;
++import org.compiere.util.Env;
+ import org.slf4j.Logger;
+ 
++import de.metas.acct.api.AccountId;
+ import de.metas.acct.api.AcctSchema;
+ import de.metas.acct.api.AcctSchemaElement;
+ import de.metas.acct.api.AcctSchemaElementType;
+ import de.metas.acct.api.AcctSchemaElementsMap;
+ import de.metas.acct.api.AcctSchemaGeneralLedger;
+ import de.metas.acct.api.AcctSchemaId;
++import de.metas.acct.api.IAccountDAO;
+ import de.metas.bpartner.BPartnerId;
+ import de.metas.currency.ICurrencyConversionContext;
+ import de.metas.logging.LogManager;
+ import de.metas.money.CurrencyId;
+ import de.metas.product.acct.api.ActivityId;
+ import de.metas.quantity.Quantity;
+ import de.metas.util.Check;
++import de.metas.util.Services;
+ import lombok.NonNull;
+ import lombok.ToString;
+ 
+@@ -1109,7 +1113,13 @@ private final void markAsBuilt()
+ 			built = true;
+ 		}
+ 
++		public FactLineBuilder setAccount(@NonNull final AccountId accountId)
++		{
++			final IAccountDAO accountsRepo = Services.get(IAccountDAO.class);
++			return setAccount(accountsRepo.getById(Env.getCtx(), accountId));
++		}
++
++		public FactLineBuilder setAccount(final MAccount account)
+ 		{
+ 			assertNotBuild();
+ 			this.account = account;
+@@ -1318,9 +1328,9 @@ private OrgId getOrgId()
+ 		}
+ 
+ 		@Deprecated
++		public FactLineBuilder setC_BPartner_ID(Integer bpartnerRepoId)
+ 		{
++			final BPartnerId bpartnerId = bpartnerRepoId != null ? BPartnerId.ofRepoIdOrNull(bpartnerRepoId) : null;
+ 			return bpartnerId(bpartnerId);
+ 		}
+ 
+@@ -1331,15 +1341,21 @@ public FactLineBuilder bpartnerId(final BPartnerId bpartnerId)
+ 			return this;
+ 		}
+ 
++		public FactLineBuilder bpartnerIdIfNotNull(final BPartnerId bpartnerId)
+ 		{
++			if (bpartnerId != null)
+ 			{
++				return bpartnerId(bpartnerId);
+ 			}
++			else
++			{
++				return this;
++			}
++		}
+ 
++		public FactLineBuilder setC_BPartner_ID_IfValid(final int bpartnerRepoId)
++		{
++			return bpartnerIdIfNotNull(BPartnerId.ofRepoIdOrNull(bpartnerRepoId));
+ 		}
+ 
+ 		private BPartnerId getBpartnerId()
+
+Example 3:
+
+Refactoring Description: Extract Method public sendMessageAsync(server RaftPeerId, message Message, timeoutMs long) : CompletableFuture<RaftClientReply> extracted from public sendMessageAsync(server RaftPeerId, message Message) : CompletableFuture<RaftClientReply> in class alluxio.master.journal.raft.RaftJournalSystem
+
+Code Before:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
+-    long timeoutMs =
+-        Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT);
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
+-    RaftClient client = createClient();
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Code After:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
++    return createClient(Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  private RaftClient createClient(long timeoutMs) {
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
++    return sendMessageAsync(server, message, Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  /**
++   * Sends a message to a raft server asynchronously.
++   *
++   * @param server the raft peer id of the target server
++   * @param message the message to send
++   * @param timeoutMs the message timeout in milliseconds
++   * @return a future to be completed with the client reply
++   */
++  public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
++      RaftPeerId server, Message message, long timeoutMs) {
++    RaftClient client = createClient(timeoutMs);
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private Object processSingle(Page page, String html, boolean isRaw) {
+    Object o = null;
+    try {
+        o = clazz.newInstance();
+        for (FieldExtractor fieldExtractor : fieldExtractors) {
+            if (fieldExtractor.isMulti()) {
+                List<String> value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().selectList(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().selectList(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().selectList(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().selectList(html);
+                }
+                if ((value == null || value.size() == 0) && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    List<Object> converted = convert(value, fieldExtractor.getObjectFormatter());
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            } else {
+                String value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().select(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().select(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().select(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().select(html);
+                }
+                if (value == null && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    Object converted = convert(value, fieldExtractor.getObjectFormatter());
+                    if (converted == null && fieldExtractor.isNotNull()) {
+                        return null;
+                    }
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            }
+        }
+        if (AfterExtractor.class.isAssignableFrom(clazz)) {
+            ((AfterExtractor) o).afterProcess(page);
+        }
+    } catch (InstantiationException e) {
+        logger.error("extract fail", e);
+    } catch (IllegalAccessException e) {
+        logger.error("extract fail", e);
+    } catch (InvocationTargetException e) {
+        logger.error("extract fail", e);
+    }
+    return o;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

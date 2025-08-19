@@ -1,0 +1,563 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private checkDelete(payload Object) : void extracted from public poll(requestMessage Message<?>) : Object in class org.springframework.integration.jpa.core.JpaExecutor
+
+Code Before:
+------------
+@@ -472,6 +472,7 @@ else if (this.namedQuery != null) {
+ 	 * Execute the JPA operation. Delegates to {@link JpaExecutor#poll(Message)}.
+ 	 * @return The object or null.
+ 	 */
+ 	public Object poll() {
+ 		return poll(null);
+ 	}
+@@ -485,6 +486,7 @@ public Object poll() {
+ 	 * @param requestMessage May be null.
+ 	 * @return The payload object, which may be null.
+ 	 */
+ 	public Object poll(@Nullable final Message<?> requestMessage) {
+ 		final Object payload;
+ 
+@@ -508,8 +510,8 @@ public Object poll(@Nullable final Message<?> requestMessage) {
+ 				if (this.firstResultExpression != null) {
+ 					firstResult = getFirstResult(requestMessage);
+ 				}
+-				ParameterSource parameterSource = determineParameterSource(requestMessage);
+-				result = doPoll(parameterSource, firstResult, maxNumberOfResults);
+ 			}
+ 
+ 			if (result.isEmpty()) {
+@@ -535,6 +537,11 @@ else if (requestMessage != null) {
+ 			}
+ 		}
+ 
+ 		if (payload != null && this.deleteAfterPoll) {
+ 			if (payload instanceof Iterable) {
+ 				if (this.deleteInBatch) {
+@@ -554,7 +561,6 @@ else if (requestMessage != null) {
+ 				this.jpaOperations.flush();
+ 			}
+ 		}
+-		return payload;
+ 	}
+ 
+ 	protected List<?> doPoll(ParameterSource jpaQLParameterSource, int firstResult, int maxNumberOfResults) {
+
+Code After:
+------------
+@@ -472,6 +472,7 @@ else if (this.namedQuery != null) {
+ 	 * Execute the JPA operation. Delegates to {@link JpaExecutor#poll(Message)}.
+ 	 * @return The object or null.
+ 	 */
++	@Nullable
+ 	public Object poll() {
+ 		return poll(null);
+ 	}
+@@ -485,6 +486,7 @@ public Object poll() {
+ 	 * @param requestMessage May be null.
+ 	 * @return The payload object, which may be null.
+ 	 */
++	@Nullable
+ 	public Object poll(@Nullable final Message<?> requestMessage) {
+ 		final Object payload;
+ 
+@@ -508,8 +510,8 @@ public Object poll(@Nullable final Message<?> requestMessage) {
+ 				if (this.firstResultExpression != null) {
+ 					firstResult = getFirstResult(requestMessage);
+ 				}
++				ParameterSource paramSource = determineParameterSource(requestMessage);
++				result = doPoll(paramSource, firstResult, maxNumberOfResults);
+ 			}
+ 
+ 			if (result.isEmpty()) {
+@@ -535,6 +537,11 @@ else if (requestMessage != null) {
+ 			}
+ 		}
+ 
++		checkDelete(payload);
++		return payload;
++	}
++
++	private void checkDelete(final Object payload) {
+ 		if (payload != null && this.deleteAfterPoll) {
+ 			if (payload instanceof Iterable) {
+ 				if (this.deleteInBatch) {
+@@ -554,7 +561,6 @@ else if (requestMessage != null) {
+ 				this.jpaOperations.flush();
+ 			}
+ 		}
+ 	}
+ 
+ 	protected List<?> doPoll(ParameterSource jpaQLParameterSource, int firstResult, int maxNumberOfResults) {
+
+Example 2:
+
+Refactoring Description: Extract Method protected queryWorkspace(columns String[], where String) : Cursor extracted from private loadWorkspaceEntries(screen long) : ArrayList<DbEntry> in class com.android.launcher3.model.GridSizeMigrationTask
+
+Code Before:
+------------
+@@ -7,6 +7,7 @@
+ import android.content.Intent;
+ import android.content.SharedPreferences;
+ import android.content.pm.PackageInfo;
+ import android.database.Cursor;
+ import android.graphics.Point;
+ import android.net.Uri;
+@@ -26,6 +27,7 @@
+ import com.android.launcher3.backup.nano.BackupProtos;
+ import com.android.launcher3.compat.AppWidgetManagerCompat;
+ import com.android.launcher3.compat.PackageInstallerCompat;
+ import com.android.launcher3.util.GridOccupancy;
+ import com.android.launcher3.util.LongArrayMap;
+ 
+@@ -66,9 +68,9 @@ public class GridSizeMigrationTask {
+ 
+     private final HashMap<String, Point> mWidgetMinSize = new HashMap<>();
+     private final ContentValues mTempValues = new ContentValues();
+-    private final ArrayList<Long> mEntryToRemove = new ArrayList<>();
+     private final ArrayList<ContentProviderOperation> mUpdateOperations = new ArrayList<>();
+-    private final ArrayList<DbEntry> mCarryOver = new ArrayList<>();
+     private final HashSet<String> mValidPackages;
+ 
+     private final int mSrcX, mSrcY;
+@@ -269,9 +271,10 @@ protected boolean migrateWorkspace() throws Exception {
+      *   3) If all those items from the above list can be placed on this screen, place them
+      *      (otherwise they are placed on a new screen).
+      */
+-    private void migrateScreen(long screenId) {
+         // If we are migrating the first screen, do not touch the first row.
+-        int startY = screenId == Workspace.FIRST_SCREEN_ID ? 1 : 0;
+ 
+         ArrayList<DbEntry> items = loadWorkspaceEntries(screenId);
+ 
+@@ -366,7 +369,7 @@ private void migrateScreen(long screenId) {
+     /**
+      * Updates an item in the DB.
+      */
+-    private void update(DbEntry item) {
+         mTempValues.clear();
+         item.addToContentValues(mTempValues);
+         mUpdateOperations.add(ContentProviderOperation
+@@ -677,8 +680,8 @@ private ArrayList<DbEntry> loadHotseatEntries() {
+     /**
+      * Loads entries for a particular screen id.
+      */
+-    private ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
+-        Cursor c =  mContext.getContentResolver().query(LauncherSettings.Favorites.CONTENT_URI,
+                 new String[]{
+                         Favorites._ID,                  // 0
+                         Favorites.ITEM_TYPE,            // 1
+@@ -690,7 +693,7 @@ private ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
+                         Favorites.APPWIDGET_PROVIDER,   // 7
+                         Favorites.APPWIDGET_ID},        // 8
+                 Favorites.CONTAINER + " = " + Favorites.CONTAINER_DESKTOP
+-                        + " AND " + Favorites.SCREEN + " = " + screen, null, null, null);
+ 
+         final int indexId = c.getColumnIndexOrThrow(Favorites._ID);
+         final int indexItemType = c.getColumnIndexOrThrow(Favorites.ITEM_TYPE);
+@@ -776,9 +779,9 @@ private ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
+      * @return the number of valid items in the folder.
+      */
+     private int getFolderItemsCount(long folderId) {
+-        Cursor c =  mContext.getContentResolver().query(LauncherSettings.Favorites.CONTENT_URI,
+                 new String[]{Favorites._ID, Favorites.INTENT},
+-                Favorites.CONTAINER + " = " + folderId, null, null, null);
+ 
+         int total = 0;
+         while (c.moveToNext()) {
+@@ -793,6 +796,11 @@ private int getFolderItemsCount(long folderId) {
+         return total;
+     }
+ 
+     /**
+      * Verifies if the intent should be restored.
+      */
+@@ -815,7 +823,7 @@ private void verifyPackage(String packageName) throws Exception {
+         }
+     }
+ 
+-    private static class DbEntry extends ItemInfo implements Comparable<DbEntry> {
+ 
+         public float weight;
+ 
+@@ -913,18 +921,7 @@ public static boolean migrateGridIfNeeded(Context context) {
+         try {
+             boolean dbChanged = false;
+ 
+-            // Initialize list of valid packages. This contain all the packages which are already on
+-            // the device and packages which are being installed. Any item which doesn't belong to
+-            // this set is removed.
+-            // Since the loader removes such items anyway, removing these items here doesn't cause
+-            // any extra data loss and gives us more free space on the grid for better migration.
+-            HashSet validPackages = new HashSet<>();
+-            for (PackageInfo info : context.getPackageManager().getInstalledPackages(0)) {
+-                validPackages.add(info.packageName);
+-            }
+-            validPackages.addAll(PackageInstallerCompat.getInstance(context)
+-                    .updateAndGetActiveSessionCache().keySet());
+-
+             // Hotseat
+             Point srcHotseatSize = parsePoint(prefs.getString(
+                     KEY_MIGRATION_SRC_HOTSEAT_SIZE, hotseatSizeString));
+@@ -1022,4 +1019,20 @@ public static boolean migrateGridIfNeeded(Context context) {
+                     .apply();
+         }
+     }
+ }
+
+Code After:
+------------
+@@ -7,6 +7,7 @@
+ import android.content.Intent;
+ import android.content.SharedPreferences;
+ import android.content.pm.PackageInfo;
++import android.content.pm.PackageManager;
+ import android.database.Cursor;
+ import android.graphics.Point;
+ import android.net.Uri;
+@@ -26,6 +27,7 @@
+ import com.android.launcher3.backup.nano.BackupProtos;
+ import com.android.launcher3.compat.AppWidgetManagerCompat;
+ import com.android.launcher3.compat.PackageInstallerCompat;
++import com.android.launcher3.config.FeatureFlags;
+ import com.android.launcher3.util.GridOccupancy;
+ import com.android.launcher3.util.LongArrayMap;
+ 
+@@ -66,9 +68,9 @@ public class GridSizeMigrationTask {
+ 
+     private final HashMap<String, Point> mWidgetMinSize = new HashMap<>();
+     private final ContentValues mTempValues = new ContentValues();
++    protected final ArrayList<Long> mEntryToRemove = new ArrayList<>();
+     private final ArrayList<ContentProviderOperation> mUpdateOperations = new ArrayList<>();
++    protected final ArrayList<DbEntry> mCarryOver = new ArrayList<>();
+     private final HashSet<String> mValidPackages;
+ 
+     private final int mSrcX, mSrcY;
+@@ -269,9 +271,10 @@ protected boolean migrateWorkspace() throws Exception {
+      *   3) If all those items from the above list can be placed on this screen, place them
+      *      (otherwise they are placed on a new screen).
+      */
++    protected void migrateScreen(long screenId) {
+         // If we are migrating the first screen, do not touch the first row.
++        int startY = (FeatureFlags.QSB_ON_FIRST_SCREEN && screenId == Workspace.FIRST_SCREEN_ID)
++                ? 1 : 0;
+ 
+         ArrayList<DbEntry> items = loadWorkspaceEntries(screenId);
+ 
+@@ -366,7 +369,7 @@ private void migrateScreen(long screenId) {
+     /**
+      * Updates an item in the DB.
+      */
++    protected void update(DbEntry item) {
+         mTempValues.clear();
+         item.addToContentValues(mTempValues);
+         mUpdateOperations.add(ContentProviderOperation
+@@ -677,8 +680,8 @@ private ArrayList<DbEntry> loadHotseatEntries() {
+     /**
+      * Loads entries for a particular screen id.
+      */
++    protected ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
++        Cursor c = queryWorkspace(
+                 new String[]{
+                         Favorites._ID,                  // 0
+                         Favorites.ITEM_TYPE,            // 1
+@@ -690,7 +693,7 @@ private ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
+                         Favorites.APPWIDGET_PROVIDER,   // 7
+                         Favorites.APPWIDGET_ID},        // 8
+                 Favorites.CONTAINER + " = " + Favorites.CONTAINER_DESKTOP
++                        + " AND " + Favorites.SCREEN + " = " + screen);
+ 
+         final int indexId = c.getColumnIndexOrThrow(Favorites._ID);
+         final int indexItemType = c.getColumnIndexOrThrow(Favorites.ITEM_TYPE);
+@@ -776,9 +779,9 @@ private ArrayList<DbEntry> loadWorkspaceEntries(long screen) {
+      * @return the number of valid items in the folder.
+      */
+     private int getFolderItemsCount(long folderId) {
++        Cursor c = queryWorkspace(
+                 new String[]{Favorites._ID, Favorites.INTENT},
++                Favorites.CONTAINER + " = " + folderId);
+ 
+         int total = 0;
+         while (c.moveToNext()) {
+@@ -793,6 +796,11 @@ private int getFolderItemsCount(long folderId) {
+         return total;
+     }
+ 
++    protected Cursor queryWorkspace(String[] columns, String where) {
++        return mContext.getContentResolver().query(LauncherSettings.Favorites.CONTENT_URI,
++                columns, where, null, null, null);
++    }
++
+     /**
+      * Verifies if the intent should be restored.
+      */
+@@ -815,7 +823,7 @@ private void verifyPackage(String packageName) throws Exception {
+         }
+     }
+ 
++    protected static class DbEntry extends ItemInfo implements Comparable<DbEntry> {
+ 
+         public float weight;
+ 
+@@ -913,18 +921,7 @@ public static boolean migrateGridIfNeeded(Context context) {
+         try {
+             boolean dbChanged = false;
+ 
++            HashSet validPackages = getValidPackages(context);
+             // Hotseat
+             Point srcHotseatSize = parsePoint(prefs.getString(
+                     KEY_MIGRATION_SRC_HOTSEAT_SIZE, hotseatSizeString));
+@@ -1022,4 +1019,20 @@ public static boolean migrateGridIfNeeded(Context context) {
+                     .apply();
+         }
+     }
++
++    protected static HashSet<String> getValidPackages(Context context) {
++        // Initialize list of valid packages. This contain all the packages which are already on
++        // the device and packages which are being installed. Any item which doesn't belong to
++        // this set is removed.
++        // Since the loader removes such items anyway, removing these items here doesn't cause
++        // any extra data loss and gives us more free space on the grid for better migration.
++        HashSet validPackages = new HashSet<>();
++        for (PackageInfo info : context.getPackageManager()
++                .getInstalledPackages(PackageManager.GET_UNINSTALLED_PACKAGES)) {
++            validPackages.add(info.packageName);
++        }
++        validPackages.addAll(PackageInstallerCompat.getInstance(context)
++                .updateAndGetActiveSessionCache().keySet());
++        return validPackages;
++    }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method private maybeAddConstJSDoc(srcDeclaration Node, srcParent Node, srcName Node, destDeclaration Node) : void extracted from private varify() : void in class com.google.javascript.jscomp.Es6RewriteBlockScopedDeclaration
+
+Code Before:
+------------
+@@ -156,39 +156,48 @@ public boolean apply(Node n) {
+     }
+   };
+ 
+   private void varify() {
+     if (!letConsts.isEmpty()) {
+       for (Node n : letConsts) {
+         if (n.isConst()) {
+-          // Normalize declarations like "const x = 1, y = 2;" so that inline
+-          // type annotations are preserved.
+-          Node insertPoint = n;
+-          for (Node child : n.children()) {
+-            Node declaration = IR.var(child.detachFromParent());
+-            declaration.useSourceInfoFrom(n);
+-            JSDocInfo existingInfo = n.getJSDocInfo();
+-            if (existingInfo == null) {
+-              existingInfo = child.getJSDocInfo();
+-              child.setJSDocInfo(null);
+-            }
+-
+-            if (NodeUtil.isForIn(n.getParent()) && n == n.getParent().getFirstChild()) {
+-              // Don't add @const for the left side of a for/in. If we do we get warnings
+-              // from the NTI.
+-              declaration.setJSDocInfo(existingInfo);
+-            } else {
+-              JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
+-              builder.recordConstancy();
+-              JSDocInfo info = builder.build();
+-              declaration.setJSDocInfo(info);
+-            }
+-            n.getParent().addChildAfter(declaration, insertPoint);
+-            insertPoint = declaration;
+-          }
+-          n.detachFromParent();
+-        } else {
+-          n.setType(Token.VAR);
+         }
+       }
+       compiler.reportCodeChange();
+     }
+@@ -368,33 +377,16 @@ private void transformLoopClosure() {
+               if (NodeUtil.isNameDeclaration(reference.getParent())) {
+                 Node declaration = reference.getParent();
+                 Node grandParent = declaration.getParent();
+-                // Normalize: "let i = 0, j = 0;" becomes "let i = 0; let j = 0;"
+-                while (declaration.getChildCount() > 1) {
+-                  Node name = declaration.getLastChild();
+-                  grandParent.addChildAfter(
+-                      IR.declaration(
+-                          name.detachFromParent(), declaration.getType())
+-                          .useSourceInfoIfMissingFromForTree(declaration),
+-                      declaration);
+-                }
+-
+                 declaration = reference.getParent(); // Might have changed after normalization.
+                 // Change declaration to assignment, or just drop it if there's
+                 // no initial value.
+                 if (reference.hasChildren()) {
+-                  JSDocInfo existingInfo = declaration.getJSDocInfo();
+-                  if (existingInfo == null) {
+-                    existingInfo = reference.getJSDocInfo();
+-                    reference.setJSDocInfo(null);
+-                  }
+-                  JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
+-                  if (declaration.isConst()) {
+-                    builder.recordConstancy();
+-                  }
+-
+                   Node newReference = reference.cloneNode();
+                   Node assign = IR.assign(newReference, reference.removeFirstChild());
+-                  assign.setJSDocInfo(builder.build());
+ 
+                   Node replacement = IR.exprResult(assign)
+                       .useSourceInfoIfMissingFromForTree(declaration);
+
+Code After:
+------------
+@@ -156,39 +156,48 @@ public boolean apply(Node n) {
+     }
+   };
+ 
++  private static void extractInlineJSDoc(Node srcDeclaration, Node srcName, Node destDeclaration) {
++    JSDocInfo existingInfo = srcDeclaration.getJSDocInfo();
++    if (existingInfo == null) {
++      // Extract inline JSDoc from "src" and add it to the "dest" node.
++      existingInfo = srcName.getJSDocInfo();
++      srcName.setJSDocInfo(null);
++    }
++    JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(existingInfo);
++    destDeclaration.setJSDocInfo(builder.build());
++  }
++
++  private static void maybeAddConstJSDoc(Node srcDeclaration, Node srcParent, Node srcName,
++      Node destDeclaration) {
++    if (srcDeclaration.isConst()
++        // Don't add @const for the left side of a for/in. If we do we get warnings from the NTI.
++        && !(NodeUtil.isForIn(srcParent) && srcDeclaration == srcParent.getFirstChild())) {
++      extractInlineJSDoc(srcDeclaration, srcName, destDeclaration);
++      JSDocInfoBuilder builder = JSDocInfoBuilder.maybeCopyFrom(destDeclaration.getJSDocInfo());
++      builder.recordConstancy();
++      destDeclaration.setJSDocInfo(builder.build());
++    }
++  }
++
++  private static void handleDeclarationList(Node declarationList, Node parent) {
++    // Normalize: "const i = 0, j = 0;" becomes "/** @const */ var i = 0; /** @const */ var j = 0;"
++    while (declarationList.hasMoreThanOneChild()) {
++      Node name = declarationList.getLastChild();
++      Node newDeclaration = IR.var(name.detachFromParent()).useSourceInfoFrom(declarationList);
++      maybeAddConstJSDoc(declarationList, parent, name, newDeclaration);
++      parent.addChildAfter(newDeclaration, declarationList);
++    }
++    maybeAddConstJSDoc(declarationList, parent, declarationList.getFirstChild(), declarationList);
++    declarationList.setType(Token.VAR);
++  }
++
+   private void varify() {
+     if (!letConsts.isEmpty()) {
+       for (Node n : letConsts) {
+         if (n.isConst()) {
++          handleDeclarationList(n, n.getParent());
+         }
++        n.setType(Token.VAR);
+       }
+       compiler.reportCodeChange();
+     }
+@@ -368,33 +377,16 @@ private void transformLoopClosure() {
+               if (NodeUtil.isNameDeclaration(reference.getParent())) {
+                 Node declaration = reference.getParent();
+                 Node grandParent = declaration.getParent();
++                handleDeclarationList(declaration, grandParent);
+                 declaration = reference.getParent(); // Might have changed after normalization.
+                 // Change declaration to assignment, or just drop it if there's
+                 // no initial value.
+                 if (reference.hasChildren()) {
+                   Node newReference = reference.cloneNode();
+                   Node assign = IR.assign(newReference, reference.removeFirstChild());
++                  extractInlineJSDoc(declaration, reference, declaration);
++                  maybeAddConstJSDoc(declaration, grandParent, reference, declaration);
++                  assign.setJSDocInfo(declaration.getJSDocInfo());
+ 
+                   Node replacement = IR.exprResult(assign)
+                       .useSourceInfoIfMissingFromForTree(declaration);
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Ensures a meta charset (html) or xml declaration (xml) with the current
+ * encoding used. This only applies with
+ * {@link #updateMetaCharsetElement(boolean) updateMetaCharset} set to
+ * <tt>true</tt>, otherwise this method does nothing.
+ *
+ * <ul>
+ * <li>An existing element gets updated with the current charset</li>
+ * <li>If there's no element yet it will be inserted</li>
+ * <li>Obsolete elements are removed</li>
+ * </ul>
+ *
+ * <p><b>Elements used:</b></p>
+ *
+ * <ul>
+ * <li><b>Html:</b> <i>&lt;meta charset="CHARSET"&gt;</i></li>
+ * <li><b>Xml:</b> <i>&lt;?xml version="1.0" encoding="CHARSET"&gt;</i></li>
+ * </ul>
+ */
+private void ensureMetaCharsetElement() {
+    if (updateMetaCharset) {
+        OutputSettings.Syntax syntax = outputSettings().syntax();
+        if (syntax == OutputSettings.Syntax.html) {
+            Element metaCharset = selectFirst("meta[charset]");
+            if (metaCharset != null) {
+                metaCharset.attr("charset", charset().displayName());
+            } else {
+                head().appendElement("meta").attr("charset", charset().displayName());
+            }
+            // Remove obsolete elements
+            select("meta[name=charset]").remove();
+        } else if (syntax == OutputSettings.Syntax.xml) {
+            Node node = ensureChildNodes().get(0);
+            if (node instanceof XmlDeclaration) {
+                XmlDeclaration decl = (XmlDeclaration) node;
+                if (decl.name().equals("xml")) {
+                    decl.attr("encoding", charset().displayName());
+                    if (decl.hasAttr("version"))
+                        decl.attr("version", "1.0");
+                } else {
+                    decl = new XmlDeclaration("xml", false);
+                    decl.attr("version", "1.0");
+                    decl.attr("encoding", charset().displayName());
+                    prependChild(decl);
+                }
+            } else {
+                XmlDeclaration decl = new XmlDeclaration("xml", false);
+                decl.attr("version", "1.0");
+                decl.attr("encoding", charset().displayName());
+                prependChild(decl);
+            }
+        }
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

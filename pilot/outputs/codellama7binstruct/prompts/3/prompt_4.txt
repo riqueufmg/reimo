@@ -1,0 +1,347 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private doPassivate(key Object, entry InternalCacheEntry) : boolean extracted from public passivate(entry InternalCacheEntry) : void in class org.infinispan.eviction.impl.PassivationManagerImpl
+
+Code Before:
+------------
+@@ -3,6 +3,7 @@
+ import static org.infinispan.commons.util.Util.toStr;
+ import static org.infinispan.persistence.manager.PersistenceManager.AccessMode.BOTH;
+ 
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+@@ -20,10 +21,12 @@
+ import org.infinispan.factories.annotations.Inject;
+ import org.infinispan.factories.annotations.Start;
+ import org.infinispan.notifications.cachelistener.CacheNotifier;
+ import org.infinispan.persistence.manager.PersistenceManager;
+ import org.infinispan.persistence.spi.MarshallableEntry;
+ import org.infinispan.persistence.spi.MarshallableEntryFactory;
+ import org.infinispan.persistence.spi.PersistenceException;
+ import org.infinispan.util.logging.Log;
+ import org.infinispan.util.logging.LogFactory;
+ 
+@@ -64,25 +67,38 @@ private boolean isL1Key(Object key) {
+       return distributionManager != null && !distributionManager.getCacheTopology().isWriteOwner(key);
+    }
+ 
+    @Override
+-   public void passivate(InternalCacheEntry entry) {
+       Object key;
+       if (enabled && entry != null && !isL1Key(key = entry.getKey())) {
+-         // notify listeners that this entry is about to be passivated
+-         notifier.notifyCacheEntryPassivated(key, entry.getValue(), true,
+-               ImmutableContext.INSTANCE, null);
+-         if (trace) log.tracef("Passivating entry %s", toStr(key));
+-         try {
+-            MarshallableEntry marshalledEntry = marshalledEntryFactory.create(key, entry.getValue(), entry.getMetadata(),
+-                  entry.getExpiryTime(), entry.getLastUsed());
+-            persistenceManager.writeToAllNonTxStores(marshalledEntry, keyPartitioner.getSegment(key), BOTH);
+-            if (statsEnabled) passivations.getAndIncrement();
+-         } catch (CacheException e) {
+-            log.unableToPassivateEntry(key, e);
+          }
+-         notifier.notifyCacheEntryPassivated(key, null, false,
+-               ImmutableContext.INSTANCE, null);
+       }
+    }
+ 
+    @Override
+
+Code After:
+------------
+@@ -3,6 +3,7 @@
+ import static org.infinispan.commons.util.Util.toStr;
+ import static org.infinispan.persistence.manager.PersistenceManager.AccessMode.BOTH;
+ 
++import java.util.concurrent.CompletionStage;
+ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+@@ -20,10 +21,12 @@
+ import org.infinispan.factories.annotations.Inject;
+ import org.infinispan.factories.annotations.Start;
+ import org.infinispan.notifications.cachelistener.CacheNotifier;
++import org.infinispan.notifications.cachelistener.annotation.CacheEntryPassivated;
+ import org.infinispan.persistence.manager.PersistenceManager;
+ import org.infinispan.persistence.spi.MarshallableEntry;
+ import org.infinispan.persistence.spi.MarshallableEntryFactory;
+ import org.infinispan.persistence.spi.PersistenceException;
++import org.infinispan.util.concurrent.CompletableFutures;
+ import org.infinispan.util.logging.Log;
+ import org.infinispan.util.logging.LogFactory;
+ 
+@@ -64,25 +67,38 @@ private boolean isL1Key(Object key) {
+       return distributionManager != null && !distributionManager.getCacheTopology().isWriteOwner(key);
+    }
+ 
++   private boolean doPassivate(Object key, InternalCacheEntry entry) {
++      if (trace) log.tracef("Passivating entry %s", toStr(key));
++      try {
++         MarshallableEntry marshalledEntry = marshalledEntryFactory.create(key, entry.getValue(), entry.getMetadata(),
++               entry.getExpiryTime(), entry.getLastUsed());
++         persistenceManager.writeToAllNonTxStores(marshalledEntry, keyPartitioner.getSegment(key), BOTH);
++         if (statsEnabled) passivations.getAndIncrement();
++      } catch (CacheException e) {
++         log.unableToPassivateEntry(key, e);
++         return false;
++      }
++      return true;
++   }
++
+    @Override
++   public CompletionStage<Void> passivateAsync(InternalCacheEntry entry) {
+       Object key;
+       if (enabled && entry != null && !isL1Key(key = entry.getKey())) {
++         if (notifier.hasListener(CacheEntryPassivated.class)) {
++            return notifier.notifyCacheEntryPassivated(key, entry.getValue(), true, ImmutableContext.INSTANCE, null)
++                  .thenCompose(v -> {
++                     if (doPassivate(key, entry)) {
++                        return notifier.notifyCacheEntryPassivated(key, null, false, ImmutableContext.INSTANCE, null);
++                     }
++                     return CompletableFutures.completedNull();
++                  });
++         } else {
++            // Ignore result
++            doPassivate(key, entry);
+          }
+       }
++      return CompletableFutures.completedNull();
+    }
+ 
+    @Override
+
+Example 2:
+
+Refactoring Description: Extract Method private getNetworkTrafficType(network Network) : TrafficType extracted from public createVpcAssociatePublicIPCommands(router VirtualRouter, ips List<? extends PublicIpAddress>, cmds Commands, vlanMacAddress Map<String,String>) : void in class com.cloud.network.router.CommandSetupHelper
+
+Code Before:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
+ import com.cloud.network.vpc.dao.VpcDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
+ }
+
+Code After:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
++import com.cloud.network.vpc.VpcGatewayVO;
+ import com.cloud.network.vpc.dao.VpcDao;
++import com.cloud.network.vpc.dao.VpcGatewayDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
++    private VpcGatewayDao _vpcGatewayDao;
++    @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
++
++    private TrafficType getNetworkTrafficType(Network network) {
++        final VpcGatewayVO gateway = _vpcGatewayDao.getVpcGatewayByNetworkId(network.getId());
++        if (gateway != null) {
++            s_logger.debug("network " + network.getId() + " (name: " + network.getName() + " ) is a vpc private gateway, set traffic type to Public");
++            return TrafficType.Public;
++        } else {
++            return network.getTrafficType();
++        }
++    }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method public CreateAnalyzeJobStmt(tbl TableName, columnNames List<String>, isSample boolean, properties Map<String,String>, pos NodePosition) extracted from public CreateAnalyzeJobStmt(tbl TableName, columnNames List<String>, isSample boolean, properties Map<String,String>) in class com.starrocks.sql.ast.CreateAnalyzeJobStmt
+
+Code Before:
+------------
+@@ -17,6 +17,7 @@
+ 
+ import com.google.common.collect.Lists;
+ import com.starrocks.analysis.TableName;
+ import com.starrocks.statistic.StatsConstants;
+ 
+ import java.util.List;
+@@ -31,15 +32,20 @@ public class CreateAnalyzeJobStmt extends DdlStmt {
+     private Map<String, String> properties;
+ 
+     public CreateAnalyzeJobStmt(boolean isSample, Map<String, String> properties) {
+-        this(null, Lists.newArrayList(), isSample, properties);
+     }
+ 
+     public CreateAnalyzeJobStmt(String db, boolean isSample, Map<String, String> properties) {
+-        this(new TableName(db, null), Lists.newArrayList(), isSample, properties);
+     }
+ 
+     public CreateAnalyzeJobStmt(TableName tbl, List<String> columnNames, boolean isSample,
+                                 Map<String, String> properties) {
+         this.tbl = tbl;
+         this.dbId = StatsConstants.DEFAULT_ALL_ID;
+         this.tableId = StatsConstants.DEFAULT_ALL_ID;
+
+Code After:
+------------
+@@ -17,6 +17,7 @@
+ 
+ import com.google.common.collect.Lists;
+ import com.starrocks.analysis.TableName;
++import com.starrocks.sql.parser.NodePosition;
+ import com.starrocks.statistic.StatsConstants;
+ 
+ import java.util.List;
+@@ -31,15 +32,20 @@ public class CreateAnalyzeJobStmt extends DdlStmt {
+     private Map<String, String> properties;
+ 
+     public CreateAnalyzeJobStmt(boolean isSample, Map<String, String> properties) {
++        this(null, Lists.newArrayList(), isSample, properties, NodePosition.ZERO);
+     }
+ 
+     public CreateAnalyzeJobStmt(String db, boolean isSample, Map<String, String> properties) {
++        this(new TableName(db, null), Lists.newArrayList(), isSample, properties, NodePosition.ZERO);
+     }
+ 
+     public CreateAnalyzeJobStmt(TableName tbl, List<String> columnNames, boolean isSample,
+                                 Map<String, String> properties) {
++        this(tbl, columnNames, isSample, properties, NodePosition.ZERO);
++    }
++    public CreateAnalyzeJobStmt(TableName tbl, List<String> columnNames, boolean isSample,
++                                Map<String, String> properties, NodePosition pos) {
++        super(pos);
+         this.tbl = tbl;
+         this.dbId = StatsConstants.DEFAULT_ALL_ID;
+         this.tableId = StatsConstants.DEFAULT_ALL_ID;
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Helper function for applyMaskPenaltyRule1. We need this for doing this calculation in both
+ * vertical and horizontal orders respectively.
+ */
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

@@ -1,0 +1,248 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private attachClones() : void extracted from package attach() : void in class org.freeplane.features.map.NodeModel
+
+Code Before:
+------------
+@@ -509,19 +509,27 @@ else if(parent != null && parent.isAttached() &&  (newParent == null || !newPare
+ 	}
+ 
+ 	void attach() {
+-		for(Clones clonesGroup : clones)
+-			clonesGroup.attach();
+ 	    for(NodeModel child : children)
+ 	    	child.attach();
+     }
+ 
+-	private void detach() {
+ 		for(Clones clonesGroup : clones)
+-			clonesGroup.detach(this);
+ 	    for(NodeModel child : children)
+ 	    	child.detach();
+     }
+ 
+ 
+ 	boolean isAttached() {
+ 	    return clones[0].size() != 0;
+@@ -689,4 +697,20 @@ public int getIndex() {
+ 		final NodeModel parentNode = getParentNode();
+ 		return parentNode != null ? parentNode.getIndex(this) : -1;
+ 	}
+ }
+
+Code After:
+------------
+@@ -509,19 +509,27 @@ else if(parent != null && parent.isAttached() &&  (newParent == null || !newPare
+ 	}
+ 
+ 	void attach() {
++		attachClones();
+ 	    for(NodeModel child : children)
+ 	    	child.attach();
+     }
+ 
++	private void attachClones() {
+ 		for(Clones clonesGroup : clones)
++			clonesGroup.attach();
++	}
++
++	private void detach() {
++		detachClones();
+ 	    for(NodeModel child : children)
+ 	    	child.detach();
+     }
+ 
++	private void detachClones() {
++		for(Clones clonesGroup : clones)
++			clonesGroup.detach(this);
++	}
++
+ 
+ 	boolean isAttached() {
+ 	    return clones[0].size() != 0;
+@@ -689,4 +697,20 @@ public int getIndex() {
+ 		final NodeModel parentNode = getParentNode();
+ 		return parentNode != null ? parentNode.getIndex(this) : -1;
+ 	}
++
++	public void swapData(NodeModel duplicate) {
++		this.detachClones();
++		SharedNodeData sharedDataSwap = sharedData;
++		this.sharedData = duplicate.sharedData;
++		duplicate.sharedData = sharedDataSwap;
++		Clones[] clonesSwap = clones;
++		this.clones = duplicate.clones;
++		duplicate.clones = clonesSwap;
++		for(CloneType cloneType : CloneType.values()) {
++			final DetachedNodeList detachedClone = (DetachedNodeList) clones[cloneType.ordinal()];
++			clones[cloneType.ordinal()] = detachedClone.forClone(this);
++		} 
++
++		this.attachClones();
++	}
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method public convertDpToPixel(res Resources, dp int) : int extracted from public convertDpToPixel(ctx Context, dp int) : int in class com.liskovsoft.smartyoutubetv2.tv.ui.common.Utils
+
+Code Before:
+------------
+@@ -2,6 +2,7 @@
+ 
+ import android.app.Activity;
+ import android.content.Context;
+ import android.graphics.Point;
+ import android.media.MediaMetadataRetriever;
+ import android.os.Build;
+@@ -44,7 +45,11 @@ public static Point getDisplaySize(Context context) {
+     }
+ 
+     public static int convertDpToPixel(Context ctx, int dp) {
+-        float density = ctx.getResources().getDisplayMetrics().density;
+         return Math.round((float) dp * density);
+     }
+ 
+
+Code After:
+------------
+@@ -2,6 +2,7 @@
+ 
+ import android.app.Activity;
+ import android.content.Context;
++import android.content.res.Resources;
+ import android.graphics.Point;
+ import android.media.MediaMetadataRetriever;
+ import android.os.Build;
+@@ -44,7 +45,11 @@ public static Point getDisplaySize(Context context) {
+     }
+ 
+     public static int convertDpToPixel(Context ctx, int dp) {
++        return convertDpToPixel(ctx.getResources(), dp);
++    }
++
++    public static int convertDpToPixel(Resources res, int dp) {
++        float density = res.getDisplayMetrics().density;
+         return Math.round((float) dp * density);
+     }
+ 
+
+Example 3:
+
+Refactoring Description: Extract Method public performClick() : boolean extracted from public onTouchEvent(ev MotionEvent) : boolean in class com.google.android.exoplayer2.ui.PlayerView
+
+Code Before:
+------------
+@@ -1032,6 +1032,12 @@ public boolean onTouchEvent(MotionEvent ev) {
+     if (ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+       return false;
+     }
+     return toggleControllerVisibility();
+   }
+ 
+
+Code After:
+------------
+@@ -1032,6 +1032,12 @@ public boolean onTouchEvent(MotionEvent ev) {
+     if (ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+       return false;
+     }
++    return performClick();
++  }
++
++  @Override
++  public boolean performClick() {
++    super.performClick();
+     return toggleControllerVisibility();
+   }
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ *     Run a depth-first filtered traversal of the root and all of its descendants.
+ *     @param filter NodeFilter visitor.
+ *     @param root the root node point to traverse.
+ *     @return The filter result of the root node, or {@link FilterResult#STOP}.
+ *
+ *     @see NodeFilter
+ */
+public static FilterResult filter(NodeFilter filter, Node root) {
+    Node node = root;
+    int depth = 0;
+    while (node != null) {
+        FilterResult result = filter.head(node, depth);
+        if (result == FilterResult.STOP)
+            return result;
+        // Descend into child nodes:
+        if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+            node = node.childNode(0);
+            ++depth;
+            continue;
+        }
+        // No siblings, move upwards:
+        while (true) {
+            // depth > 0, so has parent
+            assert node != null;
+            if (!(node.nextSibling() == null && depth > 0))
+                break;
+            // 'tail' current node:
+            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+                result = filter.tail(node, depth);
+                if (result == FilterResult.STOP)
+                    return result;
+            }
+            // In case we need to remove it below.
+            Node prev = node;
+            node = node.parentNode();
+            depth--;
+            if (result == FilterResult.REMOVE)
+                // Remove AFTER finding parent.
+                prev.remove();
+            // Parent was not pruned.
+            result = FilterResult.CONTINUE;
+        }
+        // 'tail' current node, then proceed with siblings:
+        if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+            result = filter.tail(node, depth);
+            if (result == FilterResult.STOP)
+                return result;
+        }
+        if (node == root)
+            return result;
+        // In case we need to remove it below.
+        Node prev = node;
+        node = node.nextSibling();
+        if (result == FilterResult.REMOVE)
+            // Remove AFTER finding sibling.
+            prev.remove();
+    }
+    // root == null?
+    return FilterResult.CONTINUE;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

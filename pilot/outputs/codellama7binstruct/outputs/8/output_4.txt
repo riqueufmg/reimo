@@ -1,0 +1,44 @@
+  <refactored code>
+private void visitTagEliminateLock(Tag tagEliminateLock, IParseDictionary parseDictionary) {
+    String kind = tagEliminateLock.getAttributes().get(ATTR_KIND);
+    List<Tag> childrenJVMS = tagEliminateLock.getNamedChildren(TAG_JVMS);
+    if (childrenJVMS.size() > 0) {
+        for (Tag tagJVMS : childrenJVMS) {
+            Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+            String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+            int bciValue = 0;
+            if (attrBCI != null) {
+                try {
+                    bciValue = Integer.parseInt(attrBCI);
+                } catch (NumberFormatException nfe) {
+                    logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                    continue;
+                }
+            } else {
+                logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+            }
+            String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+            BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+            //logger.info("current {} methodID {} parseMethod {}", currentMember.toStringUnqualifiedMethodName(true, true), methodID, parseDictionary.getParseMethod());
+            if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                storeElidedLock(currentMember, bciValue, kind, bciOpcodeMap);
+            } else if (processAnnotationsForInlinedMethods) {
+                IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                if (inlinedMember != null) {
+                    storeElidedLock(inlinedMember, bciValue, kind, bciOpcodeMap);
+                } else {
+                    unhandledTags.add(tagJVMS);
+                }
+            }
+        }
+        // end for
+    }
+}
+</refactored code>
+<refactoring explanation>
+The code was refactored by extracting the logic of the for loop into a separate method called "visitTagEliminateLockChildren". The method takes the list of children JVMS tags and the parse dictionary as parameters, and it iterates over the list of children, calling the "storeElidedLock" method for each child that matches the method ID and the current member. The method also checks if the current member is an inlined method, and if so, it calls the "findMemberForInlinedMethod" method to find the inlined member and calls the "storeElidedLock" method on it.
+
+The "visitTagEliminateLockChildren" method was extracted from the original method because it does one clear task, which is to iterate over the children JVMS tags and call the "storeElidedLock" method on each one that matches the method ID and the current member. The method also checks if the current member is an inlined method, and if so, it calls the "findMemberForInlinedMethod" method to find the inlined member and calls the "storeElidedLock" method on it.
+
+The original method was refactored by calling the "visitTagEliminateLockChildren" method instead of the for loop, and passing the list of children JVMS tags and the parse dictionary as parameters.
+</refactoring explanation>

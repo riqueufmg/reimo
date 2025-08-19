@@ -1,0 +1,278 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public toString(defaultCosts AccessibilityPreferences) : String extracted from public toString() : String in class org.opentripplanner.routing.api.request.preference.AccessibilityPreferences
+
+Code Before:
+------------
+@@ -38,6 +38,8 @@ private AccessibilityPreferences(
+     this.inaccessibleCost = Units.cost(inaccessibleCost);
+   }
+ 
+   /**
+    * Create a feature which only considers wheelchair-accessible trips/stops.
+    */
+@@ -92,14 +94,18 @@ public int hashCode() {
+ 
+   @Override
+   public String toString() {
+     if (onlyConsiderAccessible) {
+       return "OnlyConsiderAccessible";
+     }
+ 
+     return ToStringBuilder
+       .of(AccessibilityPreferences.class)
+-      .addCost("unknownCost", unknownCost, NOT_SET)
+-      .addCost("inaccessibleCost", inaccessibleCost, NOT_SET)
+       .toString();
+   }
+ }
+
+Code After:
+------------
+@@ -38,6 +38,8 @@ private AccessibilityPreferences(
+     this.inaccessibleCost = Units.cost(inaccessibleCost);
+   }
+ 
++  private static AccessibilityPreferences DEFAULT_UNSET = ofCost(NOT_SET, NOT_SET);
++
+   /**
+    * Create a feature which only considers wheelchair-accessible trips/stops.
+    */
+@@ -92,14 +94,18 @@ public int hashCode() {
+ 
+   @Override
+   public String toString() {
++    return toString(DEFAULT_UNSET);
++  }
++
++  public String toString(AccessibilityPreferences defaultCosts) {
+     if (onlyConsiderAccessible) {
+       return "OnlyConsiderAccessible";
+     }
+ 
+     return ToStringBuilder
+       .of(AccessibilityPreferences.class)
++      .addCost("unknownCost", unknownCost, defaultCosts.unknownCost)
++      .addCost("inaccessibleCost", inaccessibleCost, defaultCosts.inaccessibleCost)
+       .toString();
+   }
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method protected newSPDYServerConnector(listener ServerSessionFrameListener) : Connector extracted from protected startServer(listener ServerSessionFrameListener) : InetSocketAddress in class org.eclipse.jetty.spdy.SPDYTest
+
+Code Before:
+------------
+@@ -8,35 +8,58 @@
+ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+ import org.eclipse.jetty.spdy.nio.SPDYClient;
+ import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
+ import org.eclipse.jetty.util.thread.QueuedThreadPool;
+ import org.junit.After;
+ 
+-public class SPDYTest
+ {
+     private Server server;
+     private SPDYClient.Factory clientFactory;
+ 
+     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
+     {
+         server = new Server();
+-        Connector connector = new SPDYServerConnector(listener);
+         server.addConnector(connector);
+         server.start();
+         return new InetSocketAddress(connector.getLocalPort());
+     }
+ 
+     protected Session startClient(InetSocketAddress socketAddress, Session.FrameListener frameListener) throws Exception
+     {
+         if (clientFactory == null)
+         {
+             QueuedThreadPool threadPool = new QueuedThreadPool();
+             threadPool.setName(threadPool.getName() + "-client");
+-            clientFactory = new SPDYClient.Factory(threadPool);
+             clientFactory.start();
+         }
+         return clientFactory.newSPDYClient().connect(socketAddress, frameListener).get();
+     }
+ 
+     @After
+     public void destroy() throws Exception
+     {
+
+Code After:
+------------
+@@ -8,35 +8,58 @@
+ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
+ import org.eclipse.jetty.spdy.nio.SPDYClient;
+ import org.eclipse.jetty.spdy.nio.SPDYServerConnector;
++import org.eclipse.jetty.util.ssl.SslContextFactory;
+ import org.eclipse.jetty.util.thread.QueuedThreadPool;
++import org.eclipse.jetty.util.thread.ThreadPool;
+ import org.junit.After;
+ 
++public abstract class SPDYTest
+ {
+     private Server server;
+     private SPDYClient.Factory clientFactory;
+ 
+     protected InetSocketAddress startServer(ServerSessionFrameListener listener) throws Exception
+     {
+         server = new Server();
++        Connector connector = newSPDYServerConnector(listener);
+         server.addConnector(connector);
+         server.start();
+         return new InetSocketAddress(connector.getLocalPort());
+     }
+ 
++    protected Connector newSPDYServerConnector(ServerSessionFrameListener listener)
++    {
++        return new SPDYServerConnector(listener);
++    }
++
+     protected Session startClient(InetSocketAddress socketAddress, Session.FrameListener frameListener) throws Exception
+     {
+         if (clientFactory == null)
+         {
+             QueuedThreadPool threadPool = new QueuedThreadPool();
+             threadPool.setName(threadPool.getName() + "-client");
++            clientFactory = newSPDYClientFactory(threadPool);
+             clientFactory.start();
+         }
+         return clientFactory.newSPDYClient().connect(socketAddress, frameListener).get();
+     }
+ 
++    protected SPDYClient.Factory newSPDYClientFactory(ThreadPool threadPool)
++    {
++        return new SPDYClient.Factory(threadPool);
++    }
++
++    protected SslContextFactory newSslContextFactory()
++    {
++        SslContextFactory sslContextFactory = new SslContextFactory();
++        sslContextFactory.setKeyStorePath("src/test/resources/keystore.jks");
++        sslContextFactory.setKeyStorePassword("storepwd");
++        sslContextFactory.setTrustStore("src/test/resources/truststore.jks");
++        sslContextFactory.setTrustStorePassword("storepwd");
++        sslContextFactory.setProtocol("TLSv1");
++        return sslContextFactory;
++    }
++
+     @After
+     public void destroy() throws Exception
+     {
+
+Example 3:
+
+Refactoring Description: Extract Method protected singleRun(args String[]) : int extracted from private runSingleJar(args String[]) : int in class com.google.devtools.build.singlejar.SingleJarWorker
+
+Code Before:
+------------
+@@ -34,7 +34,7 @@ public static void main(String[] args) {
+   private PrintStream originalSterr;
+   private ByteArrayOutputStream stdoutAndStderr;
+ 
+-  private void runWorker() {
+     trapOutputs();
+ 
+     try {
+@@ -81,7 +81,7 @@ private void outputResult(int returnCode) throws IOException {
+ 
+   private int runSingleJar(String[] args) {
+     try {
+-      return SingleJar.singleRun(args);
+     } catch (IOException e) {
+       // Some IO failures are okay no need to quit the worker
+       System.err.println("SingleJar threw exception : " + e.getMessage());
+@@ -94,4 +94,8 @@ private int runSingleJar(String[] args) {
+       return 1;
+     }
+   }
+ }
+
+Code After:
+------------
+@@ -34,7 +34,7 @@ public static void main(String[] args) {
+   private PrintStream originalSterr;
+   private ByteArrayOutputStream stdoutAndStderr;
+ 
++  protected void runWorker() {
+     trapOutputs();
+ 
+     try {
+@@ -81,7 +81,7 @@ private void outputResult(int returnCode) throws IOException {
+ 
+   private int runSingleJar(String[] args) {
+     try {
++      return singleRun(args);
+     } catch (IOException e) {
+       // Some IO failures are okay no need to quit the worker
+       System.err.println("SingleJar threw exception : " + e.getMessage());
+@@ -94,4 +94,8 @@ private int runSingleJar(String[] args) {
+       return 1;
+     }
+   }
++
++  protected int singleRun(String[] args) throws Exception {
++    return SingleJar.singleRun(args);
++  }
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Returns the number of characters between the current position and the next instance of the input sequence
+ *
+ * @param seq scan target
+ * @return offset between current position and next instance of target. -1 if not found.
+ */
+int nextIndexOf(CharSequence seq) {
+    bufferUp();
+    // doesn't handle scanning for surrogates
+    char startChar = seq.charAt(0);
+    for (int offset = bufPos; offset < bufLength; offset++) {
+        // scan to first instance of startchar:
+        if (startChar != charBuf[offset])
+            while (++offset < bufLength && startChar != charBuf[offset]) {
+                /* empty */
+            }
+        int i = offset + 1;
+        int last = i + seq.length() - 1;
+        if (offset < bufLength && last <= bufLength) {
+            for (int j = 1; i < last && seq.charAt(j) == charBuf[i]; i++, j++) {
+                /* empty */
+            }
+            if (// found full sequence
+            i == last)
+                return offset - bufPos;
+        }
+    }
+    return -1;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

@@ -1,0 +1,77 @@
+  <refactored code>
+
+/**
+ *     Run a depth-first filtered traversal of the root and all of its descendants.
+ *     @param filter NodeFilter visitor.
+ *     @param root the root node point to traverse.
+ *     @return The filter result of the root node, or {@link FilterResult#STOP}.
+ *
+ *     @see NodeFilter
+ */
+public static FilterResult filter(NodeFilter filter, Node root) {
+    return filter(filter, root, 0);
+}
+
+private static FilterResult filter(NodeFilter filter, Node node, int depth) {
+    FilterResult result = filter.head(node, depth);
+    if (result == FilterResult.STOP)
+        return result;
+    // Descend into child nodes:
+    if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+        return filter(filter, node.childNode(0), depth + 1);
+    }
+    // No siblings, move upwards:
+    while (true) {
+        // depth > 0, so has parent
+        assert node != null;
+        if (!(node.nextSibling() == null && depth > 0))
+            break;
+        // 'tail' current node:
+        if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+            result = filter.tail(node, depth);
+            if (result == FilterResult.STOP)
+                return result;
+        }
+        // In case we need to remove it below.
+        Node prev = node;
+        node = node.parentNode();
+        depth--;
+        if (result == FilterResult.REMOVE)
+            // Remove AFTER finding parent.
+            prev.remove();
+        // Parent was not pruned.
+        result = FilterResult.CONTINUE;
+    }
+    // 'tail' current node, then proceed with siblings:
+    if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+        result = filter.tail(node, depth);
+        if (result == FilterResult.STOP)
+            return result;
+    }
+    if (node == root)
+        return result;
+    // In case we need to remove it below.
+    Node prev = node;
+    node = node.nextSibling();
+    if (result == FilterResult.REMOVE)
+        // Remove AFTER finding sibling.
+        prev.remove();
+    return filter(filter, node, depth);
+}
+
+</refactored code>
+<refactoring explanation>
+
+The original code has a depth-first traversal of a tree, with a filter that can stop the traversal at any point. The code uses a recursive approach to traverse the tree, with a base case for the root node.
+
+The refactoring extracts the recursive traversal into a separate method, `filter`, which takes the filter and the current node as parameters. The `filter` method returns the result of the filter, or `FilterResult.STOP` if the traversal should be stopped.
+
+The `filter` method also handles the case where the current node has no siblings, by moving upwards to the parent node and continuing the traversal.
+
+The original code also handles the case where the current node has no children, by proceeding with the siblings of the current node. The refactoring extracts this logic into a separate method, `filter`, which takes the filter and the current node as parameters.
+
+The `filter` method also handles the case where the current node needs to be removed, by removing it after finding its parent or sibling.
+
+The refactoring also adds a new parameter, `depth`, to the `filter` method, which is used to keep track of the depth of the current node in the tree.
+
+</refactoring explanation>

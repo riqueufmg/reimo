@@ -1,0 +1,487 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private openReportParamsDialog(report Report, window Window) : void extracted from public createRunReportButton(captionId String, window Window) : AbstractAction in class com.haulmont.cuba.web.app.ui.report.ReportHelper
+
+Code Before:
+------------
+@@ -46,14 +46,18 @@ private ReportHelper() {
+     public static void runReport(Report report, Window window) {
+         if (report != null) {
+             if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
+-                window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
+-                        Collections.<String, Object>singletonMap("report", report));
+             } else {
+                 ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+             }
+         }
+     }
+ 
+     public static void runReport(Report report, Window window, final String paramAlias, final Object paramValue) {
+         runReport(report, window, paramAlias, paramValue, null);
+     }
+@@ -62,8 +66,7 @@ public static void runReport(Report report, Window window, final String paramAli
+         if (report != null) {
+             List<ReportInputParameter> params = report.getInputParameters();
+             if (params != null && params.size() > 1) {
+-                window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
+-                        Collections.<String, Object>singletonMap("report", report));
+             } else {
+                 if (params != null && params.size() == 1) {
+                     if (name == null)
+@@ -97,14 +100,6 @@ public static void printReport(Report report, String name, Map<String, Object> p
+         }
+         if (find)
+             printReport(report, name, params, item.getKey(), item.getValue());
+-        /*
+-        if (ReportOutputType.XLS.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.XLS, ExportFormat.XLS);
+-        else if (ReportOutputType.DOC.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.DOC, ExportFormat.DOC);
+-        else if (ReportOutputType.PDF.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.PDF, ExportFormat.PDF);
+-        */
+     }
+ 
+     private static void printReport(Report report, String name, Map<String, Object> params, ReportOutputType reportOutputType, ExportFormat exportFormat) {
+@@ -131,7 +126,7 @@ public void handleLookup(Collection items) {
+                             report = window.getDsContext().getDataService().reload(report, "report.edit");
+                             if (report != null) {
+                                 if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
+-                                    window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG, Collections.<String, Object>singletonMap("report", report));
+                                 } else {
+                                     ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+                                 }
+
+Code After:
+------------
+@@ -46,14 +46,18 @@ private ReportHelper() {
+     public static void runReport(Report report, Window window) {
+         if (report != null) {
+             if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
++                openReportParamsDialog(report, window);
+             } else {
+                 ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+             }
+         }
+     }
+ 
++    private static void openReportParamsDialog(Report report, Window window) {
++        window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
++                Collections.<String, Object>singletonMap("report", report));
++    }
++
+     public static void runReport(Report report, Window window, final String paramAlias, final Object paramValue) {
+         runReport(report, window, paramAlias, paramValue, null);
+     }
+@@ -62,8 +66,7 @@ public static void runReport(Report report, Window window, final String paramAli
+         if (report != null) {
+             List<ReportInputParameter> params = report.getInputParameters();
+             if (params != null && params.size() > 1) {
++                openReportParamsDialog(report, window);
+             } else {
+                 if (params != null && params.size() == 1) {
+                     if (name == null)
+@@ -97,14 +100,6 @@ public static void printReport(Report report, String name, Map<String, Object> p
+         }
+         if (find)
+             printReport(report, name, params, item.getKey(), item.getValue());
+     }
+ 
+     private static void printReport(Report report, String name, Map<String, Object> params, ReportOutputType reportOutputType, ExportFormat exportFormat) {
+@@ -131,7 +126,7 @@ public void handleLookup(Collection items) {
+                             report = window.getDsContext().getDataService().reload(report, "report.edit");
+                             if (report != null) {
+                                 if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
++                                    openReportParamsDialog(report, window);
+                                 } else {
+                                     ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+                                 }
+
+Example 2:
+
+Refactoring Description: Extract Method private collectSeqFileSize(fileSizes EnumMap<FileSizeConstants,Long>, kinds FileSizeConstants) : long extracted from public getFileSizesInByte() : Map<FileSizeConstants,Long> in class org.apache.iotdb.db.monitor.collector.FileSize
+
+Code Before:
+------------
+@@ -30,8 +30,8 @@
+ import org.apache.commons.io.FileUtils;
+ import org.apache.iotdb.db.conf.IoTDBConfig;
+ import org.apache.iotdb.db.conf.IoTDBDescriptor;
+-import org.apache.iotdb.db.engine.filenode.FileNodeManager;
+-import org.apache.iotdb.db.exception.FileNodeManagerException;
+ import org.apache.iotdb.db.monitor.IStatistic;
+ import org.apache.iotdb.db.monitor.MonitorConstants;
+ import org.apache.iotdb.db.monitor.MonitorConstants.FileSizeConstants;
+@@ -51,10 +51,10 @@
+ public class FileSize implements IStatistic {
+ 
+   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
+-  private static final Logger LOGGER = LoggerFactory.getLogger(FileSize.class);
+   private static final long ABNORMAL_VALUE = -1L;
+   private static final long INIT_VALUE_IF_FILE_NOT_EXIST = 0L;
+-  private FileNodeManager fileNodeManager;
+ 
+   @Override
+   public Map<String, TSRecord> getAllStatisticsValue() {
+@@ -77,11 +77,11 @@ public void registerStatMetadata() {
+       hashMap.put(seriesPath, MonitorConstants.DATA_TYPE_INT64);
+       Path path = new Path(seriesPath);
+       try {
+-        fileNodeManager.addTimeSeries(path, TSDataType.valueOf(MonitorConstants.DATA_TYPE_INT64),
+             TSEncoding.valueOf("RLE"), CompressionType.valueOf(TSFileConfig.compressor),
+             Collections.emptyMap());
+-      } catch (FileNodeManagerException e) {
+-        LOGGER.error("Register File Size Stats into fileNodeManager Failed.", e);
+       }
+     }
+     StatMonitor.getInstance().registerStatStorageGroup(hashMap);
+@@ -114,7 +114,7 @@ private static class FileSizeHolder {
+   }
+ 
+   private FileSize() {
+-    fileNodeManager = FileNodeManager.getInstance();
+     if (config.isEnableStatMonitor()) {
+       StatMonitor statMonitor = StatMonitor.getInstance();
+       registerStatMetadata();
+@@ -135,32 +135,17 @@ public static FileSize getInstance() {
+   public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     EnumMap<FileSizeConstants, Long> fileSizes = new EnumMap<>(FileSizeConstants.class);
+     for (FileSizeConstants kinds : MonitorConstants.FileSizeConstants.values()) {
+-      if (kinds.equals(MonitorConstants.FileSizeConstants.SETTLED)) {
+-        //sum bufferWriteDirs size
+-        long settledSize = INIT_VALUE_IF_FILE_NOT_EXIST;
+-        for (String bufferWriteDir : config.getBufferWriteDirs()) {
+-          File settledFile = new File(bufferWriteDir);
+-          if (settledFile.exists()) {
+-            try {
+-              settledSize += FileUtils.sizeOfDirectory(settledFile);
+-            } catch (Exception e) {
+-              LOGGER.error("Meet error while trying to get {} size with dir {} .", kinds,
+-                  bufferWriteDir, e);
+-              fileSizes.put(kinds, ABNORMAL_VALUE);
+-            }
+-          }
+-        }
+-        fileSizes.put(kinds, settledSize);
+       } else {
+         File file = new File(kinds.getPath());
+         if (file.exists()) {
+           try {
+             fileSizes.put(kinds, FileUtils.sizeOfDirectory(file));
+           } catch (Exception e) {
+-            LOGGER
+-                .error("Meet error while trying to get {} size with dir {} .", kinds,
+-                    kinds.getPath(),
+-                    e);
+             fileSizes.put(kinds, ABNORMAL_VALUE);
+           }
+         } else {
+@@ -170,4 +155,24 @@ public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     }
+     return fileSizes;
+   }
+ }
+
+Code After:
+------------
+@@ -30,8 +30,8 @@
+ import org.apache.commons.io.FileUtils;
+ import org.apache.iotdb.db.conf.IoTDBConfig;
+ import org.apache.iotdb.db.conf.IoTDBDescriptor;
++import org.apache.iotdb.db.engine.StorageEngine;
++import org.apache.iotdb.db.exception.StorageEngineException;
+ import org.apache.iotdb.db.monitor.IStatistic;
+ import org.apache.iotdb.db.monitor.MonitorConstants;
+ import org.apache.iotdb.db.monitor.MonitorConstants.FileSizeConstants;
+@@ -51,10 +51,10 @@
+ public class FileSize implements IStatistic {
+ 
+   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
++  private static final Logger logger = LoggerFactory.getLogger(FileSize.class);
+   private static final long ABNORMAL_VALUE = -1L;
+   private static final long INIT_VALUE_IF_FILE_NOT_EXIST = 0L;
++  private StorageEngine storageEngine;
+ 
+   @Override
+   public Map<String, TSRecord> getAllStatisticsValue() {
+@@ -77,11 +77,11 @@ public void registerStatMetadata() {
+       hashMap.put(seriesPath, MonitorConstants.DATA_TYPE_INT64);
+       Path path = new Path(seriesPath);
+       try {
++        storageEngine.addTimeSeries(path, TSDataType.valueOf(MonitorConstants.DATA_TYPE_INT64),
+             TSEncoding.valueOf("RLE"), CompressionType.valueOf(TSFileConfig.compressor),
+             Collections.emptyMap());
++      } catch (StorageEngineException e) {
++        logger.error("Register File Size Stats into storageEngine Failed.", e);
+       }
+     }
+     StatMonitor.getInstance().registerStatStorageGroup(hashMap);
+@@ -114,7 +114,7 @@ private static class FileSizeHolder {
+   }
+ 
+   private FileSize() {
++    storageEngine = StorageEngine.getInstance();
+     if (config.isEnableStatMonitor()) {
+       StatMonitor statMonitor = StatMonitor.getInstance();
+       registerStatMetadata();
+@@ -135,32 +135,17 @@ public static FileSize getInstance() {
+   public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     EnumMap<FileSizeConstants, Long> fileSizes = new EnumMap<>(FileSizeConstants.class);
+     for (FileSizeConstants kinds : MonitorConstants.FileSizeConstants.values()) {
++
++      if (kinds.equals(FileSizeConstants.SYS)) {
++        fileSizes.put(kinds, collectSeqFileSize(fileSizes, kinds));
+       } else {
+         File file = new File(kinds.getPath());
+         if (file.exists()) {
+           try {
+             fileSizes.put(kinds, FileUtils.sizeOfDirectory(file));
+           } catch (Exception e) {
++            logger.error("Meet error while trying to get {} size with dir {} .", kinds,
++                    kinds.getPath(), e);
+             fileSizes.put(kinds, ABNORMAL_VALUE);
+           }
+         } else {
+@@ -170,4 +155,24 @@ public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     }
+     return fileSizes;
+   }
++
++  private long collectSeqFileSize(EnumMap<FileSizeConstants, Long> fileSizes, FileSizeConstants kinds) {
++    long fileSize = INIT_VALUE_IF_FILE_NOT_EXIST;
++    for (String sequenceDir : config.getDataDirs()) {
++      if (sequenceDir.contains("unsequence")) {
++        continue;
++      }
++      File settledFile = new File(sequenceDir);
++      if (settledFile.exists()) {
++        try {
++          fileSize += FileUtils.sizeOfDirectory(settledFile);
++        } catch (Exception e) {
++          logger.error("Meet error while trying to get {} size with dir {} .", kinds,
++              sequenceDir, e);
++          fileSizes.put(kinds, ABNORMAL_VALUE);
++        }
++      }
++    }
++    return fileSize;
++  }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method private getNetworkTrafficType(network Network) : TrafficType extracted from public createVpcAssociatePublicIPCommands(router VirtualRouter, ips List<? extends PublicIpAddress>, cmds Commands, vlanMacAddress Map<String,String>) : void in class com.cloud.network.router.CommandSetupHelper
+
+Code Before:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
+ import com.cloud.network.vpc.dao.VpcDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
+ }
+
+Code After:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
++import com.cloud.network.vpc.VpcGatewayVO;
+ import com.cloud.network.vpc.dao.VpcDao;
++import com.cloud.network.vpc.dao.VpcGatewayDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
++    private VpcGatewayDao _vpcGatewayDao;
++    @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
++
++    private TrafficType getNetworkTrafficType(Network network) {
++        final VpcGatewayVO gateway = _vpcGatewayDao.getVpcGatewayByNetworkId(network.getId());
++        if (gateway != null) {
++            s_logger.debug("network " + network.getId() + " (name: " + network.getName() + " ) is a vpc private gateway, set traffic type to Public");
++            return TrafficType.Public;
++        } else {
++            return network.getTrafficType();
++        }
++    }
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+public void handleLine(final String inLine) {
+    // JMH ???
+    String line = inLine.replaceFirst("^ +", "");
+    line = StringUtil.replaceXMLEntities(line);
+    String trimmedLine = line.trim();
+    if (DEBUG_LOGGING_ASSEMBLY) {
+        logger.debug("handleLine:{}", line);
+    }
+    if (line.startsWith("[Disassembling for mach")) {
+        architecture = Architecture.parseFromLogLine(line);
+        if (architecture == null) {
+            logger.error("Could not determine architecture from '{}'", line);
+        } else {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Detected architecture: {}", architecture);
+            }
+        }
+    }
+    if (S_HASH.equals(previousLine) && line.startsWith("{method}")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("fixup mangled {method} line");
+        }
+        line = S_HASH + S_SPACE + line;
+    }
+    if (trimmedLine.startsWith("total in heap")) {
+        String possibleNativeAddress = getStartAddress(line);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith(" bytes") || trimmedLine.startsWith("main code")) {
+        String possibleEntryAddress = getStartAddress(line);
+        if (possibleEntryAddress != null) {
+            entryAddress = possibleEntryAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith("</print_nmethod>")) {
+        complete();
+    }
+    if (line.startsWith(NATIVE_CODE_START) || line.startsWith("Compiled method") || line.startsWith("----------------------------------------------------------------------")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("Assembly started");
+        }
+        assemblyStarted = true;
+        if (builder.length() > 0) {
+            complete();
+        }
+        String possibleNativeAddress = StringUtil.getSubstringBetween(line, NATIVE_CODE_START, S_COLON);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    } else if (assemblyStarted) {
+        boolean couldBeNativeMethodMark = false;
+        couldBeNativeMethodMark = line.startsWith(NATIVE_CODE_METHOD_MARK);
+        if (couldBeNativeMethodMark) {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Assembly method started");
+            }
+            methodStarted = true;
+            if (!line.endsWith(S_APOSTROPHE)) {
+                if (DEBUG_LOGGING_ASSEMBLY) {
+                    logger.debug("Method signature interrupted");
+                }
+                methodInterrupted = true;
+            }
+        } else if (methodInterrupted && line.endsWith(S_APOSTROPHE)) {
+            methodInterrupted = false;
+        }
+        if (methodStarted && line.length() > 0) {
+            builder.append(line);
+            if (!methodInterrupted) {
+                builder.append(S_NEWLINE);
+            }
+        }
+    }
+    previousLine = line;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

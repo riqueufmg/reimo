@@ -1,0 +1,287 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private createLogoutRequestMatcher(httpMethod String) : RequestMatcher extracted from private getLogoutRequestMatcher(http H) : RequestMatcher in class org.springframework.security.config.annotation.web.configurers.LogoutConfigurer
+
+Code Before:
+------------
+@@ -276,7 +276,6 @@ public void init(H http) {
+ 			PermitAllSupport.permitAll(http, this.logoutSuccessUrl);
+ 			PermitAllSupport.permitAll(http, this.getLogoutRequestMatcher(http));
+ 		}
+-
+ 		DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http
+ 				.getSharedObject(DefaultLoginPageGeneratingFilter.class);
+ 		if (loginPageGeneratingFilter != null && !isCustomLogoutSuccess()) {
+@@ -334,20 +333,28 @@ private LogoutFilter createLogoutFilter(H http) {
+ 		return result;
+ 	}
+ 
+-	@SuppressWarnings("unchecked")
+ 	private RequestMatcher getLogoutRequestMatcher(H http) {
+ 		if (this.logoutRequestMatcher != null) {
+ 			return this.logoutRequestMatcher;
+ 		}
+ 		if (http.getConfigurer(CsrfConfigurer.class) != null) {
+-			this.logoutRequestMatcher = new AntPathRequestMatcher(this.logoutUrl, "POST");
+-		}
+-		else {
+-			this.logoutRequestMatcher = new OrRequestMatcher(new AntPathRequestMatcher(this.logoutUrl, "GET"),
+-					new AntPathRequestMatcher(this.logoutUrl, "POST"), new AntPathRequestMatcher(this.logoutUrl, "PUT"),
+-					new AntPathRequestMatcher(this.logoutUrl, "DELETE"));
+ 		}
+-		return this.logoutRequestMatcher;
+ 	}
+ 
+ }
+
+Code After:
+------------
+@@ -276,7 +276,6 @@ public void init(H http) {
+ 			PermitAllSupport.permitAll(http, this.logoutSuccessUrl);
+ 			PermitAllSupport.permitAll(http, this.getLogoutRequestMatcher(http));
+ 		}
+ 		DefaultLoginPageGeneratingFilter loginPageGeneratingFilter = http
+ 				.getSharedObject(DefaultLoginPageGeneratingFilter.class);
+ 		if (loginPageGeneratingFilter != null && !isCustomLogoutSuccess()) {
+@@ -334,20 +333,28 @@ private LogoutFilter createLogoutFilter(H http) {
+ 		return result;
+ 	}
+ 
+ 	private RequestMatcher getLogoutRequestMatcher(H http) {
+ 		if (this.logoutRequestMatcher != null) {
+ 			return this.logoutRequestMatcher;
+ 		}
++		this.logoutRequestMatcher = createLogoutRequestMatcher(http);
++		return this.logoutRequestMatcher;
++	}
++
++	@SuppressWarnings("unchecked")
++	private RequestMatcher createLogoutRequestMatcher(H http) {
++		RequestMatcher post = createLogoutRequestMatcher("POST");
+ 		if (http.getConfigurer(CsrfConfigurer.class) != null) {
++			return post;
+ 		}
++		RequestMatcher get = createLogoutRequestMatcher("GET");
++		RequestMatcher put = createLogoutRequestMatcher("PUT");
++		RequestMatcher delete = createLogoutRequestMatcher("DELETE");
++		return new OrRequestMatcher(get, post, put, delete);
++	}
++
++	private RequestMatcher createLogoutRequestMatcher(String httpMethod) {
++		return new AntPathRequestMatcher(this.logoutUrl, httpMethod);
+ 	}
+ 
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method public init() : void extracted from public runOldAndNew() : void in class org.pentaho.di.run.TimedTransRunner
+
+Code Before:
+------------
+@@ -44,18 +44,23 @@ public TimedTransRunner(String filename, int logLevel, long records)
+     }
+     
+     public void runOldAndNew() throws KettleXMLException
+     {
+         EnvUtil.environmentInit();
+         LogWriter.getInstance(logLevel);
+         
+         // Set environment variables ${NR_OF_ROWS}
+         //
+         KettleVariables.getInstance().setVariable("NR_OF_ROWS", Long.toString(records));
+-        
+-        runOldEngine();
+-        runNewEngine();
+-        
+-        compareResults();
+     }
+ 
+     public void runOldEngine() throws KettleXMLException
+@@ -143,7 +148,7 @@ public void runNewEngine() throws KettleXMLException
+     
+     private static DecimalFormat factorDF = new DecimalFormat("##0.00");
+     
+-    private void compareResults()
+     {
+         double factor = oldRunTime/newRunTime;
+         System.out.println("V3 / V2 = x"+factorDF.format(factor));
+
+Code After:
+------------
+@@ -44,18 +44,23 @@ public TimedTransRunner(String filename, int logLevel, long records)
+     }
+     
+     public void runOldAndNew() throws KettleXMLException
++    {
++        init();
++        
++        runOldEngine();
++        runNewEngine();
++        
++        compareResults();
++    }
++
++    public void init()
+     {
+         EnvUtil.environmentInit();
+         LogWriter.getInstance(logLevel);
+         
+         // Set environment variables ${NR_OF_ROWS}
+         //
+         KettleVariables.getInstance().setVariable("NR_OF_ROWS", Long.toString(records));
+     }
+ 
+     public void runOldEngine() throws KettleXMLException
+@@ -143,7 +148,7 @@ public void runNewEngine() throws KettleXMLException
+     
+     private static DecimalFormat factorDF = new DecimalFormat("##0.00");
+     
++    public void compareResults()
+     {
+         double factor = oldRunTime/newRunTime;
+         System.out.println("V3 / V2 = x"+factorDF.format(factor));
+
+Example 3:
+
+Refactoring Description: Extract Method public closeStreams(self Process) : void extracted from public getText(self Process) : String in class org.codehaus.groovy.runtime.ProcessGroovyMethods
+
+Code Before:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
+-        try { self.getErrorStream().close(); } catch (IOException ignore) {}
+-        try { self.getInputStream().close(); } catch (IOException ignore) {}
+-        try { self.getOutputStream().close(); } catch (IOException ignore) {}
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+Code After:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
++        closeStreams(self);
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
++    /**
++     * Closes all the streams associated with the process (ignoring any IOExceptions).
++     *
++     * @param self a Process
++     * @since 2.1
++     */
++    public static void closeStreams(Process self) {
++        try { self.getErrorStream().close(); } catch (IOException ignore) {}
++        try { self.getInputStream().close(); } catch (IOException ignore) {}
++        try { self.getOutputStream().close(); } catch (IOException ignore) {}
++    }
++
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ *     Run a depth-first filtered traversal of the root and all of its descendants.
+ *     @param filter NodeFilter visitor.
+ *     @param root the root node point to traverse.
+ *     @return The filter result of the root node, or {@link FilterResult#STOP}.
+ *
+ *     @see NodeFilter
+ */
+public static FilterResult filter(NodeFilter filter, Node root) {
+    Node node = root;
+    int depth = 0;
+    while (node != null) {
+        FilterResult result = filter.head(node, depth);
+        if (result == FilterResult.STOP)
+            return result;
+        // Descend into child nodes:
+        if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+            node = node.childNode(0);
+            ++depth;
+            continue;
+        }
+        // No siblings, move upwards:
+        while (true) {
+            // depth > 0, so has parent
+            assert node != null;
+            if (!(node.nextSibling() == null && depth > 0))
+                break;
+            // 'tail' current node:
+            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+                result = filter.tail(node, depth);
+                if (result == FilterResult.STOP)
+                    return result;
+            }
+            // In case we need to remove it below.
+            Node prev = node;
+            node = node.parentNode();
+            depth--;
+            if (result == FilterResult.REMOVE)
+                // Remove AFTER finding parent.
+                prev.remove();
+            // Parent was not pruned.
+            result = FilterResult.CONTINUE;
+        }
+        // 'tail' current node, then proceed with siblings:
+        if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+            result = filter.tail(node, depth);
+            if (result == FilterResult.STOP)
+                return result;
+        }
+        if (node == root)
+            return result;
+        // In case we need to remove it below.
+        Node prev = node;
+        node = node.nextSibling();
+        if (result == FilterResult.REMOVE)
+            // Remove AFTER finding sibling.
+            prev.remove();
+    }
+    // root == null?
+    return FilterResult.CONTINUE;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

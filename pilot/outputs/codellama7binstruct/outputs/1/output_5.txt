@@ -1,0 +1,44 @@
+  <refactored code>
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    return getMinimalResult(edges, inputLength);
+}
+
+private static Result getMinimalResult(Edge[][] edges, int inputLength) {
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+</refactored code>
+<refactoring explanation>
+In this refactoring, we have extracted a method called "getMinimalResult" from the original method "encodeMinimally". The extracted method takes two parameters: "edges" and "inputLength". The method returns a Result object, which is created by analyzing the "edges" array and finding the minimal result.
+
+The original method "encodeMinimally" is now simpler and easier to understand, as it only focuses on setting up the "edges" array and calling the extracted method.
+
+The extracted method "getMinimalResult" is a more focused method that only cares about finding the minimal result, and it can be reused in other parts of the codebase if needed.
+
+Overall, this refactoring improves the readability and maintainability of the code, as it makes it easier to understand the logic of the method and reduces the complexity of the code.
+</refactoring explanation>

@@ -1,0 +1,241 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public insertCode(position Position, content String) : void extracted from public insertCode(position InputEditorPosition, content String) : void in class org.rstudio.studio.client.workbench.views.source.editors.text.AceEditor
+
+Code Before:
+------------
+@@ -728,7 +728,12 @@ public InputEditorSelection search(String needle,
+    @Override
+    public void insertCode(InputEditorPosition position, String content)
+    {
+-     getSession().insert(selectionToPosition(position), content);
+    }
+ 
+    @Override
+
+Code After:
+------------
+@@ -728,7 +728,12 @@ public InputEditorSelection search(String needle,
+    @Override
+    public void insertCode(InputEditorPosition position, String content)
+    {
++      insertCode(selectionToPosition(position), content);
++   }
++   
++   public void insertCode(Position position, String content)
++   {
++      getSession().insert(position, content);
+    }
+ 
+    @Override
+
+Example 2:
+
+Refactoring Description: Extract Method private getPreviousParameter(parameters List<SQLQueryParameter>, parameter SQLQueryParameter) : SQLQueryParameter extracted from protected parseParameters(document IDocument, queryOffset int, queryLength int) : List<SQLQueryParameter> in class org.jkiss.dbeaver.ui.editors.sql.SQLEditorBase
+
+Code Before:
+------------
+@@ -1205,16 +1205,7 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+                         tokenOffset - queryOffset,
+                         tokenLength);
+ 
+-                    SQLQueryParameter previous = null;
+-                    if (parameter.isNamed()) {
+-                        for (int i = parameters.size(); i > 0; i--) {
+-                            if (parameters.get(i - 1).getName().equals(paramName)) {
+-                                previous = parameters.get(i - 1);
+-                                break;
+-                            }
+-                        }
+-                    }
+-                    parameter.setPrevious(previous);
+                     parameters.add(parameter);
+                 } catch (BadLocationException e) {
+                     log.warn("Can't extract query parameter", e);
+@@ -1251,7 +1242,7 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+                             if (parameters == null) {
+                                 parameters = new ArrayList<>();
+                             }
+-
+                             parameters.add(param.getOrdinalPosition(), param);
+                         }
+                     }
+@@ -1265,6 +1256,18 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+         return parameters;
+     }
+ 
+     protected List<SQLQueryParameter> parseParameters(IDocument document, SQLQuery query) {
+         return parseParameters(document, query.getOffset(), query.getLength());
+     }
+
+Code After:
+------------
+@@ -1205,16 +1205,7 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+                         tokenOffset - queryOffset,
+                         tokenLength);
+ 
++                    parameter.setPrevious(getPreviousParameter(parameters, parameter));
+                     parameters.add(parameter);
+                 } catch (BadLocationException e) {
+                     log.warn("Can't extract query parameter", e);
+@@ -1251,7 +1242,7 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+                             if (parameters == null) {
+                                 parameters = new ArrayList<>();
+                             }
++                            param.setPrevious(getPreviousParameter(parameters, param));
+                             parameters.add(param.getOrdinalPosition(), param);
+                         }
+                     }
+@@ -1265,6 +1256,18 @@ protected List<SQLQueryParameter> parseParameters(IDocument document, int queryO
+         return parameters;
+     }
+ 
++    private static SQLQueryParameter getPreviousParameter(List<SQLQueryParameter> parameters, SQLQueryParameter parameter) {
++        String varName = parameter.getVarName();
++        if (parameter.isNamed()) {
++            for (int i = parameters.size(); i > 0; i--) {
++                if (parameters.get(i - 1).getVarName().equals(varName)) {
++                    return parameters.get(i - 1);
++                }
++            }
++        }
++        return null;
++    }
++
+     protected List<SQLQueryParameter> parseParameters(IDocument document, SQLQuery query) {
+         return parseParameters(document, query.getOffset(), query.getLength());
+     }
+
+Example 3:
+
+Refactoring Description: Extract Method public closeStreams(self Process) : void extracted from public getText(self Process) : String in class org.codehaus.groovy.runtime.ProcessGroovyMethods
+
+Code Before:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
+-        try { self.getErrorStream().close(); } catch (IOException ignore) {}
+-        try { self.getInputStream().close(); } catch (IOException ignore) {}
+-        try { self.getOutputStream().close(); } catch (IOException ignore) {}
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+Code After:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
++        closeStreams(self);
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
++    /**
++     * Closes all the streams associated with the process (ignoring any IOExceptions).
++     *
++     * @param self a Process
++     * @since 2.1
++     */
++    public static void closeStreams(Process self) {
++        try { self.getErrorStream().close(); } catch (IOException ignore) {}
++        try { self.getInputStream().close(); } catch (IOException ignore) {}
++        try { self.getOutputStream().close(); } catch (IOException ignore) {}
++    }
++
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Encode the given symbol info to a bit matrix.
+ *
+ * @param placement  The DataMatrix placement.
+ * @param symbolInfo The symbol info to encode.
+ * @return The bit matrix generated.
+ */
+private static BitMatrix encodeLowLevel(DefaultPlacement placement, SymbolInfo symbolInfo, int width, int height) {
+    int symbolWidth = symbolInfo.getSymbolDataWidth();
+    int symbolHeight = symbolInfo.getSymbolDataHeight();
+    ByteMatrix matrix = new ByteMatrix(symbolInfo.getSymbolWidth(), symbolInfo.getSymbolHeight());
+    int matrixY = 0;
+    for (int y = 0; y < symbolHeight; y++) {
+        // Fill the top edge with alternate 0 / 1
+        int matrixX;
+        if ((y % symbolInfo.matrixHeight) == 0) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, (x % 2) == 0);
+                matrixX++;
+            }
+            matrixY++;
+        }
+        matrixX = 0;
+        for (int x = 0; x < symbolWidth; x++) {
+            // Fill the right edge with full 1
+            if ((x % symbolInfo.matrixWidth) == 0) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrix.set(matrixX, matrixY, placement.getBit(x, y));
+            matrixX++;
+            // Fill the right edge with alternate 0 / 1
+            if ((x % symbolInfo.matrixWidth) == symbolInfo.matrixWidth - 1) {
+                matrix.set(matrixX, matrixY, (y % 2) == 0);
+                matrixX++;
+            }
+        }
+        matrixY++;
+        // Fill the bottom edge with full 1
+        if ((y % symbolInfo.matrixHeight) == symbolInfo.matrixHeight - 1) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrixY++;
+        }
+    }
+    return convertByteMatrixToBitMatrix(matrix, width, height);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

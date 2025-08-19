@@ -1,0 +1,406 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private materialize(keyedBackend ChangelogKeyedStateBackend<Integer>, periodicMaterializationManager PeriodicMaterializationManager) : void extracted from public testMaterializedRestore(stateBackend StateBackend, stateTtlConfig StateTtlConfig, env Environment, streamFactory CheckpointStreamFactory) : void in class org.apache.flink.state.changelog.ChangelogStateBackendTestUtils
+
+Code Before:
+------------
+@@ -51,6 +51,9 @@
+ import org.apache.flink.runtime.state.TestTaskStateManager;
+ import org.apache.flink.runtime.state.VoidNamespace;
+ import org.apache.flink.runtime.state.VoidNamespaceSerializer;
+ import org.apache.flink.runtime.state.ttl.TtlTimeProvider;
+ import org.apache.flink.runtime.testutils.statemigration.TestType;
+ import org.apache.flink.util.CloseableIterator;
+@@ -173,19 +176,15 @@ public static void testMaterializedRestore(
+             keyedBackend.setCurrentKey(2);
+             state.update(new StateBackendTestBase.TestPojo("u2", 2));
+ 
+-            // In this test, every materialization is triggered explicitly by calling
+-            // triggerMaterialization.
+-            // Automatic/periodic triggering is disabled by NOT starting the
+-            // periodicMaterializationManager
+-            periodicMaterializationManager.triggerMaterialization();
+ 
+             keyedBackend.setCurrentKey(2);
+             state.update(new StateBackendTestBase.TestPojo("u2", 22));
+ 
+             keyedBackend.setCurrentKey(3);
+             state.update(new StateBackendTestBase.TestPojo("u3", 3));
+ 
+-            periodicMaterializationManager.triggerMaterialization();
+ 
+             keyedBackend.setCurrentKey(4);
+             state.update(new StateBackendTestBase.TestPojo("u4", 4));
+@@ -237,6 +236,24 @@ public static void testMaterializedRestore(
+         }
+     }
+ 
+     public static void testMaterializedRestoreForPriorityQueue(
+             StateBackend stateBackend, Environment env, CheckpointStreamFactory streamFactory)
+             throws Exception {
+@@ -269,12 +286,12 @@ public static void testMaterializedRestoreForPriorityQueue(
+ 
+             assertThat(actualList, containsInAnyOrder(elementA100, elementA10, elementA20));
+ 
+-            periodicMaterializationManager.triggerMaterialization();
+ 
+             TestType elementB9 = new TestType("b", 9);
+             assertTrue(priorityQueue.add(elementB9));
+ 
+-            periodicMaterializationManager.triggerMaterialization();
+ 
+             TestType elementC9 = new TestType("c", 9);
+             TestType elementC8 = new TestType("c", 8);
+
+Code After:
+------------
+@@ -51,6 +51,9 @@
+ import org.apache.flink.runtime.state.TestTaskStateManager;
+ import org.apache.flink.runtime.state.VoidNamespace;
+ import org.apache.flink.runtime.state.VoidNamespaceSerializer;
++import org.apache.flink.runtime.state.changelog.ChangelogStateHandle;
++import org.apache.flink.runtime.state.changelog.SequenceNumber;
++import org.apache.flink.runtime.state.changelog.StateChangelogWriter;
+ import org.apache.flink.runtime.state.ttl.TtlTimeProvider;
+ import org.apache.flink.runtime.testutils.statemigration.TestType;
+ import org.apache.flink.util.CloseableIterator;
+@@ -173,19 +176,15 @@ public static void testMaterializedRestore(
+             keyedBackend.setCurrentKey(2);
+             state.update(new StateBackendTestBase.TestPojo("u2", 2));
+ 
++            materialize(keyedBackend, periodicMaterializationManager);
+ 
+             keyedBackend.setCurrentKey(2);
+             state.update(new StateBackendTestBase.TestPojo("u2", 22));
+ 
+             keyedBackend.setCurrentKey(3);
+             state.update(new StateBackendTestBase.TestPojo("u3", 3));
+ 
++            materialize(keyedBackend, periodicMaterializationManager);
+ 
+             keyedBackend.setCurrentKey(4);
+             state.update(new StateBackendTestBase.TestPojo("u4", 4));
+@@ -237,6 +236,24 @@ public static void testMaterializedRestore(
+         }
+     }
+ 
++    /**
++     * Explicitly trigger materialization. Materialization is expected to complete before returning
++     * from this method by the use of direct executor when constructing materializer.
++     * Automatic/periodic triggering is disabled by NOT starting the periodicMaterializationManager.
++     *
++     * <p>Additionally, verify changelog truncation happened upon completion.
++     */
++    private static void materialize(
++            ChangelogKeyedStateBackend<Integer> keyedBackend,
++            PeriodicMaterializationManager periodicMaterializationManager) {
++        StateChangelogWriter<ChangelogStateHandle> writer = keyedBackend.getChangelogWriter();
++        SequenceNumber sqnBefore = writer.lastAppendedSequenceNumber();
++        periodicMaterializationManager.triggerMaterialization();
++        assertTrue(
++                "Materialization didn't truncate the changelog",
++                sqnBefore.compareTo(writer.getLowestSequenceNumber()) <= 0);
++    }
++
+     public static void testMaterializedRestoreForPriorityQueue(
+             StateBackend stateBackend, Environment env, CheckpointStreamFactory streamFactory)
+             throws Exception {
+@@ -269,12 +286,12 @@ public static void testMaterializedRestoreForPriorityQueue(
+ 
+             assertThat(actualList, containsInAnyOrder(elementA100, elementA10, elementA20));
+ 
++            materialize(keyedBackend, periodicMaterializationManager);
+ 
+             TestType elementB9 = new TestType("b", 9);
+             assertTrue(priorityQueue.add(elementB9));
+ 
++            materialize(keyedBackend, periodicMaterializationManager);
+ 
+             TestType elementC9 = new TestType("c", 9);
+             TestType elementC8 = new TestType("c", 8);
+
+Example 2:
+
+Refactoring Description: Extract Method private calculateCapacity(elementData Object[], minCapacity int) : int extracted from private ensureCapacityInternal(minCapacity int) : void in class java.util.ArrayList
+
+Code Before:
+------------
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
+-    private void ensureCapacityInternal(int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+         }
+ 
+-        ensureExplicitCapacity(minCapacity);
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Code After:
+------------
+@@ -1,5 +1,5 @@
+ /*
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
++import sun.misc.SharedSecrets;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
++    private static int calculateCapacity(Object[] elementData, int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
++            return Math.max(DEFAULT_CAPACITY, minCapacity);
++        }
++        return minCapacity;
+         }
+ 
++    private void ensureCapacityInternal(int minCapacity) {
++        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
++            int capacity = calculateCapacity(elementData, size);
++            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Example 3:
+
+Refactoring Description: Extract Method private assertIndexExistsForDrop(index IndexDescriptor) : void extracted from public indexDrop(index IndexDescriptor) : void in class org.neo4j.kernel.impl.newapi.Operations
+
+Code Before:
+------------
+@@ -904,14 +904,7 @@ public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
+         }
+         exclusiveSchemaLock( index.schema() );
+         exclusiveSchemaNameLock( index.getName() );
+-        try
+-        {
+-            allStoreHolder.assertIndexExists( index );
+-        }
+-        catch ( IndexNotFoundKernelException e )
+-        {
+-            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
+-        }
+         if ( index.isUnique() )
+         {
+             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
+@@ -923,6 +916,18 @@ public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
+         ktx.txState().indexDoDrop( index );
+     }
+ 
+     @Override
+     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
+     {
+@@ -954,7 +959,17 @@ public void indexDrop( String indexName ) throws SchemaKernelException
+         {
+             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
+         }
+-        indexDrop( index );
+     }
+ 
+     @Override
+@@ -1193,10 +1208,11 @@ private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint( SchemaD
+     }
+ 
+     @Override
+-    public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelException
+     {
+         ktx.assertOpen();
+         Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
+         if ( constraints.hasNext() )
+         {
+             ConstraintDescriptor constraint = constraints.next();
+@@ -1209,7 +1225,7 @@ public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelExcepti
+                 String schemaDescription = schema.userDescription( tokenNameLookup );
+                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
+                 throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
+-                        "More than one constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
+             }
+         }
+         else
+
+Code After:
+------------
+@@ -904,14 +904,7 @@ public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
+         }
+         exclusiveSchemaLock( index.schema() );
+         exclusiveSchemaNameLock( index.getName() );
++        assertIndexExistsForDrop( index );
+         if ( index.isUnique() )
+         {
+             if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
+@@ -923,6 +916,18 @@ public void indexDrop( IndexDescriptor index ) throws SchemaKernelException
+         ktx.txState().indexDoDrop( index );
+     }
+ 
++    private void assertIndexExistsForDrop( IndexDescriptor index ) throws DropIndexFailureException
++    {
++        try
++        {
++            allStoreHolder.assertIndexExists( index );
++        }
++        catch ( IndexNotFoundKernelException e )
++        {
++            throw new DropIndexFailureException( "Unable to drop index: " + e.getUserMessage( tokenNameLookup ), e );
++        }
++    }
++
+     @Override
+     public void indexDrop( SchemaDescriptor schema ) throws SchemaKernelException
+     {
+@@ -954,7 +959,17 @@ public void indexDrop( String indexName ) throws SchemaKernelException
+         {
+             throw new DropIndexFailureException( "Unable to drop index called `" + indexName + "`. There is no such index." );
+         }
++        exclusiveSchemaLock( index.schema() );
++        assertIndexExistsForDrop( index );
++        if ( index.isUnique() )
++        {
++            if ( allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null )
++            {
++                IndexBelongsToConstraintException cause = new IndexBelongsToConstraintException( indexName, index.schema() );
++                throw new DropIndexFailureException( "Unable to drop index: " + cause.getUserMessage( tokenNameLookup ), cause );
++            }
++        }
++        ktx.txState().indexDoDrop( index );
+     }
+ 
+     @Override
+@@ -1193,10 +1208,11 @@ private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint( SchemaD
+     }
+ 
+     @Override
++    public void constraintDrop( SchemaDescriptor schema, ConstraintType type ) throws SchemaKernelException
+     {
+         ktx.assertOpen();
+         Iterator<ConstraintDescriptor> constraints = ktx.schemaRead().constraintsGetForSchema( schema );
++        constraints = Iterators.filter( constraint -> constraint.type() == type, constraints );
+         if ( constraints.hasNext() )
+         {
+             ConstraintDescriptor constraint = constraints.next();
+@@ -1209,7 +1225,7 @@ public void constraintDrop( SchemaDescriptor schema ) throws SchemaKernelExcepti
+                 String schemaDescription = schema.userDescription( tokenNameLookup );
+                 String constraintDescription = constraints.next().userDescription( tokenNameLookup );
+                 throw new DropConstraintFailureException( constraint, new IllegalArgumentException(
++                        "More than one " + type + " constraint was found with the '" + schemaDescription + "' schema: " + constraintDescription ) );
+             }
+         }
+         else
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Encode the given symbol info to a bit matrix.
+ *
+ * @param placement  The DataMatrix placement.
+ * @param symbolInfo The symbol info to encode.
+ * @return The bit matrix generated.
+ */
+private static BitMatrix encodeLowLevel(DefaultPlacement placement, SymbolInfo symbolInfo, int width, int height) {
+    int symbolWidth = symbolInfo.getSymbolDataWidth();
+    int symbolHeight = symbolInfo.getSymbolDataHeight();
+    ByteMatrix matrix = new ByteMatrix(symbolInfo.getSymbolWidth(), symbolInfo.getSymbolHeight());
+    int matrixY = 0;
+    for (int y = 0; y < symbolHeight; y++) {
+        // Fill the top edge with alternate 0 / 1
+        int matrixX;
+        if ((y % symbolInfo.matrixHeight) == 0) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, (x % 2) == 0);
+                matrixX++;
+            }
+            matrixY++;
+        }
+        matrixX = 0;
+        for (int x = 0; x < symbolWidth; x++) {
+            // Fill the right edge with full 1
+            if ((x % symbolInfo.matrixWidth) == 0) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrix.set(matrixX, matrixY, placement.getBit(x, y));
+            matrixX++;
+            // Fill the right edge with alternate 0 / 1
+            if ((x % symbolInfo.matrixWidth) == symbolInfo.matrixWidth - 1) {
+                matrix.set(matrixX, matrixY, (y % 2) == 0);
+                matrixX++;
+            }
+        }
+        matrixY++;
+        // Fill the bottom edge with full 1
+        if ((y % symbolInfo.matrixHeight) == symbolInfo.matrixHeight - 1) {
+            matrixX = 0;
+            for (int x = 0; x < symbolInfo.getSymbolWidth(); x++) {
+                matrix.set(matrixX, matrixY, true);
+                matrixX++;
+            }
+            matrixY++;
+        }
+    }
+    return convertByteMatrixToBitMatrix(matrix, width, height);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

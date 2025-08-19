@@ -1,0 +1,449 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public set(l Locale) : void extracted from public get() : Locale in class ch.cyberduck.core.LocaleFactory
+
+Code Before:
+------------
+@@ -35,11 +35,15 @@ public LocaleFactory() {
+      */
+     public static synchronized Locale get() {
+         if(null == locale) {
+-            locale = new LocaleFactory().create();
+         }
+         return locale;
+     }
+ 
+     /**
+      * @param key English variant
+      * @return Localized from default table
+
+Code After:
+------------
+@@ -35,11 +35,15 @@ public LocaleFactory() {
+      */
+     public static synchronized Locale get() {
+         if(null == locale) {
++            set(new LocaleFactory().create());
+         }
+         return locale;
+     }
+ 
++    public static synchronized void set(Locale l) {
++        locale = l;
++    }
++
+     /**
+      * @param key English variant
+      * @return Localized from default table
+
+Example 2:
+
+Refactoring Description: Extract Method protected getClickableColumnKeys(columnIds Collection<Object>) : String[] extracted from protected updateClickableColumnKeys() : void in class com.haulmont.cuba.web.widgets.CubaTable
+
+Code Before:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
+-            public void onClick(String columnKey, String rowKey) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
+-                if (itemId != null && cellClickListeners != null) {
+-                    CellClickListener cellClickListener = cellClickListeners.get(columnId);
+-                    if (cellClickListener != null) {
+-                        cellClickListener.onClick(itemId, columnId);
+                     }
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
+-            String[] clickableColumnKeys = new String[cellClickListeners.size()];
+-            int i = 0;
+-            for (Object columnId : cellClickListeners.keySet()) {
+-                clickableColumnKeys[i] = _columnIdMap().key(columnId);
+-                i++;
+-            }
+ 
+-            getState().clickableColumnKeys = clickableColumnKeys;
+         }
+     }
+ 
+     @Override
+
+Code After:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
++    protected List<Object> clickableTableColumnIds; // lazily initialized list
++
++    protected Registration tableCellClickListenerRegistration;
++
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
++            public void onClick(String columnKey, String rowKey, boolean isText) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
++                if (itemId != null) {
++                    if (cellClickListeners != null && isText) {
++                        CellClickListener cellClickListener = cellClickListeners.get(columnId);
++                        if (cellClickListener != null) {
++                            cellClickListener.onClick(itemId, columnId);
++                        }
+                     }
++
++                    fireEvent(new TableCellClickEvent(CubaTable.this, itemId, columnId, isText));
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
++    @Override
++    public void addTableCellClickListener(Object propertyId, TableCellClickListener listener) {
++        if (clickableTableColumnIds == null) {
++            clickableTableColumnIds = new ArrayList<>();
++        }
++        clickableTableColumnIds.add(propertyId);
++
++        // Register only one TableCellClickListener for all clickable table columns
++        if (tableCellClickListenerRegistration == null) {
++            tableCellClickListenerRegistration = addListener(TableCellClickEvent.class, listener, TableCellClickListener.clickMethod);
++        }
++    }
++
++    @Override
++    public void removeTableCellClickListener(Object propertyId) {
++        if (clickableTableColumnIds != null) {
++            clickableTableColumnIds.remove(propertyId);
++
++            if (tableCellClickListenerRegistration != null
++                    && clickableTableColumnIds.isEmpty()) {
++                tableCellClickListenerRegistration.remove();
++                tableCellClickListenerRegistration = null;
++
++                clickableTableColumnIds = null;
++            }
++        }
++    }
++
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
++        updateClickableTableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
++            getState().clickableColumnKeys = getClickableColumnKeys(cellClickListeners.keySet());
++        }
++    }
++
++    protected void updateClickableTableColumnKeys() {
++        if (clickableTableColumnIds != null) {
++            getState().clickableTableColumnKeys = getClickableColumnKeys(clickableTableColumnIds);
++        }
++    }
+ 
++    protected String[] getClickableColumnKeys(Collection<Object> columnIds) {
++        String[] clickableColumnKeys = new String[columnIds.size()];
++        int i = 0;
++        for (Object columnId : columnIds) {
++            clickableColumnKeys[i] = _columnIdMap().key(columnId);
++            i++;
+         }
++        return clickableColumnKeys;
+     }
+ 
+     @Override
+
+Example 3:
+
+Refactoring Description: Extract Method protected removeNic(vm VirtualMachineProfile<? extends VMInstanceVO>, nic NicVO) : void extracted from public cleanupNics(vm VirtualMachineProfile<? extends VMInstanceVO>) : void in class com.cloud.network.NetworkManagerImpl
+
+Code Before:
+------------
+@@ -2022,11 +2022,14 @@ public int compare(NicVO nic1, NicVO nic2) {
+     }
+ 
+     @Override
+     public NicProfile prepareNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, DeployDestination 
+             dest, ReservationContext context, long nicId, NetworkVO network)
+             throws InsufficientVirtualNetworkCapcityException, InsufficientAddressCapacityException, 
+             ConcurrentOperationException, InsufficientCapacityException, ResourceUnavailableException {
+         
+         Integer networkRate = getNetworkRate(network.getId(), vmProfile.getId());
+         NetworkGuru guru = _networkGurus.get(network.getGuruName());
+         NicVO nic = _nicDao.findById(nicId);
+@@ -2090,7 +2093,8 @@ public <T extends VMInstanceVO> void prepareNicForMigration(VirtualMachineProfil
+             Integer networkRate = getNetworkRate(network.getId(), vm.getId());
+ 
+             NetworkGuru guru = _networkGurus.get(network.getGuruName());
+-            NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), networkRate, isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+             guru.updateNicProfile(profile, network);
+             vm.addNic(profile);
+         }
+@@ -2105,6 +2109,18 @@ public void release(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, boo
+             releaseNic(vmProfile, nic, network);
+         }
+     }
+ 
+     protected void releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NicVO nic, NetworkVO network) 
+             throws ConcurrentOperationException, ResourceUnavailableException {
+@@ -2283,15 +2299,27 @@ public void cleanupNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+ 
+         List<NicVO> nics = _nicDao.listByVmId(vm.getId());
+         for (NicVO nic : nics) {
+-            nic.setState(Nic.State.Deallocating);
+-            _nicDao.update(nic.getId(), nic);
+-            NetworkVO network = _networksDao.findById(nic.getNetworkId());
+-            NicProfile profile = new NicProfile(nic, network, null, null, null, isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+-            NetworkGuru guru = _networkGurus.get(network.getGuruName());
+-            guru.deallocate(network, profile, vm);
+-            _nicDao.remove(nic.getId());
+         }
+     }
+ 
+     @Override
+     public void expungeNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+@@ -2629,21 +2657,18 @@ protected Network createVpcGuestNetwork(long ntwkOffId, String name, String disp
+             PhysicalNetwork pNtwk, long zoneId, ACLType aclType, Boolean subdomainAccess, long vpcId) 
+                     throws ConcurrentOperationException, InsufficientCapacityException, ResourceAllocationException {
+         
+         //1) Validate if network can be created for VPC
+-        _vpcMgr.validateGuestNtkwForVpc(_configMgr.getNetworkOffering(ntwkOffId), cidr, networkDomain, owner, 
+-                _vpcMgr.getVpc(vpcId));
+         
+         //2) Create network
+         Network guestNetwork = createGuestNetwork(ntwkOffId, name, displayText, gateway, cidr, vlanId, 
+                 networkDomain, owner, domainId, pNtwk, zoneId, aclType, subdomainAccess, vpcId);
+         
+-        //3) Add network to all VPC's routers
+-        List<DomainRouterVO> routers = _routerDao.listRoutersByVpcId(vpcId);
+-        for (DomainRouterVO router : routers) {
+-            s_logger.debug("Adding router " + router + " to network " + guestNetwork);
+-            _routerDao.addRouterToNetwork(router, guestNetwork);
+-        }
+-        
+         return guestNetwork;
+     }
+ 
+
+Code After:
+------------
+@@ -2022,11 +2022,14 @@ public int compare(NicVO nic1, NicVO nic2) {
+     }
+ 
+     @Override
++    @DB
+     public NicProfile prepareNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, DeployDestination 
+             dest, ReservationContext context, long nicId, NetworkVO network)
+             throws InsufficientVirtualNetworkCapcityException, InsufficientAddressCapacityException, 
+             ConcurrentOperationException, InsufficientCapacityException, ResourceUnavailableException {
+         
++        
++        
+         Integer networkRate = getNetworkRate(network.getId(), vmProfile.getId());
+         NetworkGuru guru = _networkGurus.get(network.getGuruName());
+         NicVO nic = _nicDao.findById(nicId);
+@@ -2090,7 +2093,8 @@ public <T extends VMInstanceVO> void prepareNicForMigration(VirtualMachineProfil
+             Integer networkRate = getNetworkRate(network.getId(), vm.getId());
+ 
+             NetworkGuru guru = _networkGurus.get(network.getGuruName());
++            NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), networkRate, 
++                    isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
+             guru.updateNicProfile(profile, network);
+             vm.addNic(profile);
+         }
+@@ -2105,6 +2109,18 @@ public void release(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, boo
+             releaseNic(vmProfile, nic, network);
+         }
+     }
++    
++    @Override
++    public NicProfile releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NetworkVO network) 
++            throws ConcurrentOperationException, ResourceUnavailableException {
++        NicVO nic = _nicDao.findByInstanceIdAndNetworkId(network.getId(), vmProfile.getId());
++        releaseNic(vmProfile, nic, network);
++        
++        NicProfile profile = new NicProfile(nic, network, nic.getBroadcastUri(), nic.getIsolationUri(), null, 
++                isSecurityGroupSupportedInNetwork(network), getNetworkTag(vmProfile.getVirtualMachine().getHypervisorType(), network));
++        return profile;
++    }
++    
+ 
+     protected void releaseNic(VirtualMachineProfile<? extends VMInstanceVO> vmProfile, NicVO nic, NetworkVO network) 
+             throws ConcurrentOperationException, ResourceUnavailableException {
+@@ -2283,15 +2299,27 @@ public void cleanupNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+ 
+         List<NicVO> nics = _nicDao.listByVmId(vm.getId());
+         for (NicVO nic : nics) {
++            removeNic(vm, nic);
+         }
+     }
++    
++    @Override
++    public void removeNic(VirtualMachineProfile<? extends VMInstanceVO> vm, Network network) {
++        NicVO nic = _nicDao.findByInstanceIdAndNetworkId(network.getId(), vm.getVirtualMachine().getId());
++        removeNic(vm, nic);
++    }
++
++    protected void removeNic(VirtualMachineProfile<? extends VMInstanceVO> vm, NicVO nic) {
++        nic.setState(Nic.State.Deallocating);
++        _nicDao.update(nic.getId(), nic);
++        NetworkVO network = _networksDao.findById(nic.getNetworkId());
++        NicProfile profile = new NicProfile(nic, network, null, null, null,
++                isSecurityGroupSupportedInNetwork(network), getNetworkTag(vm.getHypervisorType(), network));
++        NetworkGuru guru = _networkGurus.get(network.getGuruName());
++        guru.deallocate(network, profile, vm);
++        _nicDao.remove(nic.getId());
++        s_logger.debug("Removed nic id=" + nic.getId());
++    }
+ 
+     @Override
+     public void expungeNics(VirtualMachineProfile<? extends VMInstanceVO> vm) {
+@@ -2629,21 +2657,18 @@ protected Network createVpcGuestNetwork(long ntwkOffId, String name, String disp
+             PhysicalNetwork pNtwk, long zoneId, ACLType aclType, Boolean subdomainAccess, long vpcId) 
+                     throws ConcurrentOperationException, InsufficientCapacityException, ResourceAllocationException {
+         
++        Vpc vpc = _vpcMgr.getVpc(vpcId);
+         //1) Validate if network can be created for VPC
++        _vpcMgr.validateGuestNtkwForVpc(_configMgr.getNetworkOffering(ntwkOffId), cidr, networkDomain, owner, vpc);
++        
++        if (networkDomain == null) {
++            networkDomain = vpc.getNetworkDomain();
++        }
+         
+         //2) Create network
+         Network guestNetwork = createGuestNetwork(ntwkOffId, name, displayText, gateway, cidr, vlanId, 
+                 networkDomain, owner, domainId, pNtwk, zoneId, aclType, subdomainAccess, vpcId);
+         
+         return guestNetwork;
+     }
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Ensures a meta charset (html) or xml declaration (xml) with the current
+ * encoding used. This only applies with
+ * {@link #updateMetaCharsetElement(boolean) updateMetaCharset} set to
+ * <tt>true</tt>, otherwise this method does nothing.
+ *
+ * <ul>
+ * <li>An existing element gets updated with the current charset</li>
+ * <li>If there's no element yet it will be inserted</li>
+ * <li>Obsolete elements are removed</li>
+ * </ul>
+ *
+ * <p><b>Elements used:</b></p>
+ *
+ * <ul>
+ * <li><b>Html:</b> <i>&lt;meta charset="CHARSET"&gt;</i></li>
+ * <li><b>Xml:</b> <i>&lt;?xml version="1.0" encoding="CHARSET"&gt;</i></li>
+ * </ul>
+ */
+private void ensureMetaCharsetElement() {
+    if (updateMetaCharset) {
+        OutputSettings.Syntax syntax = outputSettings().syntax();
+        if (syntax == OutputSettings.Syntax.html) {
+            Element metaCharset = selectFirst("meta[charset]");
+            if (metaCharset != null) {
+                metaCharset.attr("charset", charset().displayName());
+            } else {
+                head().appendElement("meta").attr("charset", charset().displayName());
+            }
+            // Remove obsolete elements
+            select("meta[name=charset]").remove();
+        } else if (syntax == OutputSettings.Syntax.xml) {
+            Node node = ensureChildNodes().get(0);
+            if (node instanceof XmlDeclaration) {
+                XmlDeclaration decl = (XmlDeclaration) node;
+                if (decl.name().equals("xml")) {
+                    decl.attr("encoding", charset().displayName());
+                    if (decl.hasAttr("version"))
+                        decl.attr("version", "1.0");
+                } else {
+                    decl = new XmlDeclaration("xml", false);
+                    decl.attr("version", "1.0");
+                    decl.attr("encoding", charset().displayName());
+                    prependChild(decl);
+                }
+            } else {
+                XmlDeclaration decl = new XmlDeclaration("xml", false);
+                decl.attr("version", "1.0");
+                decl.attr("encoding", charset().displayName());
+                prependChild(decl);
+            }
+        }
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

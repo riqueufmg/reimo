@@ -1,0 +1,42 @@
+  <refactored code>
+static Result encodeMinimally(Input input) {
+    return encodeMinimally(input, new Edge[input.length() + 1][6]);
+}
+
+private static Result encodeMinimally(Input input, Edge[][] edges) {
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= input.length(); i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[input.length()][j] != null) {
+            Edge edge = edges[input.length()][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[input.length()][minimalJ]);
+}
+</refactored code>
+<refactoring explanation>
+The original method was too long and complex, so we refactored it into two methods: one that initializes the edges array and another that finds the minimal encoding.
+
+The first method, `encodeMinimally`, takes an input and an empty edges array as parameters and returns the result. It calls the second method, `encodeMinimally`, with the input and the initialized edges array.
+
+The second method, `encodeMinimally`, takes an input, an edges array, and a starting index as parameters and returns the result. It adds edges to the array and then finds the minimal encoding by iterating over the last row of the array and comparing the sizes of the edges.
+
+The refactoring was done to make the code more modular and easier to understand. The original method was too long and complex, so it was refactored into two smaller methods that each have a clear purpose.
+</refactoring explanation>

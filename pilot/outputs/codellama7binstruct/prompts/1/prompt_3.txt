@@ -1,0 +1,337 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private isDefaultLibrary(lib ExternalLibrary) : boolean extracted from public isInternalLibrary(lib ExternalLibrary) : boolean in class com.oracle.truffle.llvm.runtime.LLVMContext
+
+Code Before:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Code After:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
++        return isDefaultLibrary(lib);
++    }
++
++    private boolean isDefaultLibrary(ExternalLibrary lib) {
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Example 2:
+
+Refactoring Description: Extract Method private resolveConfigFile(fileName String, confFile File) : void extracted from public getByPath(configurationPath String) : Config in class org.tron.core.config.Configuration
+
+Code Before:
+------------
+@@ -19,10 +19,15 @@
+ package org.tron.core.config;
+ 
+ import static org.apache.commons.lang3.StringUtils.isBlank;
+ 
+ import com.typesafe.config.ConfigFactory;
+ import java.io.File;
+ import lombok.extern.slf4j.Slf4j;
+ 
+ @Slf4j
+ public class Configuration {
+@@ -32,29 +37,36 @@ public class Configuration {
+   /**
+    * Get configuration by a given path.
+    *
+-   * @param configurationPath path to configuration file
+    * @return loaded configuration
+    */
+-  public static com.typesafe.config.Config getByPath(final String configurationPath) {
+-    if (isBlank(configurationPath)) {
+-      throw new IllegalArgumentException("Configuration path is required!");
+     }
+ 
+-    File confFile = new File(configurationPath);
+-    if (confFile.exists()) {
+-      config = ConfigFactory.parseFile(new File(configurationPath));
+     } else {
+-      config = ConfigFactory.load(configurationPath);
+     }
+-    return config;
+   }
+ 
+-  public static com.typesafe.config.Config getByFile(final File confFile) {
+-    if (!confFile.exists()) {
+-      throw new IllegalArgumentException("Configuration path is required!");
+     }
+-    config = ConfigFactory.parseFile(confFile);
+-    return config;
+   }
+ }
+ 
+
+Code After:
+------------
+@@ -19,10 +19,15 @@
+ package org.tron.core.config;
+ 
+ import static org.apache.commons.lang3.StringUtils.isBlank;
++import static org.apache.commons.lang3.StringUtils.isNoneBlank;
+ 
+ import com.typesafe.config.ConfigFactory;
++
+ import java.io.File;
++import java.io.FileNotFoundException;
++
+ import lombok.extern.slf4j.Slf4j;
++import org.springframework.util.ResourceUtils;
+ 
+ @Slf4j
+ public class Configuration {
+@@ -32,29 +37,36 @@ public class Configuration {
+   /**
+    * Get configuration by a given path.
+    *
++   * @param confFileName path to configuration file
+    * @return loaded configuration
+    */
++  public static com.typesafe.config.Config getByFileName(final String shellConfFileName, final String confFileName) {
++    if (isNoneBlank(shellConfFileName)) {
++      File shellConfFile = new File(shellConfFileName);
++      resolveConfigFile(shellConfFileName, shellConfFile);
++      return config;
+     }
+ 
++    if (isBlank(confFileName)) {
++      throw new IllegalArgumentException("Configuration path is required!");
+     } else {
++      File confFile = new File(confFileName);
++      resolveConfigFile(confFileName, confFile);
++      return config;
+     }
+   }
+ 
++  private static void resolveConfigFile(String fileName, File confFile) {
++    if (confFile.exists()) {
++      config = ConfigFactory.parseFile(confFile);
++    } else {
++      try {
++        ResourceUtils.getFile("classpath:" + fileName);
++      } catch (FileNotFoundException e) {
++        throw new IllegalArgumentException("Configuration path is required! No Such file " + fileName);
++      }
++      config = ConfigFactory.load(fileName);
+     }
+   }
+ }
+ 
+
+Example 3:
+
+Refactoring Description: Extract Method private getNetworkTrafficType(network Network) : TrafficType extracted from public createVpcAssociatePublicIPCommands(router VirtualRouter, ips List<? extends PublicIpAddress>, cmds Commands, vlanMacAddress Map<String,String>) : void in class com.cloud.network.router.CommandSetupHelper
+
+Code Before:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
+ import com.cloud.network.vpc.dao.VpcDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
+-                ip.setTrafficType(network.getTrafficType());
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
+ }
+
+Code After:
+------------
+@@ -104,7 +104,9 @@
+ import com.cloud.network.vpc.StaticRouteProfile;
+ import com.cloud.network.vpc.Vpc;
+ import com.cloud.network.vpc.VpcGateway;
++import com.cloud.network.vpc.VpcGatewayVO;
+ import com.cloud.network.vpc.dao.VpcDao;
++import com.cloud.network.vpc.dao.VpcGatewayDao;
+ import com.cloud.offering.NetworkOffering;
+ import com.cloud.offerings.NetworkOfferingVO;
+ import com.cloud.offerings.dao.NetworkOfferingDao;
+@@ -170,6 +172,8 @@ public class CommandSetupHelper {
+     @Inject
+     private VpcDao _vpcDao;
+     @Inject
++    private VpcGatewayDao _vpcGatewayDao;
++    @Inject
+     private VlanDao _vlanDao;
+     @Inject
+     private IPAddressDao _ipAddressDao;
+@@ -707,7 +711,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, BroadcastDomainType.fromString(ipAddr.getVlanTag()).toString(), ipAddr.getGateway(),
+                         ipAddr.getNetmask(), macAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 if (ipAddr.isSourceNat()) {
+@@ -823,7 +827,7 @@ public int compare(final PublicIpAddress o1, final PublicIpAddress o2) {
+                 final IpAddressTO ip = new IpAddressTO(ipAddr.getAccountId(), ipAddr.getAddress().addr(), add, firstIP, sourceNat, vlanId, vlanGateway, vlanNetmask,
+                         vifMacAddress, networkRate, ipAddr.isOneToOneNat());
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+                 /*
+@@ -948,7 +952,7 @@ public void createVpcAssociatePrivateIPCommands(final VirtualRouter router, fina
+                 final IpAddressTO ip = new IpAddressTO(Account.ACCOUNT_ID_SYSTEM, ipAddr.getIpAddress(), add, false, ipAddr.getSourceNat(), ipAddr.getBroadcastUri(),
+                         ipAddr.getGateway(), ipAddr.getNetmask(), ipAddr.getMacAddress(), null, false);
+ 
++                ip.setTrafficType(getNetworkTrafficType(network));
+                 ip.setNetworkName(_networkModel.getNetworkTag(router.getHypervisorType(), network));
+                 ipsToSend[i++] = ip;
+ 
+@@ -1101,4 +1105,14 @@ protected String getGuestDhcpRange(final NicProfile guestNic, final Network gues
+         }
+         return dhcpRange;
+     }
++
++    private TrafficType getNetworkTrafficType(Network network) {
++        final VpcGatewayVO gateway = _vpcGatewayDao.getVpcGatewayByNetworkId(network.getId());
++        if (gateway != null) {
++            s_logger.debug("network " + network.getId() + " (name: " + network.getName() + " ) is a vpc private gateway, set traffic type to Public");
++            return TrafficType.Public;
++        } else {
++            return network.getTrafficType();
++        }
++    }
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

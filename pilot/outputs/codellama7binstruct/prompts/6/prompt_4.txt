@@ -1,0 +1,617 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private collectSeqFileSize(fileSizes EnumMap<FileSizeConstants,Long>, kinds FileSizeConstants) : long extracted from public getFileSizesInByte() : Map<FileSizeConstants,Long> in class org.apache.iotdb.db.monitor.collector.FileSize
+
+Code Before:
+------------
+@@ -30,8 +30,8 @@
+ import org.apache.commons.io.FileUtils;
+ import org.apache.iotdb.db.conf.IoTDBConfig;
+ import org.apache.iotdb.db.conf.IoTDBDescriptor;
+-import org.apache.iotdb.db.engine.filenode.FileNodeManager;
+-import org.apache.iotdb.db.exception.FileNodeManagerException;
+ import org.apache.iotdb.db.monitor.IStatistic;
+ import org.apache.iotdb.db.monitor.MonitorConstants;
+ import org.apache.iotdb.db.monitor.MonitorConstants.FileSizeConstants;
+@@ -51,10 +51,10 @@
+ public class FileSize implements IStatistic {
+ 
+   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
+-  private static final Logger LOGGER = LoggerFactory.getLogger(FileSize.class);
+   private static final long ABNORMAL_VALUE = -1L;
+   private static final long INIT_VALUE_IF_FILE_NOT_EXIST = 0L;
+-  private FileNodeManager fileNodeManager;
+ 
+   @Override
+   public Map<String, TSRecord> getAllStatisticsValue() {
+@@ -77,11 +77,11 @@ public void registerStatMetadata() {
+       hashMap.put(seriesPath, MonitorConstants.DATA_TYPE_INT64);
+       Path path = new Path(seriesPath);
+       try {
+-        fileNodeManager.addTimeSeries(path, TSDataType.valueOf(MonitorConstants.DATA_TYPE_INT64),
+             TSEncoding.valueOf("RLE"), CompressionType.valueOf(TSFileConfig.compressor),
+             Collections.emptyMap());
+-      } catch (FileNodeManagerException e) {
+-        LOGGER.error("Register File Size Stats into fileNodeManager Failed.", e);
+       }
+     }
+     StatMonitor.getInstance().registerStatStorageGroup(hashMap);
+@@ -114,7 +114,7 @@ private static class FileSizeHolder {
+   }
+ 
+   private FileSize() {
+-    fileNodeManager = FileNodeManager.getInstance();
+     if (config.isEnableStatMonitor()) {
+       StatMonitor statMonitor = StatMonitor.getInstance();
+       registerStatMetadata();
+@@ -135,32 +135,17 @@ public static FileSize getInstance() {
+   public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     EnumMap<FileSizeConstants, Long> fileSizes = new EnumMap<>(FileSizeConstants.class);
+     for (FileSizeConstants kinds : MonitorConstants.FileSizeConstants.values()) {
+-      if (kinds.equals(MonitorConstants.FileSizeConstants.SETTLED)) {
+-        //sum bufferWriteDirs size
+-        long settledSize = INIT_VALUE_IF_FILE_NOT_EXIST;
+-        for (String bufferWriteDir : config.getBufferWriteDirs()) {
+-          File settledFile = new File(bufferWriteDir);
+-          if (settledFile.exists()) {
+-            try {
+-              settledSize += FileUtils.sizeOfDirectory(settledFile);
+-            } catch (Exception e) {
+-              LOGGER.error("Meet error while trying to get {} size with dir {} .", kinds,
+-                  bufferWriteDir, e);
+-              fileSizes.put(kinds, ABNORMAL_VALUE);
+-            }
+-          }
+-        }
+-        fileSizes.put(kinds, settledSize);
+       } else {
+         File file = new File(kinds.getPath());
+         if (file.exists()) {
+           try {
+             fileSizes.put(kinds, FileUtils.sizeOfDirectory(file));
+           } catch (Exception e) {
+-            LOGGER
+-                .error("Meet error while trying to get {} size with dir {} .", kinds,
+-                    kinds.getPath(),
+-                    e);
+             fileSizes.put(kinds, ABNORMAL_VALUE);
+           }
+         } else {
+@@ -170,4 +155,24 @@ public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     }
+     return fileSizes;
+   }
+ }
+
+Code After:
+------------
+@@ -30,8 +30,8 @@
+ import org.apache.commons.io.FileUtils;
+ import org.apache.iotdb.db.conf.IoTDBConfig;
+ import org.apache.iotdb.db.conf.IoTDBDescriptor;
++import org.apache.iotdb.db.engine.StorageEngine;
++import org.apache.iotdb.db.exception.StorageEngineException;
+ import org.apache.iotdb.db.monitor.IStatistic;
+ import org.apache.iotdb.db.monitor.MonitorConstants;
+ import org.apache.iotdb.db.monitor.MonitorConstants.FileSizeConstants;
+@@ -51,10 +51,10 @@
+ public class FileSize implements IStatistic {
+ 
+   private static IoTDBConfig config = IoTDBDescriptor.getInstance().getConfig();
++  private static final Logger logger = LoggerFactory.getLogger(FileSize.class);
+   private static final long ABNORMAL_VALUE = -1L;
+   private static final long INIT_VALUE_IF_FILE_NOT_EXIST = 0L;
++  private StorageEngine storageEngine;
+ 
+   @Override
+   public Map<String, TSRecord> getAllStatisticsValue() {
+@@ -77,11 +77,11 @@ public void registerStatMetadata() {
+       hashMap.put(seriesPath, MonitorConstants.DATA_TYPE_INT64);
+       Path path = new Path(seriesPath);
+       try {
++        storageEngine.addTimeSeries(path, TSDataType.valueOf(MonitorConstants.DATA_TYPE_INT64),
+             TSEncoding.valueOf("RLE"), CompressionType.valueOf(TSFileConfig.compressor),
+             Collections.emptyMap());
++      } catch (StorageEngineException e) {
++        logger.error("Register File Size Stats into storageEngine Failed.", e);
+       }
+     }
+     StatMonitor.getInstance().registerStatStorageGroup(hashMap);
+@@ -114,7 +114,7 @@ private static class FileSizeHolder {
+   }
+ 
+   private FileSize() {
++    storageEngine = StorageEngine.getInstance();
+     if (config.isEnableStatMonitor()) {
+       StatMonitor statMonitor = StatMonitor.getInstance();
+       registerStatMetadata();
+@@ -135,32 +135,17 @@ public static FileSize getInstance() {
+   public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     EnumMap<FileSizeConstants, Long> fileSizes = new EnumMap<>(FileSizeConstants.class);
+     for (FileSizeConstants kinds : MonitorConstants.FileSizeConstants.values()) {
++
++      if (kinds.equals(FileSizeConstants.SYS)) {
++        fileSizes.put(kinds, collectSeqFileSize(fileSizes, kinds));
+       } else {
+         File file = new File(kinds.getPath());
+         if (file.exists()) {
+           try {
+             fileSizes.put(kinds, FileUtils.sizeOfDirectory(file));
+           } catch (Exception e) {
++            logger.error("Meet error while trying to get {} size with dir {} .", kinds,
++                    kinds.getPath(), e);
+             fileSizes.put(kinds, ABNORMAL_VALUE);
+           }
+         } else {
+@@ -170,4 +155,24 @@ public Map<FileSizeConstants, Long> getFileSizesInByte() {
+     }
+     return fileSizes;
+   }
++
++  private long collectSeqFileSize(EnumMap<FileSizeConstants, Long> fileSizes, FileSizeConstants kinds) {
++    long fileSize = INIT_VALUE_IF_FILE_NOT_EXIST;
++    for (String sequenceDir : config.getDataDirs()) {
++      if (sequenceDir.contains("unsequence")) {
++        continue;
++      }
++      File settledFile = new File(sequenceDir);
++      if (settledFile.exists()) {
++        try {
++          fileSize += FileUtils.sizeOfDirectory(settledFile);
++        } catch (Exception e) {
++          logger.error("Meet error while trying to get {} size with dir {} .", kinds,
++              sequenceDir, e);
++          fileSizes.put(kinds, ABNORMAL_VALUE);
++        }
++      }
++    }
++    return fileSize;
++  }
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method protected getClickableColumnKeys(columnIds Collection<Object>) : String[] extracted from protected updateClickableColumnKeys() : void in class com.haulmont.cuba.web.widgets.CubaTable
+
+Code Before:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
+-            public void onClick(String columnKey, String rowKey) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
+-                if (itemId != null && cellClickListeners != null) {
+-                    CellClickListener cellClickListener = cellClickListeners.get(columnId);
+-                    if (cellClickListener != null) {
+-                        cellClickListener.onClick(itemId, columnId);
+                     }
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
+-            String[] clickableColumnKeys = new String[cellClickListeners.size()];
+-            int i = 0;
+-            for (Object columnId : cellClickListeners.keySet()) {
+-                clickableColumnKeys[i] = _columnIdMap().key(columnId);
+-                i++;
+-            }
+ 
+-            getState().clickableColumnKeys = clickableColumnKeys;
+         }
+     }
+ 
+     @Override
+
+Code After:
+------------
+@@ -71,6 +71,10 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+ 
+     protected Set<Object> htmlCaptionColumns; // lazily initialized set
+ 
++    protected List<Object> clickableTableColumnIds; // lazily initialized list
++
++    protected Registration tableCellClickListenerRegistration;
++
+     protected AggregationStyle aggregationStyle = AggregationStyle.TOP;
+     protected Object focusColumn;
+     protected Object focusItem;
+@@ -92,16 +96,20 @@ public class CubaTable extends com.vaadin.v7.ui.Table implements TableSortableCo
+     public CubaTable() {
+         registerRpc(new CubaTableServerRpc() {
+             @Override
++            public void onClick(String columnKey, String rowKey, boolean isText) {
+                 Object columnId = _columnIdMap().get(columnKey);
+                 Object itemId = itemIdMapper.get(rowKey);
+                 // itemId could be null if rendering in process
+                 // If itemId is null it causes NPE
++                if (itemId != null) {
++                    if (cellClickListeners != null && isText) {
++                        CellClickListener cellClickListener = cellClickListeners.get(columnId);
++                        if (cellClickListener != null) {
++                            cellClickListener.onClick(itemId, columnId);
++                        }
+                     }
++
++                    fireEvent(new TableCellClickEvent(CubaTable.this, itemId, columnId, isText));
+                 }
+             }
+ 
+@@ -778,6 +786,34 @@ public void removeClickListener(Object propertyId) {
+         }
+     }
+ 
++    @Override
++    public void addTableCellClickListener(Object propertyId, TableCellClickListener listener) {
++        if (clickableTableColumnIds == null) {
++            clickableTableColumnIds = new ArrayList<>();
++        }
++        clickableTableColumnIds.add(propertyId);
++
++        // Register only one TableCellClickListener for all clickable table columns
++        if (tableCellClickListenerRegistration == null) {
++            tableCellClickListenerRegistration = addListener(TableCellClickEvent.class, listener, TableCellClickListener.clickMethod);
++        }
++    }
++
++    @Override
++    public void removeTableCellClickListener(Object propertyId) {
++        if (clickableTableColumnIds != null) {
++            clickableTableColumnIds.remove(propertyId);
++
++            if (tableCellClickListenerRegistration != null
++                    && clickableTableColumnIds.isEmpty()) {
++                tableCellClickListenerRegistration.remove();
++                tableCellClickListenerRegistration = null;
++
++                clickableTableColumnIds = null;
++            }
++        }
++    }
++
+     @Override
+     public boolean getColumnSortable(Object columnId) {
+         return nonSortableProperties == null || !nonSortableProperties.contains(columnId);
+@@ -829,6 +865,7 @@ public void beforeClientResponse(boolean initial) {
+         super.beforeClientResponse(initial);
+ 
+         updateClickableColumnKeys();
++        updateClickableTableColumnKeys();
+         updateColumnDescriptions();
+         updateAggregatableTooltips();
+         updateHtmlCaptionColumns();
+@@ -871,15 +908,24 @@ protected void updateFooterAggregation() {
+ 
+     protected void updateClickableColumnKeys() {
+         if (cellClickListeners != null) {
++            getState().clickableColumnKeys = getClickableColumnKeys(cellClickListeners.keySet());
++        }
++    }
++
++    protected void updateClickableTableColumnKeys() {
++        if (clickableTableColumnIds != null) {
++            getState().clickableTableColumnKeys = getClickableColumnKeys(clickableTableColumnIds);
++        }
++    }
+ 
++    protected String[] getClickableColumnKeys(Collection<Object> columnIds) {
++        String[] clickableColumnKeys = new String[columnIds.size()];
++        int i = 0;
++        for (Object columnId : columnIds) {
++            clickableColumnKeys[i] = _columnIdMap().key(columnId);
++            i++;
+         }
++        return clickableColumnKeys;
+     }
+ 
+     @Override
+
+Example 3:
+
+Refactoring Description: Extract Method private createChangePasswordRequest(user ScimUser, code ExpiringCode, useCSRF boolean, password String, passwordConfirmation String) : MockHttpServletRequestBuilder extracted from public testResettingAPasswordUsingTimestampForUserModification() : void in class org.cloudfoundry.identity.uaa.login.ResetPasswordControllerMockMvcTests
+
+Code Before:
+------------
+@@ -40,8 +40,10 @@
+ import static org.junit.Assert.assertThat;
+ import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+ 
+ public class ResetPasswordControllerMockMvcTests extends InjectedMockContextTest {
+ 
+@@ -60,16 +62,9 @@ public void testResettingAPasswordUsingUsernameToEnsureNoModification() throws E
+         assertEquals(1, users.size());
+         PasswordChange change = new PasswordChange(users.get(0).getId(), users.get(0).getUserName());
+ 
+-        ExpiringCode code = codeStore.generateCode(JsonUtils.writeValueAsString(change), new Timestamp(System.currentTimeMillis()+ UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
+-        MockHttpServletRequestBuilder post = post("/reset_password.do")
+-            .with(csrf())
+-            .param("code", code.getCode())
+-            .param("email", users.get(0).getPrimaryEmail())
+-            .param("password", "newpassw0rD")
+-            .param("password_confirmation", "newpassw0rD");
+-
+-        MvcResult mvcResult = getMockMvc().perform(post)
+             .andExpect(status().isFound())
+             .andExpect(redirectedUrl("home"))
+             .andReturn();
+@@ -100,14 +95,7 @@ public void testResettingAPasswordFailsWhenUsernameChanged() throws Exception {
+         user.setUserName("newusername");
+         user = userProvisioning.update(user.getId(), user);
+         try {
+-            MockHttpServletRequestBuilder post = post("/reset_password.do")
+-                .with(csrf())
+-                .param("code", code.getCode())
+-                .param("email", user.getPrimaryEmail())
+-                .param("password", "newpassw0rD")
+-                .param("password_confirmation", "newpassw0rD");
+-
+-            getMockMvc().perform(post)
+                 .andExpect(status().isUnprocessableEntity());
+         } finally {
+             user.setUserName(formerUsername);
+@@ -122,13 +110,7 @@ public void testResettingAPasswordNoCsrfParameter() throws Exception {
+         assertEquals(1, users.size());
+         ExpiringCode code = codeStore.generateCode(users.get(0).getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
+-        MockHttpServletRequestBuilder post = post("/reset_password.do")
+-            .param("code", code.getCode())
+-            .param("email", users.get(0).getPrimaryEmail())
+-            .param("password", "newpassw0rDl")
+-            .param("password_confirmation", "newpassw0rDl");
+-
+-        getMockMvc().perform(post)
+             .andExpect(status().isFound())
+             .andExpect(redirectedUrl("http://localhost/invalid_request"));
+     }
+@@ -140,12 +122,8 @@ public void testResettingAPasswordUsingTimestampForUserModification() throws Exc
+         assertEquals(1, users.size());
+         ExpiringCode code = codeStore.generateCode(users.get(0).getId(), new Timestamp(System.currentTimeMillis()+ UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
+-        MockHttpServletRequestBuilder post = post("/reset_password.do")
+-            .with(csrf())
+-            .param("code", code.getCode())
+-            .param("email", users.get(0).getPrimaryEmail())
+-            .param("password", "newpassw0rDl")
+-            .param("password_confirmation", "newpassw0rDl");
+ 
+         MvcResult mvcResult = getMockMvc().perform(post)
+             .andExpect(status().isFound())
+@@ -171,12 +149,7 @@ public void testResettingAPasswordUsingTimestampUserModified() throws Exception
+         ScimUser user = users.get(0);
+         ExpiringCode code = codeStore.generateCode(user.getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
+-        MockHttpServletRequestBuilder post = post("/reset_password.do")
+-            .with(csrf())
+-            .param("code", code.getCode())
+-            .param("email", user.getPrimaryEmail())
+-            .param("password", "newpassw0rDl")
+-            .param("password_confirmation", "newpassw0rDl");
+ 
+         if (Arrays.asList(getWebApplicationContext().getEnvironment().getActiveProfiles()).contains("mysql")) {
+             Thread.sleep(1050);
+@@ -188,7 +161,39 @@ public void testResettingAPasswordUsingTimestampUserModified() throws Exception
+ 
+         getMockMvc().perform(post)
+             .andExpect(status().isUnprocessableEntity());
+ 
+ 
+     }
+ }
+
+Code After:
+------------
+@@ -40,8 +40,10 @@
+ import static org.junit.Assert.assertThat;
+ import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
+ 
+ public class ResetPasswordControllerMockMvcTests extends InjectedMockContextTest {
+ 
+@@ -60,16 +62,9 @@ public void testResettingAPasswordUsingUsernameToEnsureNoModification() throws E
+         assertEquals(1, users.size());
+         PasswordChange change = new PasswordChange(users.get(0).getId(), users.get(0).getUserName());
+ 
++        ExpiringCode code = codeStore.generateCode(JsonUtils.writeValueAsString(change), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
++        MvcResult mvcResult = getMockMvc().perform(createChangePasswordRequest(users.get(0), code, true))
+             .andExpect(status().isFound())
+             .andExpect(redirectedUrl("home"))
+             .andReturn();
+@@ -100,14 +95,7 @@ public void testResettingAPasswordFailsWhenUsernameChanged() throws Exception {
+         user.setUserName("newusername");
+         user = userProvisioning.update(user.getId(), user);
+         try {
++            getMockMvc().perform(createChangePasswordRequest(users.get(0), code, true))
+                 .andExpect(status().isUnprocessableEntity());
+         } finally {
+             user.setUserName(formerUsername);
+@@ -122,13 +110,7 @@ public void testResettingAPasswordNoCsrfParameter() throws Exception {
+         assertEquals(1, users.size());
+         ExpiringCode code = codeStore.generateCode(users.get(0).getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
++        getMockMvc().perform(createChangePasswordRequest(users.get(0), code, false))
+             .andExpect(status().isFound())
+             .andExpect(redirectedUrl("http://localhost/invalid_request"));
+     }
+@@ -140,12 +122,8 @@ public void testResettingAPasswordUsingTimestampForUserModification() throws Exc
+         assertEquals(1, users.size());
+         ExpiringCode code = codeStore.generateCode(users.get(0).getId(), new Timestamp(System.currentTimeMillis()+ UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
++        MockHttpServletRequestBuilder post = createChangePasswordRequest(users.get(0), code,
++            true, "newpassw0rD", "newpassw0rD");
+ 
+         MvcResult mvcResult = getMockMvc().perform(post)
+             .andExpect(status().isFound())
+@@ -171,12 +149,7 @@ public void testResettingAPasswordUsingTimestampUserModified() throws Exception
+         ScimUser user = users.get(0);
+         ExpiringCode code = codeStore.generateCode(user.getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
+ 
++        MockHttpServletRequestBuilder post = createChangePasswordRequest(user, code, true);
+ 
+         if (Arrays.asList(getWebApplicationContext().getEnvironment().getActiveProfiles()).contains("mysql")) {
+             Thread.sleep(1050);
+@@ -188,7 +161,39 @@ public void testResettingAPasswordUsingTimestampUserModified() throws Exception
+ 
+         getMockMvc().perform(post)
+             .andExpect(status().isUnprocessableEntity());
++    }
++
++    @Test
++    public void resetPassword_ReturnsUnprocessableEntity_NewPasswordSameAsOld() throws Exception {
++        ScimUserProvisioning userProvisioning = getWebApplicationContext().getBean(ScimUserProvisioning.class);
++        List<ScimUser> users = userProvisioning.query("username eq \"marissa\"");
++        assertNotNull(users);
++        assertEquals(1, users.size());
++        ScimUser user = users.get(0);
++
++        ExpiringCode code = codeStore.generateCode(user.getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
++        getMockMvc().perform(createChangePasswordRequest(user, code, true, "d3faultPasswd", "d3faultPasswd"));
+ 
++        code = codeStore.generateCode(user.getId(), new Timestamp(System.currentTimeMillis() + UaaResetPasswordService.PASSWORD_RESET_LIFETIME));
++        getMockMvc().perform(createChangePasswordRequest(user, code, true, "d3faultPasswd", "d3faultPasswd"))
++            .andExpect(status().isUnprocessableEntity())
++            .andExpect(view().name("forgot_password"))
++            .andExpect(model().attribute("message", "Your new password cannot be the same as the old password."));
++    }
++
++    private MockHttpServletRequestBuilder createChangePasswordRequest(ScimUser user, ExpiringCode code, boolean useCSRF) throws Exception {
++        return createChangePasswordRequest(user, code, useCSRF, "newpassw0rDl", "newpassw0rDl");
++    }
+ 
++    private MockHttpServletRequestBuilder createChangePasswordRequest(ScimUser user, ExpiringCode code, boolean useCSRF, String password, String passwordConfirmation) throws Exception {
++        MockHttpServletRequestBuilder post = post("/reset_password.do");
++        if (useCSRF) {
++            post.with(csrf());
++        }
++        post.param("code", code.getCode())
++            .param("email", user.getPrimaryEmail())
++            .param("password", password)
++            .param("password_confirmation", passwordConfirmation);
++        return post;
+     }
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ *     Run a depth-first filtered traversal of the root and all of its descendants.
+ *     @param filter NodeFilter visitor.
+ *     @param root the root node point to traverse.
+ *     @return The filter result of the root node, or {@link FilterResult#STOP}.
+ *
+ *     @see NodeFilter
+ */
+public static FilterResult filter(NodeFilter filter, Node root) {
+    Node node = root;
+    int depth = 0;
+    while (node != null) {
+        FilterResult result = filter.head(node, depth);
+        if (result == FilterResult.STOP)
+            return result;
+        // Descend into child nodes:
+        if (result == FilterResult.CONTINUE && node.childNodeSize() > 0) {
+            node = node.childNode(0);
+            ++depth;
+            continue;
+        }
+        // No siblings, move upwards:
+        while (true) {
+            // depth > 0, so has parent
+            assert node != null;
+            if (!(node.nextSibling() == null && depth > 0))
+                break;
+            // 'tail' current node:
+            if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+                result = filter.tail(node, depth);
+                if (result == FilterResult.STOP)
+                    return result;
+            }
+            // In case we need to remove it below.
+            Node prev = node;
+            node = node.parentNode();
+            depth--;
+            if (result == FilterResult.REMOVE)
+                // Remove AFTER finding parent.
+                prev.remove();
+            // Parent was not pruned.
+            result = FilterResult.CONTINUE;
+        }
+        // 'tail' current node, then proceed with siblings:
+        if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+            result = filter.tail(node, depth);
+            if (result == FilterResult.STOP)
+                return result;
+        }
+        if (node == root)
+            return result;
+        // In case we need to remove it below.
+        Node prev = node;
+        node = node.nextSibling();
+        if (result == FilterResult.REMOVE)
+            // Remove AFTER finding sibling.
+            prev.remove();
+    }
+    // root == null?
+    return FilterResult.CONTINUE;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

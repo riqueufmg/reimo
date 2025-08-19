@@ -1,0 +1,308 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private movePlayerToForeground() : void extracted from private processCommand(command Command) : void in class com.liskovsoft.smartyoutubetv2.common.app.models.playback.managers.RemoteControlManager
+
+Code Before:
+------------
+@@ -8,6 +8,7 @@
+ import com.liskovsoft.mediaserviceinterfaces.data.Command;
+ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+ import com.liskovsoft.sharedutils.mylogger.Log;
+ import com.liskovsoft.smartyoutubetv2.common.R;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
+@@ -16,7 +17,6 @@
+ import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
+-import com.liskovsoft.sharedutils.rx.RxUtils;
+ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+ import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+ import io.reactivex.android.schedulers.AndroidSchedulers;
+@@ -239,7 +239,7 @@ private void processCommand(Command command) {
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+                 }
+-                Utils.movePlayerToForeground(getActivity());
+                 Video newVideo = Video.from(command.getVideoId());
+                 newVideo.remotePlaylistId = command.getPlaylistId();
+                 newVideo.playlistIndex = command.getPlaylistIndex();
+@@ -261,7 +261,7 @@ private void processCommand(Command command) {
+             case Command.TYPE_SEEK:
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPositionMs(command.getCurrentTimeMs());
+                     postSeek(command.getCurrentTimeMs());
+                 } else {
+@@ -270,7 +270,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PLAY:
+                 if (getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPlay(true);
+                     //postStartPlaying(getController().getVideo(), true);
+                     postPlay(true);
+@@ -280,7 +280,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PAUSE:
+                 if (getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     getController().setPlay(false);
+                     //postStartPlaying(getController().getVideo(), false);
+                     postPlay(false);
+@@ -290,15 +290,15 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_NEXT:
+                 if (getBridge() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     mVideoLoader.loadNext();
+                 } else {
+                     openNewVideo(mVideo);
+                 }
+                 break;
+             case Command.TYPE_PREVIOUS:
+                 if (getBridge() != null && getController() != null) {
+-                    Utils.movePlayerToForeground(getActivity());
+                     // Switch immediately. Skip position reset logic.
+                     mVideoLoader.loadPrevious();
+                 } else {
+@@ -435,4 +435,11 @@ private void setVolume(int volume) {
+             MessageHelpers.showMessageThrottled(getActivity(), getActivity().getString(R.string.volume, Utils.getGlobalVolume(getActivity())));
+         }
+     }
+ }
+
+Code After:
+------------
+@@ -8,6 +8,7 @@
+ import com.liskovsoft.mediaserviceinterfaces.data.Command;
+ import com.liskovsoft.sharedutils.helpers.MessageHelpers;
+ import com.liskovsoft.sharedutils.mylogger.Log;
++import com.liskovsoft.sharedutils.rx.RxUtils;
+ import com.liskovsoft.smartyoutubetv2.common.R;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.data.Video;
+ import com.liskovsoft.smartyoutubetv2.common.app.models.playback.PlayerEventListenerHelper;
+@@ -16,7 +17,6 @@
+ import com.liskovsoft.smartyoutubetv2.common.app.views.ViewManager;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.PlayerData;
+ import com.liskovsoft.smartyoutubetv2.common.prefs.RemoteControlData;
+ import com.liskovsoft.smartyoutubetv2.common.utils.Utils;
+ import com.liskovsoft.youtubeapi.service.YouTubeMediaService;
+ import io.reactivex.android.schedulers.AndroidSchedulers;
+@@ -239,7 +239,7 @@ private void processCommand(Command command) {
+                 if (getController() != null) {
+                     getController().showOverlay(false);
+                 }
++                movePlayerToForeground();
+                 Video newVideo = Video.from(command.getVideoId());
+                 newVideo.remotePlaylistId = command.getPlaylistId();
+                 newVideo.playlistIndex = command.getPlaylistIndex();
+@@ -261,7 +261,7 @@ private void processCommand(Command command) {
+             case Command.TYPE_SEEK:
+                 if (getController() != null) {
+                     getController().showOverlay(false);
++                    movePlayerToForeground();
+                     getController().setPositionMs(command.getCurrentTimeMs());
+                     postSeek(command.getCurrentTimeMs());
+                 } else {
+@@ -270,7 +270,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PLAY:
+                 if (getController() != null) {
++                    movePlayerToForeground();
+                     getController().setPlay(true);
+                     //postStartPlaying(getController().getVideo(), true);
+                     postPlay(true);
+@@ -280,7 +280,7 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_PAUSE:
+                 if (getController() != null) {
++                    movePlayerToForeground();
+                     getController().setPlay(false);
+                     //postStartPlaying(getController().getVideo(), false);
+                     postPlay(false);
+@@ -290,15 +290,15 @@ private void processCommand(Command command) {
+                 break;
+             case Command.TYPE_NEXT:
+                 if (getBridge() != null) {
++                    movePlayerToForeground();
+                     mVideoLoader.loadNext();
+                 } else {
+                     openNewVideo(mVideo);
+                 }
+                 break;
+             case Command.TYPE_PREVIOUS:
+                 if (getBridge() != null && getController() != null) {
++                    movePlayerToForeground();
+                     // Switch immediately. Skip position reset logic.
+                     mVideoLoader.loadPrevious();
+                 } else {
+@@ -435,4 +435,11 @@ private void setVolume(int volume) {
+             MessageHelpers.showMessageThrottled(getActivity(), getActivity().getString(R.string.volume, Utils.getGlobalVolume(getActivity())));
+         }
+     }
++
++    private void movePlayerToForeground() {
++        Utils.movePlayerToForeground(getActivity());
++        if (getController() == null || !Utils.checkActivity(getActivity())) { // player isn't started yet or closed
++            RxUtils.runAsync(() -> Utils.movePlayerToForeground(getActivity()), 5_000);
++        }
++    }
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method private prefix(adr AMD64Address, reg Register, byteinst boolean) : void extracted from private prefix(adr AMD64Address, reg Register) : void in class com.oracle.graal.asm.amd64.AMD64Assembler
+
+Code Before:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
+-        prefix(dst, src); // , true)
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
+-                } else if (reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Code After:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
++        prefix(dst, src, true);
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
++        prefix(adr, reg, false);
++    }
++
++    private void prefix(AMD64Address adr, Register reg, boolean byteinst) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
++                } else if (byteinst && reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Example 3:
+
+Refactoring Description: Extract Method public set(l Locale) : void extracted from public get() : Locale in class ch.cyberduck.core.LocaleFactory
+
+Code Before:
+------------
+@@ -35,11 +35,15 @@ public LocaleFactory() {
+      */
+     public static synchronized Locale get() {
+         if(null == locale) {
+-            locale = new LocaleFactory().create();
+         }
+         return locale;
+     }
+ 
+     /**
+      * @param key English variant
+      * @return Localized from default table
+
+Code After:
+------------
+@@ -35,11 +35,15 @@ public LocaleFactory() {
+      */
+     public static synchronized Locale get() {
+         if(null == locale) {
++            set(new LocaleFactory().create());
+         }
+         return locale;
+     }
+ 
++    public static synchronized void set(Locale l) {
++        locale = l;
++    }
++
+     /**
+      * @param key English variant
+      * @return Localized from default table
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

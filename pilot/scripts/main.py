@@ -84,8 +84,6 @@ if __name__ == "__main__":
                 file = open(f"{OUTPUT_PATH}prompts/{sample['id']}/prompt_{i}.txt", "r", encoding="utf-8")
                 prompt = file.read()
                 file.close()
-                
-                prompt = zeroshot_prompt(code_snippet="Olá tudo bem?")
 
                 hf_inference_endpoint(
                     prompt=prompt,
@@ -93,14 +91,14 @@ if __name__ == "__main__":
                     api_token=API_TOKEN,
                     sample_id=sample['id'],
                     prompt_id=i
-                )
-                
-                exit()
-            
-            exit()
+                )    
         except Exception as e:
             logger.error(f"Error processing sample {sample['id']}: {e}")
-    
+
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    logger.info(f"Execution finished in {elapsed_time:.2f} seconds")
+    print(f"\nExecution time: {elapsed_time:.2f} seconds")    
     exit() ## I WILL REMOVE AFTER THE TESTS
     
     ## FORMAT LLM OUTPUT

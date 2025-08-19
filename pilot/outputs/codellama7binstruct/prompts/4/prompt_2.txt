@@ -1,0 +1,274 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private getSecondsSinceMidnight(time Calendar, leg Leg) : int extracted from public rideForTransitPathLeg(leg Leg) : Ride in class org.opentripplanner.routing.fares.impl.RideMapper
+
+Code Before:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
+-        var zones = leg.intermediateStops.stream().map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString()).collect(
+-                Collectors.toSet());
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
+-        ride.startTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+-        ride.endTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
+ }
+
+Code After:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
++import java.util.Calendar;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
++        var zones = leg.intermediateStops.stream()
++                .map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString())
++                .collect(Collectors.toSet());
++
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
++        ride.startTime = getSecondsSinceMidnight(leg.startTime, leg);
++        ride.endTime = getSecondsSinceMidnight(leg.endTime, leg);
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
++    private static int getSecondsSinceMidnight(Calendar time, Leg leg) {
++        return time.toInstant()
++                .atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset))
++                .toLocalTime()
++                .toSecondOfDay();
++    }
++
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method protected singleRun(args String[]) : int extracted from private runSingleJar(args String[]) : int in class com.google.devtools.build.singlejar.SingleJarWorker
+
+Code Before:
+------------
+@@ -34,7 +34,7 @@ public static void main(String[] args) {
+   private PrintStream originalSterr;
+   private ByteArrayOutputStream stdoutAndStderr;
+ 
+-  private void runWorker() {
+     trapOutputs();
+ 
+     try {
+@@ -81,7 +81,7 @@ private void outputResult(int returnCode) throws IOException {
+ 
+   private int runSingleJar(String[] args) {
+     try {
+-      return SingleJar.singleRun(args);
+     } catch (IOException e) {
+       // Some IO failures are okay no need to quit the worker
+       System.err.println("SingleJar threw exception : " + e.getMessage());
+@@ -94,4 +94,8 @@ private int runSingleJar(String[] args) {
+       return 1;
+     }
+   }
+ }
+
+Code After:
+------------
+@@ -34,7 +34,7 @@ public static void main(String[] args) {
+   private PrintStream originalSterr;
+   private ByteArrayOutputStream stdoutAndStderr;
+ 
++  protected void runWorker() {
+     trapOutputs();
+ 
+     try {
+@@ -81,7 +81,7 @@ private void outputResult(int returnCode) throws IOException {
+ 
+   private int runSingleJar(String[] args) {
+     try {
++      return singleRun(args);
+     } catch (IOException e) {
+       // Some IO failures are okay no need to quit the worker
+       System.err.println("SingleJar threw exception : " + e.getMessage());
+@@ -94,4 +94,8 @@ private int runSingleJar(String[] args) {
+       return 1;
+     }
+   }
++
++  protected int singleRun(String[] args) throws Exception {
++    return SingleJar.singleRun(args);
++  }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method private prefix(adr AMD64Address, reg Register, byteinst boolean) : void extracted from private prefix(adr AMD64Address, reg Register) : void in class com.oracle.graal.asm.amd64.AMD64Assembler
+
+Code Before:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
+-        prefix(dst, src); // , true)
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
+-                } else if (reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Code After:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
++        prefix(dst, src, true);
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
++        prefix(adr, reg, false);
++    }
++
++    private void prefix(AMD64Address adr, Register reg, boolean byteinst) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
++                } else if (byteinst && reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Ensures a meta charset (html) or xml declaration (xml) with the current
+ * encoding used. This only applies with
+ * {@link #updateMetaCharsetElement(boolean) updateMetaCharset} set to
+ * <tt>true</tt>, otherwise this method does nothing.
+ *
+ * <ul>
+ * <li>An existing element gets updated with the current charset</li>
+ * <li>If there's no element yet it will be inserted</li>
+ * <li>Obsolete elements are removed</li>
+ * </ul>
+ *
+ * <p><b>Elements used:</b></p>
+ *
+ * <ul>
+ * <li><b>Html:</b> <i>&lt;meta charset="CHARSET"&gt;</i></li>
+ * <li><b>Xml:</b> <i>&lt;?xml version="1.0" encoding="CHARSET"&gt;</i></li>
+ * </ul>
+ */
+private void ensureMetaCharsetElement() {
+    if (updateMetaCharset) {
+        OutputSettings.Syntax syntax = outputSettings().syntax();
+        if (syntax == OutputSettings.Syntax.html) {
+            Element metaCharset = selectFirst("meta[charset]");
+            if (metaCharset != null) {
+                metaCharset.attr("charset", charset().displayName());
+            } else {
+                head().appendElement("meta").attr("charset", charset().displayName());
+            }
+            // Remove obsolete elements
+            select("meta[name=charset]").remove();
+        } else if (syntax == OutputSettings.Syntax.xml) {
+            Node node = ensureChildNodes().get(0);
+            if (node instanceof XmlDeclaration) {
+                XmlDeclaration decl = (XmlDeclaration) node;
+                if (decl.name().equals("xml")) {
+                    decl.attr("encoding", charset().displayName());
+                    if (decl.hasAttr("version"))
+                        decl.attr("version", "1.0");
+                } else {
+                    decl = new XmlDeclaration("xml", false);
+                    decl.attr("version", "1.0");
+                    decl.attr("encoding", charset().displayName());
+                    prependChild(decl);
+                }
+            } else {
+                XmlDeclaration decl = new XmlDeclaration("xml", false);
+                decl.attr("version", "1.0");
+                decl.attr("encoding", charset().displayName());
+                prependChild(decl);
+            }
+        }
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

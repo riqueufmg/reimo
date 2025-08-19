@@ -1,0 +1,50 @@
+  <refactored code>
+
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    return applyMaskPenaltyRule1InternalHelper(matrix, isHorizontal);
+}
+
+private static int applyMaskPenaltyRule1InternalHelper(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+</refactored code>
+<refactoring explanation>
+
+The original code has a nested loop that iterates over the cells of a 2D array. The inner loop checks the value of each cell and increments a penalty variable if the value is the same as the previous cell. The outer loop increments the penalty variable if the number of same-value cells is greater than or equal to 5.
+
+To refactor this code, we can extract a helper method that performs the same logic as the original method, but with a different name. This will allow us to reuse the logic in both the horizontal and vertical orders.
+
+The extracted method takes the same parameters as the original method, but it also takes an additional parameter that indicates whether the method should iterate over the rows or columns of the 2D array.
+
+The extracted method uses the same logic as the original method, but it uses the new parameter to determine whether to iterate over the rows or columns of the 2D array. It also uses a new variable to keep track of the previous value, and it uses a new variable to keep track of the number of same-value cells.
+
+The original method calls the extracted method with the appropriate parameter to iterate over the rows or columns of the 2D array.
+
+The extracted method returns the penalty variable, which is then returned by the original method.
+
+</refactoring explanation>

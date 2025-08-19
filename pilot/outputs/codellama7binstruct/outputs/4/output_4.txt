@@ -1,0 +1,40 @@
+  <refactored code>
+private void ensureMetaCharsetElement() {
+    if (updateMetaCharset) {
+        OutputSettings.Syntax syntax = outputSettings().syntax();
+        if (syntax == OutputSettings.Syntax.html) {
+            Element metaCharset = selectFirst("meta[charset]");
+            if (metaCharset != null) {
+                metaCharset.attr("charset", charset().displayName());
+            } else {
+                head().appendElement("meta").attr("charset", charset().displayName());
+            }
+            // Remove obsolete elements
+            select("meta[name=charset]").remove();
+        } else if (syntax == OutputSettings.Syntax.xml) {
+            Node node = ensureChildNodes().get(0);
+            if (node instanceof XmlDeclaration) {
+                XmlDeclaration decl = (XmlDeclaration) node;
+                if (decl.name().equals("xml")) {
+                    decl.attr("encoding", charset().displayName());
+                    if (decl.hasAttr("version"))
+                        decl.attr("version", "1.0");
+                } else {
+                    decl = new XmlDeclaration("xml", false);
+                    decl.attr("version", "1.0");
+                    decl.attr("encoding", charset().displayName());
+                    prependChild(decl);
+                }
+            } else {
+                XmlDeclaration decl = new XmlDeclaration("xml", false);
+                decl.attr("version", "1.0");
+                decl.attr("encoding", charset().displayName());
+                prependChild(decl);
+            }
+        }
+    }
+}
+</refactored code>
+<refactoring explanation>
+The code was refactored by extracting the logic of ensuring a meta charset element into a separate method. The new method, <code>ensureMetaCharsetElement</code>, takes no parameters and returns void. The original method, <code>ensureMetaCharsetElement</code>, was refactored into two parts: the first part checks the syntax and the second part checks if there is a meta charset element. The first part was extracted into a separate method, <code>ensureMetaCharsetElement</code>, and the second part was extracted into a separate method, <code>ensureMetaCharsetElement</code>. The original method was then replaced with a call to the new method.
+</refactoring explanation>

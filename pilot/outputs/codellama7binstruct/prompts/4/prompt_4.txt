@@ -1,0 +1,286 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public sendMessageAsync(server RaftPeerId, message Message, timeoutMs long) : CompletableFuture<RaftClientReply> extracted from public sendMessageAsync(server RaftPeerId, message Message) : CompletableFuture<RaftClientReply> in class alluxio.master.journal.raft.RaftJournalSystem
+
+Code Before:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
+-    long timeoutMs =
+-        Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT);
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
+-    RaftClient client = createClient();
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Code After:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
++    return createClient(Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  private RaftClient createClient(long timeoutMs) {
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
++    return sendMessageAsync(server, message, Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  /**
++   * Sends a message to a raft server asynchronously.
++   *
++   * @param server the raft peer id of the target server
++   * @param message the message to send
++   * @param timeoutMs the message timeout in milliseconds
++   * @return a future to be completed with the client reply
++   */
++  public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
++      RaftPeerId server, Message message, long timeoutMs) {
++    RaftClient client = createClient(timeoutMs);
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Example 2:
+
+Refactoring Description: Extract Method protected computeNodes(nodes NodeBitMap, graph Graph, blocks Iterable<AbstractBeginNode>, earlyExits Iterable<LoopExitNode>) : void extracted from protected computeNodes(graph Graph, blocks Iterable<AbstractBeginNode>, earlyExits Iterable<LoopExitNode>) : NodeBitMap in class com.oracle.graal.loop.LoopFragment
+
+Code Before:
+------------
+@@ -176,6 +176,11 @@ protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode
+ 
+     protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode> blocks, Iterable<LoopExitNode> earlyExits) {
+         final NodeBitMap nodes = graph.createNodeBitMap();
+         for (AbstractBeginNode b : blocks) {
+             if (b.isDeleted()) {
+                 continue;
+@@ -227,8 +232,6 @@ protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode
+                 }
+             }
+         }
+-
+-        return nodes;
+     }
+ 
+     private static boolean markFloating(Node n, NodeBitMap loopNodes, NodeBitMap notloopNodes) {
+@@ -358,7 +361,7 @@ protected void mergeEarlyExits() {
+                  * VirtualState nodes contained in the old exit's state may be shared by other
+                  * dominated VirtualStates. Those dominated virtual states need to see the
+                  * proxy->phi update that are applied below.
+-                 * 
+                  * We now update the original fragment's nodes accordingly:
+                  */
+                 originalExitState.applyToVirtual(node -> original.nodes.clearAndGrow(node));
+
+Code After:
+------------
+@@ -176,6 +176,11 @@ protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode
+ 
+     protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode> blocks, Iterable<LoopExitNode> earlyExits) {
+         final NodeBitMap nodes = graph.createNodeBitMap();
++        computeNodes(nodes, graph, blocks, earlyExits);
++        return nodes;
++    }
++
++    protected static void computeNodes(NodeBitMap nodes, Graph graph, Iterable<AbstractBeginNode> blocks, Iterable<LoopExitNode> earlyExits) {
+         for (AbstractBeginNode b : blocks) {
+             if (b.isDeleted()) {
+                 continue;
+@@ -227,8 +232,6 @@ protected static NodeBitMap computeNodes(Graph graph, Iterable<AbstractBeginNode
+                 }
+             }
+         }
+     }
+ 
+     private static boolean markFloating(Node n, NodeBitMap loopNodes, NodeBitMap notloopNodes) {
+@@ -358,7 +361,7 @@ protected void mergeEarlyExits() {
+                  * VirtualState nodes contained in the old exit's state may be shared by other
+                  * dominated VirtualStates. Those dominated virtual states need to see the
+                  * proxy->phi update that are applied below.
++                 *
+                  * We now update the original fragment's nodes accordingly:
+                  */
+                 originalExitState.applyToVirtual(node -> original.nodes.clearAndGrow(node));
+
+Example 3:
+
+Refactoring Description: Extract Method private calculateCapacity(elementData Object[], minCapacity int) : int extracted from private ensureCapacityInternal(minCapacity int) : void in class java.util.ArrayList
+
+Code Before:
+------------
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
+-    private void ensureCapacityInternal(int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+         }
+ 
+-        ensureExplicitCapacity(minCapacity);
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Code After:
+------------
+@@ -1,5 +1,5 @@
+ /*
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
++import sun.misc.SharedSecrets;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
++    private static int calculateCapacity(Object[] elementData, int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
++            return Math.max(DEFAULT_CAPACITY, minCapacity);
++        }
++        return minCapacity;
+         }
+ 
++    private void ensureCapacityInternal(int minCapacity) {
++        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
++            int capacity = calculateCapacity(elementData, size);
++            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Ensures a meta charset (html) or xml declaration (xml) with the current
+ * encoding used. This only applies with
+ * {@link #updateMetaCharsetElement(boolean) updateMetaCharset} set to
+ * <tt>true</tt>, otherwise this method does nothing.
+ *
+ * <ul>
+ * <li>An existing element gets updated with the current charset</li>
+ * <li>If there's no element yet it will be inserted</li>
+ * <li>Obsolete elements are removed</li>
+ * </ul>
+ *
+ * <p><b>Elements used:</b></p>
+ *
+ * <ul>
+ * <li><b>Html:</b> <i>&lt;meta charset="CHARSET"&gt;</i></li>
+ * <li><b>Xml:</b> <i>&lt;?xml version="1.0" encoding="CHARSET"&gt;</i></li>
+ * </ul>
+ */
+private void ensureMetaCharsetElement() {
+    if (updateMetaCharset) {
+        OutputSettings.Syntax syntax = outputSettings().syntax();
+        if (syntax == OutputSettings.Syntax.html) {
+            Element metaCharset = selectFirst("meta[charset]");
+            if (metaCharset != null) {
+                metaCharset.attr("charset", charset().displayName());
+            } else {
+                head().appendElement("meta").attr("charset", charset().displayName());
+            }
+            // Remove obsolete elements
+            select("meta[name=charset]").remove();
+        } else if (syntax == OutputSettings.Syntax.xml) {
+            Node node = ensureChildNodes().get(0);
+            if (node instanceof XmlDeclaration) {
+                XmlDeclaration decl = (XmlDeclaration) node;
+                if (decl.name().equals("xml")) {
+                    decl.attr("encoding", charset().displayName());
+                    if (decl.hasAttr("version"))
+                        decl.attr("version", "1.0");
+                } else {
+                    decl = new XmlDeclaration("xml", false);
+                    decl.attr("version", "1.0");
+                    decl.attr("encoding", charset().displayName());
+                    prependChild(decl);
+                }
+            } else {
+                XmlDeclaration decl = new XmlDeclaration("xml", false);
+                decl.attr("version", "1.0");
+                decl.attr("encoding", charset().displayName());
+                prependChild(decl);
+            }
+        }
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

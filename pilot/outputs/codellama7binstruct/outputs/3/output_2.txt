@@ -1,0 +1,36 @@
+  <refactored code>
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    return applyMaskPenaltyRule1InternalHelper(matrix, isHorizontal);
+}
+
+private static int applyMaskPenaltyRule1InternalHelper(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+</refactored code>
+<refactoring explanation>
+The original code is refactored into two methods: applyMaskPenaltyRule1Internal and applyMaskPenaltyRule1InternalHelper. The first method is the original method that does the calculation in both vertical and horizontal orders. The second method is a helper method that does the actual calculation. The original method calls the helper method and passes in the necessary parameters.
+</refactoring explanation>

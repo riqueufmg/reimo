@@ -1,1 +1,0 @@
-![Texto alternativo](logo.png)

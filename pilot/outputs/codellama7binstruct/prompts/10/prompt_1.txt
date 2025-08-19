@@ -1,0 +1,389 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private openReportParamsDialog(report Report, window Window) : void extracted from public createRunReportButton(captionId String, window Window) : AbstractAction in class com.haulmont.cuba.web.app.ui.report.ReportHelper
+
+Code Before:
+------------
+@@ -46,14 +46,18 @@ private ReportHelper() {
+     public static void runReport(Report report, Window window) {
+         if (report != null) {
+             if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
+-                window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
+-                        Collections.<String, Object>singletonMap("report", report));
+             } else {
+                 ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+             }
+         }
+     }
+ 
+     public static void runReport(Report report, Window window, final String paramAlias, final Object paramValue) {
+         runReport(report, window, paramAlias, paramValue, null);
+     }
+@@ -62,8 +66,7 @@ public static void runReport(Report report, Window window, final String paramAli
+         if (report != null) {
+             List<ReportInputParameter> params = report.getInputParameters();
+             if (params != null && params.size() > 1) {
+-                window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
+-                        Collections.<String, Object>singletonMap("report", report));
+             } else {
+                 if (params != null && params.size() == 1) {
+                     if (name == null)
+@@ -97,14 +100,6 @@ public static void printReport(Report report, String name, Map<String, Object> p
+         }
+         if (find)
+             printReport(report, name, params, item.getKey(), item.getValue());
+-        /*
+-        if (ReportOutputType.XLS.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.XLS, ExportFormat.XLS);
+-        else if (ReportOutputType.DOC.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.DOC, ExportFormat.DOC);
+-        else if (ReportOutputType.PDF.equals(reportOutputType))
+-            printReport(report, params, ReportOutputType.PDF, ExportFormat.PDF);
+-        */
+     }
+ 
+     private static void printReport(Report report, String name, Map<String, Object> params, ReportOutputType reportOutputType, ExportFormat exportFormat) {
+@@ -131,7 +126,7 @@ public void handleLookup(Collection items) {
+                             report = window.getDsContext().getDataService().reload(report, "report.edit");
+                             if (report != null) {
+                                 if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
+-                                    window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG, Collections.<String, Object>singletonMap("report", report));
+                                 } else {
+                                     ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+                                 }
+
+Code After:
+------------
+@@ -46,14 +46,18 @@ private ReportHelper() {
+     public static void runReport(Report report, Window window) {
+         if (report != null) {
+             if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
++                openReportParamsDialog(report, window);
+             } else {
+                 ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+             }
+         }
+     }
+ 
++    private static void openReportParamsDialog(Report report, Window window) {
++        window.openWindow("report$inputParameters", WindowManager.OpenType.DIALOG,
++                Collections.<String, Object>singletonMap("report", report));
++    }
++
+     public static void runReport(Report report, Window window, final String paramAlias, final Object paramValue) {
+         runReport(report, window, paramAlias, paramValue, null);
+     }
+@@ -62,8 +66,7 @@ public static void runReport(Report report, Window window, final String paramAli
+         if (report != null) {
+             List<ReportInputParameter> params = report.getInputParameters();
+             if (params != null && params.size() > 1) {
++                openReportParamsDialog(report, window);
+             } else {
+                 if (params != null && params.size() == 1) {
+                     if (name == null)
+@@ -97,14 +100,6 @@ public static void printReport(Report report, String name, Map<String, Object> p
+         }
+         if (find)
+             printReport(report, name, params, item.getKey(), item.getValue());
+     }
+ 
+     private static void printReport(Report report, String name, Map<String, Object> params, ReportOutputType reportOutputType, ExportFormat exportFormat) {
+@@ -131,7 +126,7 @@ public void handleLookup(Collection items) {
+                             report = window.getDsContext().getDataService().reload(report, "report.edit");
+                             if (report != null) {
+                                 if (report.getInputParameters() != null && report.getInputParameters().size() > 0) {
++                                    openReportParamsDialog(report, window);
+                                 } else {
+                                     ReportHelper.printReport(report, Collections.<String, Object>emptyMap());
+                                 }
+
+Example 2:
+
+Refactoring Description: Extract Method public isEnableCommonScript() : boolean extracted from public isValid() : boolean in class io.metersphere.project.api.processor.ScriptProcessor
+
+Code Before:
+------------
+@@ -2,16 +2,15 @@
+ 
+ import com.fasterxml.jackson.annotation.JsonTypeName;
+ import io.metersphere.project.constants.ScriptLanguageType;
+-import io.metersphere.project.api.KeyValueParam;
+ import io.metersphere.system.valid.EnumValue;
+ import jakarta.validation.Valid;
+ import jakarta.validation.constraints.Size;
+ import lombok.Data;
+ import org.apache.commons.lang3.BooleanUtils;
+ import org.apache.commons.lang3.StringUtils;
+ 
+-import java.util.List;
+-
+ 
+ /**
+  * @Author: jianxing
+@@ -29,6 +28,7 @@ public class ScriptProcessor extends MsProcessor {
+      * {@link ScriptLanguageType}
+      */
+     @Size(max = 20)
+     @EnumValue(enumClass = ScriptLanguageType.class)
+     private String scriptLanguage;
+     /**
+@@ -38,20 +38,22 @@ public class ScriptProcessor extends MsProcessor {
+      */
+     private Boolean enableCommonScript = false;
+     /**
+-     * 公共脚本ID
+-     */
+-    @Size(max = 50)
+-    private String scriptId;
+-    /**
+-     * 公共脚本入参
+      */
+     @Valid
+-    private List<KeyValueParam> params;
+ 
+     public boolean isValid() {
+-        if (BooleanUtils.isTrue(enableCommonScript) && StringUtils.isBlank(scriptId)) {
+-            return false;
+         }
+-        return StringUtils.isNotBlank(script);
+     }
+ }
+
+Code After:
+------------
+@@ -2,16 +2,15 @@
+ 
+ import com.fasterxml.jackson.annotation.JsonTypeName;
+ import io.metersphere.project.constants.ScriptLanguageType;
++import io.metersphere.project.dto.CommonScriptInfo;
+ import io.metersphere.system.valid.EnumValue;
+ import jakarta.validation.Valid;
++import jakarta.validation.constraints.NotBlank;
+ import jakarta.validation.constraints.Size;
+ import lombok.Data;
+ import org.apache.commons.lang3.BooleanUtils;
+ import org.apache.commons.lang3.StringUtils;
+ 
+ 
+ /**
+  * @Author: jianxing
+@@ -29,6 +28,7 @@ public class ScriptProcessor extends MsProcessor {
+      * {@link ScriptLanguageType}
+      */
+     @Size(max = 20)
++    @NotBlank
+     @EnumValue(enumClass = ScriptLanguageType.class)
+     private String scriptLanguage;
+     /**
+@@ -38,20 +38,22 @@ public class ScriptProcessor extends MsProcessor {
+      */
+     private Boolean enableCommonScript = false;
+     /**
++     * 公共脚本信息
++     * {@link CommonScriptInfo}
+      */
+     @Valid
++    private CommonScriptInfo commonScriptInfo;
++
+ 
+     public boolean isValid() {
++        if (isEnableCommonScript()) {
++            return commonScriptInfo != null && StringUtils.isNotBlank(commonScriptInfo.getId());
++        } else {
++            return StringUtils.isNotBlank(script);
+         }
++    }
++
++    public boolean isEnableCommonScript() {
++        return BooleanUtils.isTrue(enableCommonScript);
+     }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method private getSecondsSinceMidnight(time Calendar, leg Leg) : int extracted from public rideForTransitPathLeg(leg Leg) : Ride in class org.opentripplanner.routing.fares.impl.RideMapper
+
+Code Before:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
+-        var zones = leg.intermediateStops.stream().map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString()).collect(
+-                Collectors.toSet());
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
+-        ride.startTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+-        ride.endTime = leg.startTime.toInstant().atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset)).toLocalTime().toSecondOfDay();
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
+ }
+
+Code After:
+------------
+@@ -1,6 +1,7 @@
+ package org.opentripplanner.routing.fares.impl;
+ 
+ import java.time.ZoneOffset;
++import java.util.Calendar;
+ import java.util.List;
+ import java.util.stream.Collectors;
+ import org.opentripplanner.model.plan.Itinerary;
+@@ -37,20 +38,29 @@ public static Ride rideForTransitPathLeg(Leg leg) {
+ 
+         // In almost all cases (except some loop routes) this should get the right set of zones passed through.
+         // We don't have the position of the stops within the pattern so can't readily get more accurate than this.
++        var zones = leg.intermediateStops.stream()
++                .map(stopArrival -> stopArrival.place.stop.getFirstZoneAsString())
++                .collect(Collectors.toSet());
++
+         ride.zones = zones;
+         ride.agency = leg.getRoute().getAgency().getId();
+         ride.route = leg.getRoute().getId();
+         ride.trip = leg.getTrip().getId();
+ 
+         // TODO verify that times are in seconds after midnight
++        ride.startTime = getSecondsSinceMidnight(leg.startTime, leg);
++        ride.endTime = getSecondsSinceMidnight(leg.endTime, leg);
+ 
+         // In the default fare service, we classify rides by mode.
+         ride.classifier = leg.mode;
+         return ride;
+     }
+ 
++    private static int getSecondsSinceMidnight(Calendar time, Leg leg) {
++        return time.toInstant()
++                .atOffset(ZoneOffset.ofTotalSeconds(leg.agencyTimeZoneOffset))
++                .toLocalTime()
++                .toSecondOfDay();
++    }
++
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private Object processSingle(Page page, String html, boolean isRaw) {
+    Object o = null;
+    try {
+        o = clazz.newInstance();
+        for (FieldExtractor fieldExtractor : fieldExtractors) {
+            if (fieldExtractor.isMulti()) {
+                List<String> value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocumentForList(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().selectList(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().selectList(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().selectList(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().selectList(html);
+                }
+                if ((value == null || value.size() == 0) && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    List<Object> converted = convert(value, fieldExtractor.getObjectFormatter());
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            } else {
+                String value;
+                switch(fieldExtractor.getSource()) {
+                    case RawHtml:
+                        value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        break;
+                    case Html:
+                        if (isRaw) {
+                            value = page.getHtml().selectDocument(fieldExtractor.getSelector());
+                        } else {
+                            value = fieldExtractor.getSelector().select(html);
+                        }
+                        break;
+                    case Url:
+                        value = fieldExtractor.getSelector().select(page.getUrl().toString());
+                        break;
+                    case RawText:
+                        value = fieldExtractor.getSelector().select(page.getRawText());
+                        break;
+                    default:
+                        value = fieldExtractor.getSelector().select(html);
+                }
+                if (value == null && fieldExtractor.isNotNull()) {
+                    return null;
+                }
+                if (fieldExtractor.getObjectFormatter() != null) {
+                    Object converted = convert(value, fieldExtractor.getObjectFormatter());
+                    if (converted == null && fieldExtractor.isNotNull()) {
+                        return null;
+                    }
+                    setField(o, fieldExtractor, converted);
+                } else {
+                    setField(o, fieldExtractor, value);
+                }
+            }
+        }
+        if (AfterExtractor.class.isAssignableFrom(clazz)) {
+            ((AfterExtractor) o).afterProcess(page);
+        }
+    } catch (InstantiationException e) {
+        logger.error("extract fail", e);
+    } catch (IllegalAccessException e) {
+        logger.error("extract fail", e);
+    } catch (InvocationTargetException e) {
+        logger.error("extract fail", e);
+    }
+    return o;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

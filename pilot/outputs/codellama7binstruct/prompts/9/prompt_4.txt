@@ -1,0 +1,330 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private attachClones() : void extracted from package attach() : void in class org.freeplane.features.map.NodeModel
+
+Code Before:
+------------
+@@ -509,19 +509,27 @@ else if(parent != null && parent.isAttached() &&  (newParent == null || !newPare
+ 	}
+ 
+ 	void attach() {
+-		for(Clones clonesGroup : clones)
+-			clonesGroup.attach();
+ 	    for(NodeModel child : children)
+ 	    	child.attach();
+     }
+ 
+-	private void detach() {
+ 		for(Clones clonesGroup : clones)
+-			clonesGroup.detach(this);
+ 	    for(NodeModel child : children)
+ 	    	child.detach();
+     }
+ 
+ 
+ 	boolean isAttached() {
+ 	    return clones[0].size() != 0;
+@@ -689,4 +697,20 @@ public int getIndex() {
+ 		final NodeModel parentNode = getParentNode();
+ 		return parentNode != null ? parentNode.getIndex(this) : -1;
+ 	}
+ }
+
+Code After:
+------------
+@@ -509,19 +509,27 @@ else if(parent != null && parent.isAttached() &&  (newParent == null || !newPare
+ 	}
+ 
+ 	void attach() {
++		attachClones();
+ 	    for(NodeModel child : children)
+ 	    	child.attach();
+     }
+ 
++	private void attachClones() {
+ 		for(Clones clonesGroup : clones)
++			clonesGroup.attach();
++	}
++
++	private void detach() {
++		detachClones();
+ 	    for(NodeModel child : children)
+ 	    	child.detach();
+     }
+ 
++	private void detachClones() {
++		for(Clones clonesGroup : clones)
++			clonesGroup.detach(this);
++	}
++
+ 
+ 	boolean isAttached() {
+ 	    return clones[0].size() != 0;
+@@ -689,4 +697,20 @@ public int getIndex() {
+ 		final NodeModel parentNode = getParentNode();
+ 		return parentNode != null ? parentNode.getIndex(this) : -1;
+ 	}
++
++	public void swapData(NodeModel duplicate) {
++		this.detachClones();
++		SharedNodeData sharedDataSwap = sharedData;
++		this.sharedData = duplicate.sharedData;
++		duplicate.sharedData = sharedDataSwap;
++		Clones[] clonesSwap = clones;
++		this.clones = duplicate.clones;
++		duplicate.clones = clonesSwap;
++		for(CloneType cloneType : CloneType.values()) {
++			final DetachedNodeList detachedClone = (DetachedNodeList) clones[cloneType.ordinal()];
++			clones[cloneType.ordinal()] = detachedClone.forClone(this);
++		} 
++
++		this.attachClones();
++	}
+ }
+
+Example 2:
+
+Refactoring Description: Extract Method private createContextMarker() : void extracted from public initLayer(view OsmandMapTileView) : void in class net.osmand.plus.views.layers.MapQuickActionLayer
+
+Code Before:
+------------
+@@ -78,7 +78,10 @@ public MapQuickActionLayer(@NonNull Context context) {
+ 	@Override
+ 	public void initLayer(@NonNull OsmandMapTileView view) {
+ 		super.initLayer(view);
+ 
+ 		Context context = AndroidUtils.createDisplayContext(getContext());
+ 		contextMarker = new ImageView(context);
+ 		contextMarker.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+@@ -89,6 +92,12 @@ public void initLayer(@NonNull OsmandMapTileView view) {
+ 		contextMarker.layout(0, 0, width, height);
+ 	}
+ 
+ 	@SuppressLint("ClickableViewAccessibility")
+ 	@Override
+ 	public void setMapActivity(@Nullable MapActivity mapActivity) {
+
+Code After:
+------------
+@@ -78,7 +78,10 @@ public MapQuickActionLayer(@NonNull Context context) {
+ 	@Override
+ 	public void initLayer(@NonNull OsmandMapTileView view) {
+ 		super.initLayer(view);
++		createContextMarker();
++	}
+ 
++	private void createContextMarker() {
+ 		Context context = AndroidUtils.createDisplayContext(getContext());
+ 		contextMarker = new ImageView(context);
+ 		contextMarker.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+@@ -89,6 +92,12 @@ public void initLayer(@NonNull OsmandMapTileView view) {
+ 		contextMarker.layout(0, 0, width, height);
+ 	}
+ 
++	@Override
++	protected void updateResources() {
++		super.updateResources();
++		createContextMarker();
++	}
++
+ 	@SuppressLint("ClickableViewAccessibility")
+ 	@Override
+ 	public void setMapActivity(@Nullable MapActivity mapActivity) {
+
+Example 3:
+
+Refactoring Description: Extract Method private getSourceSection(context LazyContext) : SourceSection extracted from public getSourceSection() : SourceSection in class com.oracle.truffle.llvm.runtime.debug.scope.LLVMSourceLocation
+
+Code Before:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
+     public abstract static class LazySourceSection {
+-        public abstract SourceSection get();
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
+-    public synchronized SourceSection getSourceSection() {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
+-            sourceSection = lazySourceSection.get();
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+Code After:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
++import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
++import com.oracle.truffle.llvm.runtime.LLVMContext;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
++    @FunctionalInterface
++    public interface LazyContext {
++
++        LLVMContext get();
++    }
++
+     public abstract static class LazySourceSection {
++        public abstract SourceSection get(LazyContext context);
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
++    public synchronized SourceSection getSourceSection(ContextReference<LLVMContext> ctxRef) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> {
++            try {
++                return ctxRef.get();
++            } catch (Throwable t) {
++                return null;
++            }
++        });
++    }
++
++    public SourceSection getSourceSection(LLVMContext context) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> context);
++    }
++
++    private synchronized SourceSection getSourceSection(LazyContext context) {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
++            sourceSection = lazySourceSection.get(context);
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+public void handleLine(final String inLine) {
+    // JMH ???
+    String line = inLine.replaceFirst("^ +", "");
+    line = StringUtil.replaceXMLEntities(line);
+    String trimmedLine = line.trim();
+    if (DEBUG_LOGGING_ASSEMBLY) {
+        logger.debug("handleLine:{}", line);
+    }
+    if (line.startsWith("[Disassembling for mach")) {
+        architecture = Architecture.parseFromLogLine(line);
+        if (architecture == null) {
+            logger.error("Could not determine architecture from '{}'", line);
+        } else {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Detected architecture: {}", architecture);
+            }
+        }
+    }
+    if (S_HASH.equals(previousLine) && line.startsWith("{method}")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("fixup mangled {method} line");
+        }
+        line = S_HASH + S_SPACE + line;
+    }
+    if (trimmedLine.startsWith("total in heap")) {
+        String possibleNativeAddress = getStartAddress(line);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith(" bytes") || trimmedLine.startsWith("main code")) {
+        String possibleEntryAddress = getStartAddress(line);
+        if (possibleEntryAddress != null) {
+            entryAddress = possibleEntryAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith("</print_nmethod>")) {
+        complete();
+    }
+    if (line.startsWith(NATIVE_CODE_START) || line.startsWith("Compiled method") || line.startsWith("----------------------------------------------------------------------")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("Assembly started");
+        }
+        assemblyStarted = true;
+        if (builder.length() > 0) {
+            complete();
+        }
+        String possibleNativeAddress = StringUtil.getSubstringBetween(line, NATIVE_CODE_START, S_COLON);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    } else if (assemblyStarted) {
+        boolean couldBeNativeMethodMark = false;
+        couldBeNativeMethodMark = line.startsWith(NATIVE_CODE_METHOD_MARK);
+        if (couldBeNativeMethodMark) {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Assembly method started");
+            }
+            methodStarted = true;
+            if (!line.endsWith(S_APOSTROPHE)) {
+                if (DEBUG_LOGGING_ASSEMBLY) {
+                    logger.debug("Method signature interrupted");
+                }
+                methodInterrupted = true;
+            }
+        } else if (methodInterrupted && line.endsWith(S_APOSTROPHE)) {
+            methodInterrupted = false;
+        }
+        if (methodStarted && line.length() > 0) {
+            builder.append(line);
+            if (!methodInterrupted) {
+                builder.append(S_NEWLINE);
+            }
+        }
+    }
+    previousLine = line;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

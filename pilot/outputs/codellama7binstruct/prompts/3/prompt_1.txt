@@ -1,0 +1,292 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private isDefaultLibrary(lib ExternalLibrary) : boolean extracted from public isInternalLibrary(lib ExternalLibrary) : boolean in class com.oracle.truffle.llvm.runtime.LLVMContext
+
+Code Before:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
+-        if (isInternalLibrary(newLib)) {
+-            // Disallow loading internal libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Code After:
+------------
+@@ -570,8 +570,8 @@ public ExternalLibrary addExternalLibraryDefaultLocator(String lib, Object reaso
+     public ExternalLibrary addExternalLibrary(String lib, Object reason, LibraryLocator locator) {
+         CompilerAsserts.neverPartOfCompilation();
+         ExternalLibrary newLib = createExternalLibrary(lib, reason, locator);
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return null;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -616,8 +616,8 @@ private ExternalLibrary createExternalLibrary(String lib, Object reason, Library
+      */
+     public boolean ensureExternalLibraryAdded(ExternalLibrary newLib) {
+         CompilerAsserts.neverPartOfCompilation();
++        if (isDefaultLibrary(newLib)) {
++            // Disallow loading default libraries explicitly.
+             return false;
+         }
+         ExternalLibrary existingLib = getOrAddExternalLibrary(newLib);
+@@ -635,6 +635,10 @@ public boolean isInternalLibrary(ExternalLibrary lib) {
+         if (lib.getPath() != null) {
+             return isInternalLibraryPath(lib.getPath());
+         }
++        return isDefaultLibrary(lib);
++    }
++
++    private boolean isDefaultLibrary(ExternalLibrary lib) {
+         return internalLibraryNames.contains(lib.getName());
+     }
+ 
+
+Example 2:
+
+Refactoring Description: Extract Method public isEnableCommonScript() : boolean extracted from public isValid() : boolean in class io.metersphere.project.api.processor.ScriptProcessor
+
+Code Before:
+------------
+@@ -2,16 +2,15 @@
+ 
+ import com.fasterxml.jackson.annotation.JsonTypeName;
+ import io.metersphere.project.constants.ScriptLanguageType;
+-import io.metersphere.project.api.KeyValueParam;
+ import io.metersphere.system.valid.EnumValue;
+ import jakarta.validation.Valid;
+ import jakarta.validation.constraints.Size;
+ import lombok.Data;
+ import org.apache.commons.lang3.BooleanUtils;
+ import org.apache.commons.lang3.StringUtils;
+ 
+-import java.util.List;
+-
+ 
+ /**
+  * @Author: jianxing
+@@ -29,6 +28,7 @@ public class ScriptProcessor extends MsProcessor {
+      * {@link ScriptLanguageType}
+      */
+     @Size(max = 20)
+     @EnumValue(enumClass = ScriptLanguageType.class)
+     private String scriptLanguage;
+     /**
+@@ -38,20 +38,22 @@ public class ScriptProcessor extends MsProcessor {
+      */
+     private Boolean enableCommonScript = false;
+     /**
+-     * 公共脚本ID
+-     */
+-    @Size(max = 50)
+-    private String scriptId;
+-    /**
+-     * 公共脚本入参
+      */
+     @Valid
+-    private List<KeyValueParam> params;
+ 
+     public boolean isValid() {
+-        if (BooleanUtils.isTrue(enableCommonScript) && StringUtils.isBlank(scriptId)) {
+-            return false;
+         }
+-        return StringUtils.isNotBlank(script);
+     }
+ }
+
+Code After:
+------------
+@@ -2,16 +2,15 @@
+ 
+ import com.fasterxml.jackson.annotation.JsonTypeName;
+ import io.metersphere.project.constants.ScriptLanguageType;
++import io.metersphere.project.dto.CommonScriptInfo;
+ import io.metersphere.system.valid.EnumValue;
+ import jakarta.validation.Valid;
++import jakarta.validation.constraints.NotBlank;
+ import jakarta.validation.constraints.Size;
+ import lombok.Data;
+ import org.apache.commons.lang3.BooleanUtils;
+ import org.apache.commons.lang3.StringUtils;
+ 
+ 
+ /**
+  * @Author: jianxing
+@@ -29,6 +28,7 @@ public class ScriptProcessor extends MsProcessor {
+      * {@link ScriptLanguageType}
+      */
+     @Size(max = 20)
++    @NotBlank
+     @EnumValue(enumClass = ScriptLanguageType.class)
+     private String scriptLanguage;
+     /**
+@@ -38,20 +38,22 @@ public class ScriptProcessor extends MsProcessor {
+      */
+     private Boolean enableCommonScript = false;
+     /**
++     * 公共脚本信息
++     * {@link CommonScriptInfo}
+      */
+     @Valid
++    private CommonScriptInfo commonScriptInfo;
++
+ 
+     public boolean isValid() {
++        if (isEnableCommonScript()) {
++            return commonScriptInfo != null && StringUtils.isNotBlank(commonScriptInfo.getId());
++        } else {
++            return StringUtils.isNotBlank(script);
+         }
++    }
++
++    public boolean isEnableCommonScript() {
++        return BooleanUtils.isTrue(enableCommonScript);
+     }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method public visitPhysicalJoin(node PhysicalJoinOperator, context ExpressionContext) : PhysicalPropertySet extracted from public visitPhysicalHashJoin(node PhysicalHashJoinOperator, context ExpressionContext) : PhysicalPropertySet in class com.starrocks.sql.optimizer.OutputPropertyDeriver
+
+Code Before:
+------------
+@@ -25,7 +25,9 @@
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalFilterOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashAggregateOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalLimitOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalNoCTEOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalProjectOperator;
+@@ -105,7 +107,7 @@ private PhysicalPropertySet computeColocateJoinOutputProperty(HashDistributionSp
+     }
+ 
+     // compute the distribution property info, just compute the nullable columns now
+-    private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHashJoinOperator node,
+                                                                         PhysicalPropertySet physicalPropertySet,
+                                                                         List<Integer> leftOnPredicateColumns,
+                                                                         List<Integer> rightOnPredicateColumns,
+@@ -137,6 +139,15 @@ private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHash
+ 
+     @Override
+     public PhysicalPropertySet visitPhysicalHashJoin(PhysicalHashJoinOperator node, ExpressionContext context) {
+         Preconditions.checkState(childrenOutputProperties.size() == 2);
+         PhysicalPropertySet leftChildOutputProperty = childrenOutputProperties.get(0);
+         PhysicalPropertySet rightChildOutputProperty = childrenOutputProperties.get(1);
+
+Code After:
+------------
+@@ -25,7 +25,9 @@
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalFilterOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashAggregateOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalHashJoinOperator;
++import com.starrocks.sql.optimizer.operator.physical.PhysicalJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalLimitOperator;
++import com.starrocks.sql.optimizer.operator.physical.PhysicalMergeJoinOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalNoCTEOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalOlapScanOperator;
+ import com.starrocks.sql.optimizer.operator.physical.PhysicalProjectOperator;
+@@ -105,7 +107,7 @@ private PhysicalPropertySet computeColocateJoinOutputProperty(HashDistributionSp
+     }
+ 
+     // compute the distribution property info, just compute the nullable columns now
++    private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalJoinOperator node,
+                                                                         PhysicalPropertySet physicalPropertySet,
+                                                                         List<Integer> leftOnPredicateColumns,
+                                                                         List<Integer> rightOnPredicateColumns,
+@@ -137,6 +139,15 @@ private PhysicalPropertySet computeHashJoinDistributionPropertyInfo(PhysicalHash
+ 
+     @Override
+     public PhysicalPropertySet visitPhysicalHashJoin(PhysicalHashJoinOperator node, ExpressionContext context) {
++        return visitPhysicalJoin(node, context);
++    }
++
++    @Override
++    public PhysicalPropertySet visitPhysicalMergeJoin(PhysicalMergeJoinOperator node, ExpressionContext context) {
++        return visitPhysicalJoin(node, context);
++    }
++
++    public PhysicalPropertySet visitPhysicalJoin(PhysicalJoinOperator node, ExpressionContext context) {
+         Preconditions.checkState(childrenOutputProperties.size() == 2);
+         PhysicalPropertySet leftChildOutputProperty = childrenOutputProperties.get(0);
+         PhysicalPropertySet rightChildOutputProperty = childrenOutputProperties.get(1);
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Helper function for applyMaskPenaltyRule1. We need this for doing this calculation in both
+ * vertical and horizontal orders respectively.
+ */
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

@@ -1,0 +1,326 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public closeStreams(self Process) : void extracted from public getText(self Process) : String in class org.codehaus.groovy.runtime.ProcessGroovyMethods
+
+Code Before:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
+-        try { self.getErrorStream().close(); } catch (IOException ignore) {}
+-        try { self.getInputStream().close(); } catch (IOException ignore) {}
+-        try { self.getOutputStream().close(); } catch (IOException ignore) {}
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+Code After:
+------------
+@@ -70,9 +70,7 @@ public static InputStream getIn(Process self) {
+      */
+     public static String getText(Process self) throws IOException {
+         String text = IOGroovyMethods.getText(new BufferedReader(new InputStreamReader(self.getInputStream())));
++        closeStreams(self);
+         return text;
+     }
+ 
+@@ -142,6 +140,18 @@ public static void waitForOrKill(Process self, long numberOfMillis) {
+         runnable.waitForOrKill(numberOfMillis);
+     }
+ 
++    /**
++     * Closes all the streams associated with the process (ignoring any IOExceptions).
++     *
++     * @param self a Process
++     * @since 2.1
++     */
++    public static void closeStreams(Process self) {
++        try { self.getErrorStream().close(); } catch (IOException ignore) {}
++        try { self.getInputStream().close(); } catch (IOException ignore) {}
++        try { self.getOutputStream().close(); } catch (IOException ignore) {}
++    }
++
+     /**
+      * Gets the output and error streams from a process and reads them
+      * to keep the process from blocking due to a full output buffer.
+
+Example 2:
+
+Refactoring Description: Extract Method public getWidth() : int extracted from public update() : void in class org.terasology.rendering.dag.stateChanges.SetViewportToSizeOf
+
+Code Before:
+------------
+@@ -19,12 +19,16 @@
+ import org.terasology.rendering.opengl.BaseFBOsManager;
+ import org.terasology.rendering.opengl.DefaultDynamicFBOs;
+ import org.terasology.rendering.opengl.FBOManagerSubscriber;
+ import java.util.Objects;
+ import org.terasology.rendering.dag.RenderPipelineTask;
+ import org.terasology.rendering.dag.StateChange;
+ import org.terasology.rendering.dag.tasks.SetViewportToSizeOfTask;
+ import org.terasology.rendering.opengl.FBO;
+ import static org.terasology.rendering.opengl.DefaultDynamicFBOs.READ_ONLY_GBUFFER;
+ /**
+  * TODO: Add javadocs
+  */
+@@ -63,14 +67,23 @@ public RenderPipelineTask generateTask() {
+         return task;
+     }
+ 
+     @Override
+     public int hashCode() {
+-        return Objects.hashCode(fboName);
+     }
+ 
+     @Override
+     public boolean equals(Object obj) {
+-        return (obj instanceof SetViewportToSizeOf) && this.fboName.equals(((SetViewportToSizeOf) obj).getFboName());
+     }
+ 
+     @Override
+@@ -80,19 +93,32 @@ public boolean isTheDefaultInstance() {
+ 
+     @Override
+     public void update() {
+-        if (defaultDynamicFBO == null) {
+-            FBO fbo = frameBuffersManager.get(fboName);
+-            task.setDimensions(fbo.width(), fbo.height());
+-        } else {
+-            task.setDimensions(defaultDynamicFBO.width(), defaultDynamicFBO.height());
+-        }
+     }
+ 
+     @Override
+     public String toString() { // TODO: used for logging purposes at the moment, investigate different methods
+         return String.format("%30s: %s", this.getClass().getSimpleName(), fboName);
+     }
+ 
+     public ResourceUrn getFboName() {
+         return fboName;
+     }
+
+Code After:
+------------
+@@ -19,12 +19,16 @@
+ import org.terasology.rendering.opengl.BaseFBOsManager;
+ import org.terasology.rendering.opengl.DefaultDynamicFBOs;
+ import org.terasology.rendering.opengl.FBOManagerSubscriber;
++
+ import java.util.Objects;
++
+ import org.terasology.rendering.dag.RenderPipelineTask;
+ import org.terasology.rendering.dag.StateChange;
+ import org.terasology.rendering.dag.tasks.SetViewportToSizeOfTask;
+ import org.terasology.rendering.opengl.FBO;
++
+ import static org.terasology.rendering.opengl.DefaultDynamicFBOs.READ_ONLY_GBUFFER;
++
+ /**
+  * TODO: Add javadocs
+  */
+@@ -63,14 +67,23 @@ public RenderPipelineTask generateTask() {
+         return task;
+     }
+ 
++    // TODO: change equals and hashCode to use dimensions instead.
+     @Override
+     public int hashCode() {
++        // Generates a unique 32 bit signed integer from two integers.
++        // This will return unique values for the following reasonable ranges:
++        // width < (1 << 16) (65536) and height < (1 << 15) (32768)
++        return getWidth() << 15 | getHeight();
+     }
+ 
+     @Override
+     public boolean equals(Object obj) {
++        if (!(obj instanceof SetViewportToSizeOf))
++            return false;
++
++        SetViewportToSizeOf other = (SetViewportToSizeOf) obj;
++
++        return getWidth() == other.getWidth() && getHeight() == other.getHeight();
+     }
+ 
+     @Override
+@@ -80,19 +93,32 @@ public boolean isTheDefaultInstance() {
+ 
+     @Override
+     public void update() {
++        task.setDimensions(getWidth(), getHeight());
+     }
+ 
+     @Override
+     public String toString() { // TODO: used for logging purposes at the moment, investigate different methods
+         return String.format("%30s: %s", this.getClass().getSimpleName(), fboName);
+     }
+ 
++    public int getWidth() {
++        FBO fbo = getFbo();
++        return fbo.width();
++    }
++
++    public int getHeight() {
++        FBO fbo = getFbo();
++        return fbo.height();
++    }
++
++    private FBO getFbo() {
++        if (defaultDynamicFBO == null)
++            return frameBuffersManager.get(fboName);
++
++        return defaultDynamicFBO.getFbo();
++    }
++
++    // TODO: Remove
+     public ResourceUrn getFboName() {
+         return fboName;
+     }
+
+Example 3:
+
+Refactoring Description: Extract Method public XmlValueMapper(dataFormat DataFormat<SpinXmlElement>) extracted from public XmlValueMapper() in class org.camunda.bpm.client.impl.variable.mapper.serializable.XmlValueMapper
+
+Code Before:
+------------
+@@ -1,9 +1,9 @@
+ /* Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
+- *
+  *      http://www.apache.org/licenses/LICENSE-2.0
+- *
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@@ -12,13 +12,38 @@
+  */
+ package org.camunda.bpm.client.impl.variable.mapper.serializable;
+ 
+-/**
+- * @author Tassilo Weidner
+- */
+-public class XmlValueMapper extends SpinValueMapper {
+ 
+   public XmlValueMapper() {
+-    super("xml");
+   }
+ 
+ }
+
+Code After:
+------------
+@@ -1,9 +1,9 @@
+ /* Licensed under the Apache License, Version 2.0 (the "License");
+  * you may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at
++ * 
+  *      http://www.apache.org/licenses/LICENSE-2.0
++ * 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+@@ -12,13 +12,38 @@
+  */
+ package org.camunda.bpm.client.impl.variable.mapper.serializable;
+ 
++import org.camunda.bpm.client.impl.variable.TypedValueField;
++import org.camunda.bpm.engine.variable.impl.value.UntypedValueImpl;
++import org.camunda.spin.DataFormats;
++import org.camunda.spin.plugin.variable.SpinValues;
++import org.camunda.spin.plugin.variable.type.SpinValueType;
++import org.camunda.spin.plugin.variable.type.XmlValueType;
++import org.camunda.spin.plugin.variable.value.XmlValue;
++import org.camunda.spin.plugin.variable.value.impl.XmlValueImpl;
++import org.camunda.spin.spi.DataFormat;
++import org.camunda.spin.xml.SpinXmlElement;
++
++public class XmlValueMapper extends SpinValueMapper<XmlValue> {
++
++  public XmlValueMapper(DataFormat<SpinXmlElement> dataFormat) {
++    super(SpinValueType.XML, dataFormat, XmlValueType.TYPE_NAME);
++  }
+ 
+   public XmlValueMapper() {
++    this(DataFormats.xml());
++  }
++
++  public XmlValue convertToTypedValue(UntypedValueImpl untypedValue) {
++    return SpinValues.xmlValue((SpinXmlElement) untypedValue.getValue()).create();
++  }
++
++  protected XmlValue createDeserializedValue(Object deserializedObject, String serializedValue, TypedValueField typedValueField) {
++    SpinXmlElement value = (SpinXmlElement) deserializedObject;
++    return new XmlValueImpl(value, serializedValue, value.getDataFormatName(), true);
++  }
++
++  protected XmlValue createSerializedValue(String serializedValue, TypedValueField typedValueField) {
++    return new XmlValueImpl(serializedValue, serializationDataFormat);
+   }
+ 
+ }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return new Result(edges[inputLength][minimalJ]);
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

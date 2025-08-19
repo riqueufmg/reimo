@@ -1,0 +1,48 @@
+  <refactored code>
+static Result encodeMinimally(Input input) {
+    int inputLength = input.length();
+    Edge[][] edges = new Edge[inputLength + 1][6];
+    addEdges(input, edges, 0, null);
+    for (int i = 1; i <= inputLength; i++) {
+        addEdges(input, edges, i, edges[i - 1][0]);
+        for (int j = 1; j < 6; j++) {
+            if (edges[i][j] != null) {
+                addEdges(input, edges, i, edges[i][j]);
+            }
+        }
+    }
+    return new Result(getMinimalEdge(edges, inputLength));
+}
+
+private static Edge getMinimalEdge(Edge[][] edges, int inputLength) {
+    int minimalJ = -1;
+    int minimalSize = Integer.MAX_VALUE;
+    for (int j = 0; j < 6; j++) {
+        if (edges[inputLength][j] != null) {
+            Edge edge = edges[inputLength][j];
+            int size = j >= 1 && j <= 3 ? edge.cachedTotalSize + 1 : edge.cachedTotalSize;
+            if (size < minimalSize) {
+                minimalSize = size;
+                minimalJ = j;
+            }
+        }
+    }
+    if (minimalJ < 0) {
+        throw new IllegalStateException("Failed to encode \"" + input + "\"");
+    }
+    return edges[inputLength][minimalJ];
+}
+</refactored code>
+<refactoring explanation>
+In this refactoring, we have extracted a method called `getMinimalEdge` that takes in the `edges` array and the `inputLength` as parameters. This method returns the minimal edge for the given input length.
+
+The original method `encodeMinimally` has been refactored to call the `getMinimalEdge` method and return the result.
+
+The `getMinimalEdge` method is a private method, which means that it is only accessible within the class where it is defined. This is a good practice, as it helps to keep the code organized and maintainable.
+
+The `getMinimalEdge` method uses a similar algorithm to the original method, but it has been refactored to be more concise and easier to read. It uses a `for` loop to iterate over the edges in the `edges` array, and it uses a `if` statement to check if the edge is not null. If the edge is not null, it checks the size of the edge and returns the minimal edge if the size is less than the current minimal size.
+
+The `getMinimalEdge` method also throws an `IllegalStateException` if the minimal edge cannot be found. This is a good practice, as it helps to catch any unexpected errors that may occur during the execution of the method.
+
+Overall, this refactoring has made the code more concise and easier to read, while also improving the maintainability and organization of the code.
+</refactoring explanation>

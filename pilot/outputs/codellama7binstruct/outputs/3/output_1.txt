@@ -1,0 +1,44 @@
+  <refactored code>
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    return applyMaskPenaltyRule1InternalHelper(matrix, isHorizontal);
+}
+
+private static int applyMaskPenaltyRule1InternalHelper(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+</refactored code>
+<refactoring explanation>
+The original code has a nested loop that iterates over the cells of a 2D array. The inner loop checks if the current cell has the same value as the previous cell, and if so, increments a counter. If the counter reaches 5 or more, the penalty is increased.
+
+To refactor this code, we can extract a helper method that takes the matrix, the direction (horizontal or vertical), and the penalty as parameters. The helper method can then iterate over the cells and perform the same checks as the original code.
+
+The extracted method is named "applyMaskPenaltyRule1InternalHelper" and takes the matrix, the direction, and the penalty as parameters. The method returns the penalty value.
+
+The original method, "applyMaskPenaltyRule1Internal", calls the helper method and returns the result.
+
+The refactoring improves the readability and maintainability of the code by separating the logic of the two loops into separate methods. It also makes it easier to test and debug the code.
+</refactoring explanation>

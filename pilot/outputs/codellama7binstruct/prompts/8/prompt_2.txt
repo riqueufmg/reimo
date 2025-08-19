@@ -1,0 +1,411 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private filterByNetworkId(leg ScheduledTransitLeg, rule FareLegRule) : boolean extracted from private getLegProducts(leg ScheduledTransitLeg) : Stream<FareProduct> in class org.opentripplanner.ext.fares.impl.GtfsFaresV2Service
+
+Code Before:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
+ 
+-public final class GtfsFaresV2Service {
+ 
+   private final List<FareLegRule> legRules;
+   private final Set<String> networksWithRules;
+ 
+-  public GtfsFaresV2Service(List<FareLegRule> legRules) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
+-      // get the fare products that match the network_id
+-      // the the network id of the product is null it depends on the presence/absence of other rules
+-      // with that network id
+-      .filter(product ->
+-        (
+-          Objects.isNull(product.networkId()) &&
+-          !networksWithRules.contains(leg.getRoute().getNetworkId())
+-        ) ||
+-        Objects.equals(product.networkId(), leg.getRoute().getNetworkId())
+-      )
+       .map(FareLegRule::fareProduct);
+   }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+Code After:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
++import com.google.common.collect.Multimap;
++import java.io.Serializable;
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
++import org.opentripplanner.transit.model.framework.FeedScopedId;
+ 
++public final class GtfsFaresV2Service implements Serializable {
+ 
+   private final List<FareLegRule> legRules;
++  private final Multimap<FeedScopedId, String> stopAreas;
+   private final Set<String> networksWithRules;
++  private final Set<String> stopAreasWithRules;
+ 
++  public GtfsFaresV2Service(List<FareLegRule> legRules, Multimap<FeedScopedId, String> stopAreas) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
++    this.stopAreasWithRules = findAreasWithRules(legRules);
++    this.stopAreas = stopAreas;
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
++  private static Set<String> findAreasWithRules(List<FareLegRule> legRules) {
++    return legRules
++      .stream()
++      .flatMap(rule -> Stream.of(rule.fromAreaId(), rule.toAreadId()).filter(Objects::nonNull))
++      .collect(Collectors.toSet());
++  }
++
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
++      .filter(rule -> filterByNetworkId(leg, rule))
++      // apply only those rules which have the correct area ids
++      .filter(rule -> filterByFromArea(leg, rule))
+       .map(FareLegRule::fareProduct);
+   }
++
++  private boolean filterByFromArea(ScheduledTransitLeg leg, FareLegRule rule) {
++    var fromStopAreas = stopAreas.get(leg.getFrom().stop.getId());
++    return (
++      (
++        Objects.isNull(rule.fromAreaId()) &&
++        fromStopAreas.stream().noneMatch(stopAreasWithRules::contains)
++      ) ||
++      (Objects.nonNull(rule.fromAreaId()) && fromStopAreas.contains(rule.fromAreaId()))
++    );
++  }
++
++  /**
++   * Get the fare products that match the network_id. If the network id of the product is null it
++   * depends on the presence/absence of other rules with that network id.
++   */
++  private boolean filterByNetworkId(ScheduledTransitLeg leg, FareLegRule rule) {
++    return (
++      (
++        Objects.isNull(rule.networkId()) &&
++        !networksWithRules.contains(leg.getRoute().getNetworkId())
++      ) ||
++      Objects.equals(rule.networkId(), leg.getRoute().getNetworkId())
++    );
++  }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+Example 2:
+
+Refactoring Description: Extract Method public toString(defaultCosts AccessibilityPreferences) : String extracted from public toString() : String in class org.opentripplanner.routing.api.request.preference.AccessibilityPreferences
+
+Code Before:
+------------
+@@ -38,6 +38,8 @@ private AccessibilityPreferences(
+     this.inaccessibleCost = Units.cost(inaccessibleCost);
+   }
+ 
+   /**
+    * Create a feature which only considers wheelchair-accessible trips/stops.
+    */
+@@ -92,14 +94,18 @@ public int hashCode() {
+ 
+   @Override
+   public String toString() {
+     if (onlyConsiderAccessible) {
+       return "OnlyConsiderAccessible";
+     }
+ 
+     return ToStringBuilder
+       .of(AccessibilityPreferences.class)
+-      .addCost("unknownCost", unknownCost, NOT_SET)
+-      .addCost("inaccessibleCost", inaccessibleCost, NOT_SET)
+       .toString();
+   }
+ }
+
+Code After:
+------------
+@@ -38,6 +38,8 @@ private AccessibilityPreferences(
+     this.inaccessibleCost = Units.cost(inaccessibleCost);
+   }
+ 
++  private static AccessibilityPreferences DEFAULT_UNSET = ofCost(NOT_SET, NOT_SET);
++
+   /**
+    * Create a feature which only considers wheelchair-accessible trips/stops.
+    */
+@@ -92,14 +94,18 @@ public int hashCode() {
+ 
+   @Override
+   public String toString() {
++    return toString(DEFAULT_UNSET);
++  }
++
++  public String toString(AccessibilityPreferences defaultCosts) {
+     if (onlyConsiderAccessible) {
+       return "OnlyConsiderAccessible";
+     }
+ 
+     return ToStringBuilder
+       .of(AccessibilityPreferences.class)
++      .addCost("unknownCost", unknownCost, defaultCosts.unknownCost)
++      .addCost("inaccessibleCost", inaccessibleCost, defaultCosts.inaccessibleCost)
+       .toString();
+   }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method package makeRDF_i(i int) : URIReference extracted from private rdf_n(i int) : URIReference in class org.apache.jena.rdfxml.xmlinput.states.WantPropertyElement
+
+Code Before:
+------------
+@@ -108,7 +108,7 @@ public FrameI startElement(String uri, String localName, String rawName,
+                 if (object != null) {
+                     if (!badStateCode(nextStateCode))
+                         // otherwise warning already given
+-                        warning(ERR_SYNTAX_ERROR, 
+                                 "On a property element, only one of the attributes rdf:nodeID or rdf:resource is permitted.");
+                 } else
+                     object = URIReference.resolve(this, x, ap.resource);
+@@ -223,25 +223,47 @@ private void clearObject() {
+         object = null;
+     }
+ 
+-    static private URIReference _rdf_n[] = new URIReference[0];
+ 
+     static private URIReference rdf_n(int i) {
+-        if (i >= _rdf_n.length) {
+-            int newLength = (i + 10) * 3 / 2;
+-            URIReference new_rdf_n[] = new URIReference[newLength];
+-            System.arraycopy(_rdf_n, 0, new_rdf_n, 0, _rdf_n.length);
+-            for (int j = _rdf_n.length; j < newLength; j++) {
+-                new_rdf_n[j] = URIReference.createNoChecks(rdfns + "_" + j);
+-            }
+-            _rdf_n = new_rdf_n;
+-        }
+-        return _rdf_n[i];
+     }
+ 
+     /***************************************************************************
+-     * 
+      * ERROR HANDLING CODE
+-     * 
+      **************************************************************************/
+ 
+     // Error detection
+@@ -269,9 +291,9 @@ private int errorNumber(int nextStateCode) {
+     }
+ 
+     /***************************************************************************
+-     * 
+      * ERROR MESSAGES
+-     * 
+      **************************************************************************/
+    private String descriptionOfCases(AttributeLexer ap, int nextStateCode,
+             String propAttrs) {
+@@ -369,14 +391,14 @@ private String complicatedErrorMessage(int nextStateCode,
+         if (ap.type != null && propAttrs != null) {
+             if (nodeIDResource == null)
+                 otherAtts += "the attribute rdf:type and the " + propAttrs;
+-            else 
+                 otherAtts += "the attribute rdf:type, the " + propAttrs;
+         } else if (ap.type != null) {
+             otherAtts += "the attribute rdf:type";
+         } else {
+             otherAtts = "the " + propAttrs;
+         }
+-        
+         if (nodeIDResource != null)
+             otherAtts += " and "+nodeIDResource;
+ 
+
+Code After:
+------------
+@@ -108,7 +108,7 @@ public FrameI startElement(String uri, String localName, String rawName,
+                 if (object != null) {
+                     if (!badStateCode(nextStateCode))
+                         // otherwise warning already given
++                        warning(ERR_SYNTAX_ERROR,
+                                 "On a property element, only one of the attributes rdf:nodeID or rdf:resource is permitted.");
+                 } else
+                     object = URIReference.resolve(this, x, ap.resource);
+@@ -223,25 +223,47 @@ private void clearObject() {
+         object = null;
+     }
+ 
++    // Allocate the first 20 rdf:_i ; calculate at run time any others.
++    static private final int RDF_N = 20;
++    static private URIReference _rdf_n_uri[] = new URIReference[RDF_N];
++    static {
++        for ( int i = 0 ; i < RDF_N; i++) {
++            _rdf_n_uri[i] = makeRDF_i(i);
++        }
++    }
+ 
+     static private URIReference rdf_n(int i) {
++        if ( i < 0 )
++            throw new IllegalStateException("Negative rdf:_i");
++        if (i < _rdf_n_uri.length)
++            return _rdf_n_uri[i];
++        return makeRDF_i(i);
+     }
+ 
++    static URIReference makeRDF_i(int i) {
++        return URIReference.createNoChecks(rdfns + "_" + i);
++    }
++
++    // Not thread safe. JENA-2172
++//    static private URIReference _rdf_n[] = new URIReference[0];
++//
++//    static private URIReference rdf_n(int i) {
++//        if (i >= _rdf_n.length) {
++//            int newLength = (i + 10) * 3 / 2;
++//            URIReference new_rdf_n[] = new URIReference[newLength];
++//            System.arraycopy(_rdf_n, 0, new_rdf_n, 0, _rdf_n.length);
++//            for (int j = _rdf_n.length; j < newLength; j++) {
++//                new_rdf_n[j] = URIReference.createNoChecks(rdfns + "_" + j);
++//            }
++//            _rdf_n = new_rdf_n;
++//        }
++//        return _rdf_n[i];
++//    }
++
+     /***************************************************************************
++     *
+      * ERROR HANDLING CODE
++     *
+      **************************************************************************/
+ 
+     // Error detection
+@@ -269,9 +291,9 @@ private int errorNumber(int nextStateCode) {
+     }
+ 
+     /***************************************************************************
++     *
+      * ERROR MESSAGES
++     *
+      **************************************************************************/
+    private String descriptionOfCases(AttributeLexer ap, int nextStateCode,
+             String propAttrs) {
+@@ -369,14 +391,14 @@ private String complicatedErrorMessage(int nextStateCode,
+         if (ap.type != null && propAttrs != null) {
+             if (nodeIDResource == null)
+                 otherAtts += "the attribute rdf:type and the " + propAttrs;
++            else
+                 otherAtts += "the attribute rdf:type, the " + propAttrs;
+         } else if (ap.type != null) {
+             otherAtts += "the attribute rdf:type";
+         } else {
+             otherAtts = "the " + propAttrs;
+         }
++
+         if (nodeIDResource != null)
+             otherAtts += " and "+nodeIDResource;
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private void visitTagEliminateLock(Tag tagEliminateLock, IParseDictionary parseDictionary) {
+    String kind = tagEliminateLock.getAttributes().get(ATTR_KIND);
+    List<Tag> childrenJVMS = tagEliminateLock.getNamedChildren(TAG_JVMS);
+    if (childrenJVMS.size() > 0) {
+        for (Tag tagJVMS : childrenJVMS) {
+            Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+            String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+            int bciValue = 0;
+            if (attrBCI != null) {
+                try {
+                    bciValue = Integer.parseInt(attrBCI);
+                } catch (NumberFormatException nfe) {
+                    logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                    continue;
+                }
+            } else {
+                logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+            }
+            String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+            BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+            //logger.info("current {} methodID {} parseMethod {}", currentMember.toStringUnqualifiedMethodName(true, true), methodID, parseDictionary.getParseMethod());
+            if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                storeElidedLock(currentMember, bciValue, kind, bciOpcodeMap);
+            } else if (processAnnotationsForInlinedMethods) {
+                IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                if (inlinedMember != null) {
+                    storeElidedLock(inlinedMember, bciValue, kind, bciOpcodeMap);
+                } else {
+                    unhandledTags.add(tagJVMS);
+                }
+            }
+        }
+        // end for
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

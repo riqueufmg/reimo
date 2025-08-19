@@ -1,0 +1,8 @@
+  <refactored code>
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    return applyMaskPenaltyRule1Internal(matrix, isHorizontal);
+}
+</refactored code>
+<refactoring explanation>
+The original method is too long and complex. It can be refactored by extracting a new method with a clear name. The new method takes the matrix and the direction as parameters and returns the penalty. The old method is replaced with a call to the new method.
+</refactoring explanation>

@@ -1,0 +1,331 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private prefix(adr AMD64Address, reg Register, byteinst boolean) : void extracted from private prefix(adr AMD64Address, reg Register) : void in class com.oracle.graal.asm.amd64.AMD64Assembler
+
+Code Before:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
+-        prefix(dst, src); // , true)
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
+-                } else if (reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Code After:
+------------
+@@ -917,7 +917,7 @@ public final void movb(AMD64Address dst, int imm8) {
+ 
+     public final void movb(AMD64Address dst, Register src) {
+         assert src.getRegisterCategory() == AMD64.CPU : "must have byte register";
++        prefix(dst, src, true);
+         emitByte(0x88);
+         emitOperandHelper(src, dst);
+     }
+@@ -1895,6 +1895,10 @@ private void prefixq(AMD64Address adr) {
+     }
+ 
+     private void prefix(AMD64Address adr, Register reg) {
++        prefix(adr, reg, false);
++    }
++
++    private void prefix(AMD64Address adr, Register reg, boolean byteinst) {
+         if (reg.encoding < 8) {
+             if (needsRex(adr.getBase())) {
+                 if (needsRex(adr.getIndex())) {
+@@ -1905,7 +1909,7 @@ private void prefix(AMD64Address adr, Register reg) {
+             } else {
+                 if (needsRex(adr.getIndex())) {
+                     emitByte(Prefix.REXX);
++                } else if (byteinst && reg.encoding >= 4) {
+                     emitByte(Prefix.REX);
+                 }
+             }
+
+Example 2:
+
+Refactoring Description: Extract Method public testListSerialization(key long, listState ListState<Long>) : void extracted from public testListSerialization() : void in class org.apache.flink.runtime.query.netty.message.KvStateRequestSerializerTest
+
+Code Before:
+------------
+@@ -21,11 +21,19 @@
+ import io.netty.buffer.ByteBuf;
+ import io.netty.buffer.ByteBufAllocator;
+ import io.netty.buffer.UnpooledByteBufAllocator;
+ import org.apache.flink.api.common.typeutils.TypeSerializer;
+ import org.apache.flink.api.common.typeutils.base.LongSerializer;
+ import org.apache.flink.api.common.typeutils.base.StringSerializer;
+ import org.apache.flink.api.java.tuple.Tuple2;
+ import org.apache.flink.runtime.query.KvStateID;
+ import org.junit.Test;
+ 
+ import java.util.ArrayList;
+@@ -34,6 +42,7 @@
+ 
+ import static org.junit.Assert.assertArrayEquals;
+ import static org.junit.Assert.assertEquals;
+ 
+ public class KvStateRequestSerializerTest {
+ 
+@@ -228,17 +237,62 @@ public void testValueSerialization() throws Exception {
+ 	 */
+ 	@Test
+ 	public void testListSerialization() throws Exception {
+ 		TypeSerializer<Long> valueSerializer = LongSerializer.INSTANCE;
+ 
+ 		// List
+-		int numElements = 10;
+ 
+-		List<Long> expectedValues = new ArrayList<>();
+ 		for (int i = 0; i < numElements; i++) {
+-			expectedValues.add(ThreadLocalRandom.current().nextLong());
+ 		}
+ 
+-		byte[] serializedValues = KvStateRequestSerializer.serializeList(expectedValues, valueSerializer);
+ 		List<Long> actualValues = KvStateRequestSerializer.deserializeList(serializedValues, valueSerializer);
+ 		assertEquals(expectedValues, actualValues);
+ 
+
+Code After:
+------------
+@@ -21,11 +21,19 @@
+ import io.netty.buffer.ByteBuf;
+ import io.netty.buffer.ByteBufAllocator;
+ import io.netty.buffer.UnpooledByteBufAllocator;
++import org.apache.flink.api.common.state.ListState;
++import org.apache.flink.api.common.state.ListStateDescriptor;
+ import org.apache.flink.api.common.typeutils.TypeSerializer;
+ import org.apache.flink.api.common.typeutils.base.LongSerializer;
+ import org.apache.flink.api.common.typeutils.base.StringSerializer;
+ import org.apache.flink.api.java.tuple.Tuple2;
+ import org.apache.flink.runtime.query.KvStateID;
++import org.apache.flink.runtime.query.TaskKvStateRegistry;
++import org.apache.flink.runtime.state.KeyGroupRange;
++import org.apache.flink.runtime.state.KvState;
++import org.apache.flink.runtime.state.VoidNamespace;
++import org.apache.flink.runtime.state.VoidNamespaceSerializer;
++import org.apache.flink.runtime.state.heap.HeapKeyedStateBackend;
+ import org.junit.Test;
+ 
+ import java.util.ArrayList;
+@@ -34,6 +42,7 @@
+ 
+ import static org.junit.Assert.assertArrayEquals;
+ import static org.junit.Assert.assertEquals;
++import static org.mockito.Mockito.mock;
+ 
+ public class KvStateRequestSerializerTest {
+ 
+@@ -228,17 +237,62 @@ public void testValueSerialization() throws Exception {
+ 	 */
+ 	@Test
+ 	public void testListSerialization() throws Exception {
++		final long key = 0l;
++
++		// objects for heap state list serialisation
++		final HeapKeyedStateBackend<Long> longHeapKeyedStateBackend =
++			new HeapKeyedStateBackend<>(
++				mock(TaskKvStateRegistry.class),
++				LongSerializer.INSTANCE,
++				ClassLoader.getSystemClassLoader(),
++				1, new KeyGroupRange(0, 0)
++			);
++		longHeapKeyedStateBackend.setCurrentKey(key);
++
++		final ListState<Long> listState = longHeapKeyedStateBackend
++			.createListState(VoidNamespaceSerializer.INSTANCE,
++				new ListStateDescriptor<>("test", LongSerializer.INSTANCE));
++		testListSerialization(key, listState);
++	}
++
++	/**
++	 * Verifies that the serialization of a list using the given list state
++	 * matches the deserialization with {@link KvStateRequestSerializer#deserializeList}.
++	 *
++	 * @param key
++	 * 		key of the list state
++	 * @param listState
++	 * 		list state using the {@link VoidNamespace}, must also be a {@link
++	 * 		KvState} instance
++	 *
++	 * @throws Exception
++	 */
++	public static void testListSerialization(final long key,
++		final ListState<Long> listState) throws Exception {
++
+ 		TypeSerializer<Long> valueSerializer = LongSerializer.INSTANCE;
+ 
++		final KvState<VoidNamespace> listKvState =
++			(KvState<VoidNamespace>) listState;
++		listKvState.setCurrentNamespace(VoidNamespace.INSTANCE);
++
+ 		// List
++		final int numElements = 10;
+ 
++		final List<Long> expectedValues = new ArrayList<>();
+ 		for (int i = 0; i < numElements; i++) {
++			final long value = ThreadLocalRandom.current().nextLong();
++			expectedValues.add(value);
++			listState.add(value);
+ 		}
+ 
++		final byte[] serializedKey =
++			KvStateRequestSerializer.serializeKeyAndNamespace(
++				key, LongSerializer.INSTANCE,
++				VoidNamespace.INSTANCE, VoidNamespaceSerializer.INSTANCE);
++		final byte[] serializedValues =
++			listKvState.getSerializedValue(serializedKey);
++
+ 		List<Long> actualValues = KvStateRequestSerializer.deserializeList(serializedValues, valueSerializer);
+ 		assertEquals(expectedValues, actualValues);
+ 
+
+Example 3:
+
+Refactoring Description: Extract Method public processMethodTree(tree MethodTree) : void extracted from public visitMethod(tree MethodTree, p Void) : Void in class org.checkerframework.common.basetype.BaseTypeVisitor
+
+Code Before:
+------------
+@@ -958,7 +958,23 @@ protected void checkDefaultConstructor(ClassTree tree) {}
+    * Also, it issues a "missing.this" error for static method annotated receivers.
+    */
+   @Override
+-  public Void visitMethod(MethodTree tree, Void p) {
+     // We copy the result from getAnnotatedType to ensure that circular types (e.g. K extends
+     // Comparable<K>) are represented by circular AnnotatedTypeMirrors, which avoids problems
+     // with later checks.
+@@ -983,7 +999,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+     try {
+       if (TreeUtils.isAnonymousConstructor(tree)) {
+         // We shouldn't dig deeper
+-        return null;
+       }
+ 
+       if (TreeUtils.isConstructor(tree)) {
+@@ -1051,7 +1067,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+ 
+       warnInvalidPolymorphicQualifier(tree.getTypeParameters());
+ 
+-      return super.visitMethod(tree, p);
+     } finally {
+       methodTree = preMT;
+     }
+
+Code After:
+------------
+@@ -958,7 +958,23 @@ protected void checkDefaultConstructor(ClassTree tree) {}
+    * Also, it issues a "missing.this" error for static method annotated receivers.
+    */
+   @Override
++  public final Void visitMethod(MethodTree tree, Void p) {
++    ClassTree enclosingClass = TreePathUtil.enclosingClass(getCurrentPath());
++    if (checker.shouldSkipDefs(enclosingClass, tree)) {
++      return null;
++    }
++    processMethodTree(tree);
++    return null;
++  }
++
++  /**
++   * Type-check {@literal methodTree}. Subclasses should override this method instead of {@link
++   * #visitMethod(MethodTree, Void)}.
++   *
++   * @param tree the method to type-check
++   */
++  public void processMethodTree(MethodTree tree) {
++
+     // We copy the result from getAnnotatedType to ensure that circular types (e.g. K extends
+     // Comparable<K>) are represented by circular AnnotatedTypeMirrors, which avoids problems
+     // with later checks.
+@@ -983,7 +999,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+     try {
+       if (TreeUtils.isAnonymousConstructor(tree)) {
+         // We shouldn't dig deeper
++        return;
+       }
+ 
+       if (TreeUtils.isConstructor(tree)) {
+@@ -1051,7 +1067,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+ 
+       warnInvalidPolymorphicQualifier(tree.getTypeParameters());
+ 
++      super.visitMethod(tree, null);
+     } finally {
+       methodTree = preMT;
+     }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Helper function for applyMaskPenaltyRule1. We need this for doing this calculation in both
+ * vertical and horizontal orders respectively.
+ */
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    int penalty = 0;
+    int iLimit = isHorizontal ? matrix.getHeight() : matrix.getWidth();
+    int jLimit = isHorizontal ? matrix.getWidth() : matrix.getHeight();
+    byte[][] array = matrix.getArray();
+    for (int i = 0; i < iLimit; i++) {
+        int numSameBitCells = 0;
+        int prevBit = -1;
+        for (int j = 0; j < jLimit; j++) {
+            int bit = isHorizontal ? array[i][j] : array[j][i];
+            if (bit == prevBit) {
+                numSameBitCells++;
+            } else {
+                if (numSameBitCells >= 5) {
+                    penalty += N1 + (numSameBitCells - 5);
+                }
+                // Include the cell itself.
+                numSameBitCells = 1;
+                prevBit = bit;
+            }
+        }
+        if (numSameBitCells >= 5) {
+            penalty += N1 + (numSameBitCells - 5);
+        }
+    }
+    return penalty;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

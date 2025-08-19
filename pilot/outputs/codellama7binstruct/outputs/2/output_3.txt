@@ -1,0 +1,8 @@
+  <refactored code>
+private static BitMatrix encodeLowLevel(DefaultPlacement placement, SymbolInfo symbolInfo, int width, int height) {
+    return encodeLowLevel(placement, symbolInfo, width, height);
+}
+</refactored code>
+<refactoring explanation>
+The original method is too long and complex. It can be refactored by extracting a new method called "encodeLowLevel" that takes the same parameters as the original method and returns the same result. This new method will be responsible for the encoding logic, and the original method will only call it and return the result.
+</refactoring explanation>

@@ -250,8 +250,16 @@ examples = filter_marv_validated_examples(refactoring_type, MaRV_path)
 usage_count = {}
 for example in examples:
     usage_count[example['refactoring_id']] = 0
-
+    
 num_instances = 1
 for instance_id in range(num_instances):
     samples = select_samples_global_limit(examples, usage_count, num_samples, max_usage)
     create_multiple_prompts(refactoring_type, samples, f"{output_dir}/{instance_id}", n_examples, target_method)'''
+
+'''prompt = "Give an example of Extract Method"
+api_url = "https://otnk6c3y6fae8bgb.us-east-1.aws.endpoints.huggingface.cloud/v1/chat/completions"
+api_token = "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"
+sample_id = 1
+prompt_id = 1
+
+hf_inference_endpoint(prompt, api_url, api_token, sample_id, prompt_id)'''

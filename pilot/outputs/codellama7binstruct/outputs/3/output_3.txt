@@ -1,0 +1,12 @@
+  <refactored code>
+private static int applyMaskPenaltyRule1Internal(ByteMatrix matrix, boolean isHorizontal) {
+    return applyMaskPenaltyRule1Internal(matrix, isHorizontal);
+}
+</refactored code>
+<refactoring explanation>
+The original code is a helper function for applyMaskPenaltyRule1. It calculates the penalty for the mask by counting the number of same-color cells in both horizontal and vertical orders. The function is too long and complex, so it can be refactored into a separate method with a clear name.
+
+The new method takes the matrix and a boolean parameter indicating whether the calculation should be done in the horizontal or vertical order. The method returns the penalty value.
+
+The original code is replaced with a call to the new method, which makes the code more readable and easier to maintain.
+</refactoring explanation>

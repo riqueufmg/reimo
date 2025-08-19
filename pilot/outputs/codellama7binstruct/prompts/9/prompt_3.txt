@@ -1,0 +1,343 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private filterOnCategory(input EventStream<LogEntry>, complement boolean, first Category, selection Category...) : EventStream<LogEntry> extracted from public EventLogger() in class net.sourceforge.pmd.util.fxdesigner.model.EventLogger
+
+Code Before:
+------------
+@@ -6,11 +6,15 @@
+ 
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.PARSE_EXCEPTION;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.PARSE_OK;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.XPATH_EVALUATION_EXCEPTION;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.XPATH_OK;
+ 
+ import java.time.Duration;
+ import java.util.EnumSet;
+ 
+ import org.reactfx.EventSource;
+ import org.reactfx.EventStream;
+@@ -20,7 +24,9 @@
+ import org.reactfx.value.Val;
+ 
+ import net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category;
+ import net.sourceforge.pmd.util.fxdesigner.util.DesignerUtil;
+ 
+ 
+ /**
+@@ -35,37 +41,52 @@ public class EventLogger {
+      * Exceptions from XPath evaluation or parsing are never emitted
+      * within less than that time interval to keep them from flooding the tableview.
+      */
+-    private static final Duration PARSE_EXCEPTION_DELAY = Duration.ofMillis(3000);
+     private final EventSource<LogEntry> latestEvent = new EventSource<>();
+     private final LiveList<LogEntry> fullLog = new LiveArrayList<>();
+ 
+ 
+     public EventLogger() {
+ 
+-        EventStream<LogEntry> onlyParseException =
+-            latestEvent.filter(x -> x.getCategory() == PARSE_EXCEPTION || x.getCategory() == PARSE_OK)
+-                       .successionEnds(PARSE_EXCEPTION_DELAY)
+-                       // don't output anything when the last state recorded was OK
+-                       .filter(x -> x.getCategory() != PARSE_OK);
+ 
+-        EventStream<LogEntry> onlyXPathException =
+-            latestEvent.filter(x -> x.getCategory() == XPATH_EVALUATION_EXCEPTION || x.getCategory() == XPATH_OK)
+-                       .successionEnds(PARSE_EXCEPTION_DELAY)
+-                       // don't output anything when the last state recorded was OK
+-                       .filter(x -> x.getCategory() != XPATH_OK);
+ 
+-        EnumSet<Category> otherExceptionSet = EnumSet.complementOf(EnumSet.of(PARSE_EXCEPTION, XPATH_EVALUATION_EXCEPTION, PARSE_OK, XPATH_OK));
+ 
+-        EventStream<LogEntry> otherExceptions = latestEvent.filter(x -> otherExceptionSet.contains(x.getCategory()));
+-
+-        EventStreams.merge(onlyParseException, otherExceptions, onlyXPathException)
+                     .subscribe(fullLog::add);
+     }
+ 
+ 
+     /** Number of log entries that were not yet examined by the user. */
+     public Val<Integer> numNewLogEntriesProperty() {
+-        return DesignerUtil.countNotMatching(fullLog.map(LogEntry::wasExaminedProperty));
+     }
+ 
+ 
+
+Code After:
+------------
+@@ -6,11 +6,15 @@
+ 
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.PARSE_EXCEPTION;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.PARSE_OK;
++import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.SELECTION_EVENT_TRACING;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.XPATH_EVALUATION_EXCEPTION;
+ import static net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category.XPATH_OK;
++import static net.sourceforge.pmd.util.fxdesigner.util.DesignerUtil.countNotMatching;
++import static net.sourceforge.pmd.util.fxdesigner.util.DesignerUtil.reduceIfPossible;
+ 
+ import java.time.Duration;
+ import java.util.EnumSet;
++import java.util.Objects;
+ 
+ import org.reactfx.EventSource;
+ import org.reactfx.EventStream;
+@@ -20,7 +24,9 @@
+ import org.reactfx.value.Val;
+ 
+ import net.sourceforge.pmd.util.fxdesigner.model.LogEntry.Category;
++import net.sourceforge.pmd.util.fxdesigner.model.LogEntry.LogEntryWithData;
+ import net.sourceforge.pmd.util.fxdesigner.util.DesignerUtil;
++import net.sourceforge.pmd.util.fxdesigner.util.NodeSelectionSource.NodeSelectionEvent;
+ 
+ 
+ /**
+@@ -35,37 +41,52 @@ public class EventLogger {
+      * Exceptions from XPath evaluation or parsing are never emitted
+      * within less than that time interval to keep them from flooding the tableview.
+      */
++    private static final Duration PARSE_EXCEPTION_REDUCTION_DELAY = Duration.ofMillis(3000);
++    private static final Duration EVENT_TRACING_REDUCTION_DELAY = Duration.ofMillis(200);
+     private final EventSource<LogEntry> latestEvent = new EventSource<>();
+     private final LiveList<LogEntry> fullLog = new LiveArrayList<>();
+ 
+ 
+     public EventLogger() {
+ 
++        EventStream<LogEntryWithData<NodeSelectionEvent>> eventTraces =
++            reduceIfPossible(filterOnCategory(latestEvent, false, SELECTION_EVENT_TRACING).map(t -> (LogEntryWithData<NodeSelectionEvent>) t),
++                             // the user data for those is the event
++                             // if they're the same event we reduce them together
++                             (lastEv, newEv) -> Objects.equals(lastEv.getUserData(), newEv.getUserData()),
++                             LogEntryWithData::reduceEventTrace,
++                             EVENT_TRACING_REDUCTION_DELAY);
+ 
++        EventStream<LogEntry> onlyParseException = deleteOnSignal(latestEvent, PARSE_EXCEPTION, PARSE_OK);
++        EventStream<LogEntry> onlyXPathException = deleteOnSignal(latestEvent, XPATH_EVALUATION_EXCEPTION, XPATH_OK);
+ 
++        EventStream<LogEntry> otherExceptions =
++            filterOnCategory(latestEvent, true, PARSE_EXCEPTION, XPATH_EVALUATION_EXCEPTION, SELECTION_EVENT_TRACING)
++                .filter(it -> !it.getCategory().isFlag());
+ 
++        EventStreams.merge(eventTraces, onlyParseException, otherExceptions, onlyXPathException)
+                     .subscribe(fullLog::add);
+     }
+ 
+ 
+     /** Number of log entries that were not yet examined by the user. */
+     public Val<Integer> numNewLogEntriesProperty() {
++        return countNotMatching(fullLog.map(LogEntry::wasExaminedProperty));
++    }
++
++
++    private static EventStream<LogEntry> deleteOnSignal(EventStream<LogEntry> input, Category normal, Category deleteSignal) {
++        return DesignerUtil.deleteOnSignal(filterOnCategory(input, false, normal, deleteSignal),
++                                           x -> x.getCategory() == deleteSignal,
++                                           PARSE_EXCEPTION_REDUCTION_DELAY);
++    }
++
++
++    private static EventStream<LogEntry> filterOnCategory(EventStream<LogEntry> input, boolean complement, Category first, Category... selection) {
++        EnumSet<Category> considered = EnumSet.of(first, selection);
++        EnumSet<Category> complemented = complement ? EnumSet.complementOf(considered) : considered;
++
++        return input.filter(e -> complemented.contains(e.getCategory()));
+     }
+ 
+ 
+
+Example 2:
+
+Refactoring Description: Extract Method public sendMessageAsync(server RaftPeerId, message Message, timeoutMs long) : CompletableFuture<RaftClientReply> extracted from public sendMessageAsync(server RaftPeerId, message Message) : CompletableFuture<RaftClientReply> in class alluxio.master.journal.raft.RaftJournalSystem
+
+Code Before:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
+-    long timeoutMs =
+-        Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT);
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
+-    RaftClient client = createClient();
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Code After:
+------------
+@@ -458,8 +458,11 @@ public synchronized RaftGroup getCurrentGroup() {
+   }
+ 
+   private RaftClient createClient() {
++    return createClient(Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  private RaftClient createClient(long timeoutMs) {
+     long retryBaseMs =
+         Configuration.getMs(PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_INTERVAL);
+     long maxSleepTimeMs =
+@@ -880,7 +883,21 @@ public synchronized List<QuorumServerInfo> getQuorumServerInfoList() throws IOEx
+    */
+   public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
+       RaftPeerId server, Message message) {
++    return sendMessageAsync(server, message, Configuration.getMs(
++        PropertyKey.MASTER_EMBEDDED_JOURNAL_RAFT_CLIENT_REQUEST_TIMEOUT));
++  }
++
++  /**
++   * Sends a message to a raft server asynchronously.
++   *
++   * @param server the raft peer id of the target server
++   * @param message the message to send
++   * @param timeoutMs the message timeout in milliseconds
++   * @return a future to be completed with the client reply
++   */
++  public synchronized CompletableFuture<RaftClientReply> sendMessageAsync(
++      RaftPeerId server, Message message, long timeoutMs) {
++    RaftClient client = createClient(timeoutMs);
+     RaftClientRequest request = RaftClientRequest.newBuilder()
+             .setClientId(mRawClientId)
+             .setServerId(server)
+
+Example 3:
+
+Refactoring Description: Extract Method public performClick() : boolean extracted from public onTouchEvent(ev MotionEvent) : boolean in class com.google.android.exoplayer2.ui.PlayerView
+
+Code Before:
+------------
+@@ -1032,6 +1032,12 @@ public boolean onTouchEvent(MotionEvent ev) {
+     if (ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+       return false;
+     }
+     return toggleControllerVisibility();
+   }
+ 
+
+Code After:
+------------
+@@ -1032,6 +1032,12 @@ public boolean onTouchEvent(MotionEvent ev) {
+     if (ev.getActionMasked() != MotionEvent.ACTION_DOWN) {
+       return false;
+     }
++    return performClick();
++  }
++
++  @Override
++  public boolean performClick() {
++    super.performClick();
+     return toggleControllerVisibility();
+   }
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+public void handleLine(final String inLine) {
+    // JMH ???
+    String line = inLine.replaceFirst("^ +", "");
+    line = StringUtil.replaceXMLEntities(line);
+    String trimmedLine = line.trim();
+    if (DEBUG_LOGGING_ASSEMBLY) {
+        logger.debug("handleLine:{}", line);
+    }
+    if (line.startsWith("[Disassembling for mach")) {
+        architecture = Architecture.parseFromLogLine(line);
+        if (architecture == null) {
+            logger.error("Could not determine architecture from '{}'", line);
+        } else {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Detected architecture: {}", architecture);
+            }
+        }
+    }
+    if (S_HASH.equals(previousLine) && line.startsWith("{method}")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("fixup mangled {method} line");
+        }
+        line = S_HASH + S_SPACE + line;
+    }
+    if (trimmedLine.startsWith("total in heap")) {
+        String possibleNativeAddress = getStartAddress(line);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith(" bytes") || trimmedLine.startsWith("main code")) {
+        String possibleEntryAddress = getStartAddress(line);
+        if (possibleEntryAddress != null) {
+            entryAddress = possibleEntryAddress.trim();
+        }
+    }
+    if (trimmedLine.endsWith("</print_nmethod>")) {
+        complete();
+    }
+    if (line.startsWith(NATIVE_CODE_START) || line.startsWith("Compiled method") || line.startsWith("----------------------------------------------------------------------")) {
+        if (DEBUG_LOGGING_ASSEMBLY) {
+            logger.debug("Assembly started");
+        }
+        assemblyStarted = true;
+        if (builder.length() > 0) {
+            complete();
+        }
+        String possibleNativeAddress = StringUtil.getSubstringBetween(line, NATIVE_CODE_START, S_COLON);
+        if (possibleNativeAddress != null) {
+            nativeAddress = possibleNativeAddress.trim();
+        }
+    } else if (assemblyStarted) {
+        boolean couldBeNativeMethodMark = false;
+        couldBeNativeMethodMark = line.startsWith(NATIVE_CODE_METHOD_MARK);
+        if (couldBeNativeMethodMark) {
+            if (DEBUG_LOGGING_ASSEMBLY) {
+                logger.debug("Assembly method started");
+            }
+            methodStarted = true;
+            if (!line.endsWith(S_APOSTROPHE)) {
+                if (DEBUG_LOGGING_ASSEMBLY) {
+                    logger.debug("Method signature interrupted");
+                }
+                methodInterrupted = true;
+            }
+        } else if (methodInterrupted && line.endsWith(S_APOSTROPHE)) {
+            methodInterrupted = false;
+        }
+        if (methodStarted && line.length() > 0) {
+            builder.append(line);
+            if (!methodInterrupted) {
+                builder.append(S_NEWLINE);
+            }
+        }
+    }
+    previousLine = line;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

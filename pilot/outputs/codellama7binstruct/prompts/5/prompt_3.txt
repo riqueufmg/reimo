@@ -1,0 +1,410 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public createNodes(nodePaths List<String>, projectId String) : Map<String,String> extracted from public createNodeByTestCases(testCases List<TestCaseWithBLOBs>, projectId String) : Map<String,String> in class io.metersphere.track.service.TestCaseNodeService
+
+Code Before:
+------------
+@@ -230,7 +230,7 @@ public List<TestCaseNodeDTO> getNodeByReviewId(String reviewId) {
+         return list;
+ 
+     }
+-    
+     private List<TestCaseNodeDTO> getNodeDTO(String projectId, String planId) {
+         TestPlanTestCaseExample testPlanTestCaseExample = new TestPlanTestCaseExample();
+         testPlanTestCaseExample.createCriteria().andPlanIdEqualTo(planId);
+@@ -355,50 +355,45 @@ public List<TestCaseNodeDTO> getAllNodeByReviewId(QueryNodeRequest request) {
+     }
+ 
+     public Map<String, String> createNodeByTestCases(List<TestCaseWithBLOBs> testCases, String projectId) {
+-
+-        List<TestCaseNodeDTO> nodeTrees = getNodeTreeByProjectId(projectId);
+-
+-        Map<String, String> pathMap = new HashMap<>();
+-
+         List<String> nodePaths = testCases.stream()
+                 .map(TestCase::getNodePath)
+                 .collect(Collectors.toList());
+ 
+-        nodePaths.forEach(path -> {
+ 
+-            if (path == null) {
+                 throw new ExcelException(Translator.get("test_case_module_not_null"));
+             }
+-            List<String> nodeNameList = new ArrayList<>(Arrays.asList(path.split("/")));
+-            Iterator<String> pathIterator = nodeNameList.iterator();
+-
+             Boolean hasNode = false;
+             String rootNodeName = null;
+ 
+             if (nodeNameList.size() <= 1) {
+-                throw new ExcelException(Translator.get("test_case_create_module_fail") + ":" + path);
+             } else {
+-                pathIterator.next();
+-                pathIterator.remove();
+-
+-                rootNodeName = pathIterator.next().trim();
+                 //原来没有，新建的树nodeTrees也不包含
+                 for (TestCaseNodeDTO nodeTree : nodeTrees) {
+                     if (StringUtils.equals(rootNodeName, nodeTree.getName())) {
+                         hasNode = true;
+-                        createNodeByPathIterator(pathIterator, "/" + rootNodeName, nodeTree,
+                                 pathMap, projectId, 2);
+                     }
+                     ;
+                 }
+             }
+-
+-
+             if (!hasNode) {
+-                createNodeByPath(pathIterator, rootNodeName, null, projectId, 1, "", pathMap);
+             }
+-        });
+-
+         return pathMap;
+ 
+     }
+
+Code After:
+------------
+@@ -230,7 +230,7 @@ public List<TestCaseNodeDTO> getNodeByReviewId(String reviewId) {
+         return list;
+ 
+     }
++
+     private List<TestCaseNodeDTO> getNodeDTO(String projectId, String planId) {
+         TestPlanTestCaseExample testPlanTestCaseExample = new TestPlanTestCaseExample();
+         testPlanTestCaseExample.createCriteria().andPlanIdEqualTo(planId);
+@@ -355,50 +355,45 @@ public List<TestCaseNodeDTO> getAllNodeByReviewId(QueryNodeRequest request) {
+     }
+ 
+     public Map<String, String> createNodeByTestCases(List<TestCaseWithBLOBs> testCases, String projectId) {
+         List<String> nodePaths = testCases.stream()
+                 .map(TestCase::getNodePath)
+                 .collect(Collectors.toList());
+ 
++        return this.createNodes(nodePaths, projectId);
++    }
+ 
++    public Map<String, String> createNodes(List<String> nodePaths, String projectId) {
++        List<TestCaseNodeDTO> nodeTrees = getNodeTreeByProjectId(projectId);
++        Map<String, String> pathMap = new HashMap<>();
++        for(String item : nodePaths){
++            if (item == null) {
+                 throw new ExcelException(Translator.get("test_case_module_not_null"));
+             }
++            List<String> nodeNameList = new ArrayList<>(Arrays.asList(item.split("/")));
++            Iterator<String> itemIterator = nodeNameList.iterator();
+             Boolean hasNode = false;
+             String rootNodeName = null;
+ 
+             if (nodeNameList.size() <= 1) {
++                throw new ExcelException(Translator.get("test_case_create_module_fail") + ":" + item);
+             } else {
++                itemIterator.next();
++                itemIterator.remove();
++                rootNodeName = itemIterator.next().trim();
+                 //原来没有，新建的树nodeTrees也不包含
+                 for (TestCaseNodeDTO nodeTree : nodeTrees) {
+                     if (StringUtils.equals(rootNodeName, nodeTree.getName())) {
+                         hasNode = true;
++                        createNodeByPathIterator(itemIterator, "/" + rootNodeName, nodeTree,
+                                 pathMap, projectId, 2);
+                     }
+                     ;
+                 }
+             }
+             if (!hasNode) {
++                createNodeByPath(itemIterator, rootNodeName, null, projectId, 1, "", pathMap);
+             }
++        }
+         return pathMap;
+ 
+     }
+
+Example 2:
+
+Refactoring Description: Extract Method private filterByNetworkId(leg ScheduledTransitLeg, rule FareLegRule) : boolean extracted from private getLegProducts(leg ScheduledTransitLeg) : Stream<FareProduct> in class org.opentripplanner.ext.fares.impl.GtfsFaresV2Service
+
+Code Before:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
+ 
+-public final class GtfsFaresV2Service {
+ 
+   private final List<FareLegRule> legRules;
+   private final Set<String> networksWithRules;
+ 
+-  public GtfsFaresV2Service(List<FareLegRule> legRules) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
+-      // get the fare products that match the network_id
+-      // the the network id of the product is null it depends on the presence/absence of other rules
+-      // with that network id
+-      .filter(product ->
+-        (
+-          Objects.isNull(product.networkId()) &&
+-          !networksWithRules.contains(leg.getRoute().getNetworkId())
+-        ) ||
+-        Objects.equals(product.networkId(), leg.getRoute().getNetworkId())
+-      )
+       .map(FareLegRule::fareProduct);
+   }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+Code After:
+------------
+@@ -1,5 +1,7 @@
+ package org.opentripplanner.ext.fares.impl;
+ 
++import com.google.common.collect.Multimap;
++import java.io.Serializable;
+ import java.util.Collection;
+ import java.util.List;
+ import java.util.Objects;
+@@ -10,15 +12,20 @@
+ import org.opentripplanner.model.FareProduct;
+ import org.opentripplanner.model.plan.Itinerary;
+ import org.opentripplanner.model.plan.ScheduledTransitLeg;
++import org.opentripplanner.transit.model.framework.FeedScopedId;
+ 
++public final class GtfsFaresV2Service implements Serializable {
+ 
+   private final List<FareLegRule> legRules;
++  private final Multimap<FeedScopedId, String> stopAreas;
+   private final Set<String> networksWithRules;
++  private final Set<String> stopAreasWithRules;
+ 
++  public GtfsFaresV2Service(List<FareLegRule> legRules, Multimap<FeedScopedId, String> stopAreas) {
+     this.legRules = legRules;
+     this.networksWithRules = findNetworksWithRules(legRules);
++    this.stopAreasWithRules = findAreasWithRules(legRules);
++    this.stopAreas = stopAreas;
+   }
+ 
+   public ProductResult getProducts(Itinerary itinerary) {
+@@ -33,6 +40,13 @@ public ProductResult getProducts(Itinerary itinerary) {
+     return new ProductResult(coveringItinerary);
+   }
+ 
++  private static Set<String> findAreasWithRules(List<FareLegRule> legRules) {
++    return legRules
++      .stream()
++      .flatMap(rule -> Stream.of(rule.fromAreaId(), rule.toAreadId()).filter(Objects::nonNull))
++      .collect(Collectors.toSet());
++  }
++
+   private static Set<String> findNetworksWithRules(Collection<FareLegRule> legRules) {
+     return legRules
+       .stream()
+@@ -46,18 +60,36 @@ private Stream<FareProduct> getLegProducts(ScheduledTransitLeg leg) {
+       .stream()
+       // make sure that you only get rules for the correct feed
+       .filter(legRule -> leg.getAgency().getId().getFeedId().equals(legRule.feedId()))
++      .filter(rule -> filterByNetworkId(leg, rule))
++      // apply only those rules which have the correct area ids
++      .filter(rule -> filterByFromArea(leg, rule))
+       .map(FareLegRule::fareProduct);
+   }
++
++  private boolean filterByFromArea(ScheduledTransitLeg leg, FareLegRule rule) {
++    var fromStopAreas = stopAreas.get(leg.getFrom().stop.getId());
++    return (
++      (
++        Objects.isNull(rule.fromAreaId()) &&
++        fromStopAreas.stream().noneMatch(stopAreasWithRules::contains)
++      ) ||
++      (Objects.nonNull(rule.fromAreaId()) && fromStopAreas.contains(rule.fromAreaId()))
++    );
++  }
++
++  /**
++   * Get the fare products that match the network_id. If the network id of the product is null it
++   * depends on the presence/absence of other rules with that network id.
++   */
++  private boolean filterByNetworkId(ScheduledTransitLeg leg, FareLegRule rule) {
++    return (
++      (
++        Objects.isNull(rule.networkId()) &&
++        !networksWithRules.contains(leg.getRoute().getNetworkId())
++      ) ||
++      Objects.equals(rule.networkId(), leg.getRoute().getNetworkId())
++    );
++  }
+ }
+ 
+ record ProductResult(List<FareProduct> productsCoveringItinerary) {}
+
+Example 3:
+
+Refactoring Description: Extract Method private getSourceSection(context LazyContext) : SourceSection extracted from public getSourceSection() : SourceSection in class com.oracle.truffle.llvm.runtime.debug.scope.LLVMSourceLocation
+
+Code Before:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
+     public abstract static class LazySourceSection {
+-        public abstract SourceSection get();
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
+-    public synchronized SourceSection getSourceSection() {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
+-            sourceSection = lazySourceSection.get();
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+Code After:
+------------
+@@ -32,8 +32,10 @@
+ import com.oracle.truffle.api.CompilerAsserts;
+ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
++import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+ import com.oracle.truffle.api.source.Source;
+ import com.oracle.truffle.api.source.SourceSection;
++import com.oracle.truffle.llvm.runtime.LLVMContext;
+ import com.oracle.truffle.llvm.runtime.global.LLVMGlobal;
+ 
+ import java.nio.file.InvalidPathException;
+@@ -47,8 +49,14 @@
+ 
+ public abstract class LLVMSourceLocation {
+ 
++    @FunctionalInterface
++    public interface LazyContext {
++
++        LLVMContext get();
++    }
++
+     public abstract static class LazySourceSection {
++        public abstract SourceSection get(LazyContext context);
+ 
+         public abstract String getPath();
+ 
+@@ -106,10 +114,26 @@ private LLVMSourceLocation(LLVMSourceLocation parent, Kind kind, String name, So
+         this.sourceSection = sourceSection;
+     }
+ 
++    public synchronized SourceSection getSourceSection(ContextReference<LLVMContext> ctxRef) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> {
++            try {
++                return ctxRef.get();
++            } catch (Throwable t) {
++                return null;
++            }
++        });
++    }
++
++    public SourceSection getSourceSection(LLVMContext context) {
++        CompilerAsserts.neverPartOfCompilation();
++        return getSourceSection(() -> context);
++    }
++
++    private synchronized SourceSection getSourceSection(LazyContext context) {
+         CompilerAsserts.neverPartOfCompilation();
+         if (sourceSection == null && lazySourceSection != null) {
++            sourceSection = lazySourceSection.get(context);
+         }
+         return sourceSection != null ? sourceSection : UNAVAILABLE_SECTION;
+     }
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Returns the number of characters between the current position and the next instance of the input sequence
+ *
+ * @param seq scan target
+ * @return offset between current position and next instance of target. -1 if not found.
+ */
+int nextIndexOf(CharSequence seq) {
+    bufferUp();
+    // doesn't handle scanning for surrogates
+    char startChar = seq.charAt(0);
+    for (int offset = bufPos; offset < bufLength; offset++) {
+        // scan to first instance of startchar:
+        if (startChar != charBuf[offset])
+            while (++offset < bufLength && startChar != charBuf[offset]) {
+                /* empty */
+            }
+        int i = offset + 1;
+        int last = i + seq.length() - 1;
+        if (offset < bufLength && last <= bufLength) {
+            for (int j = 1; i < last && seq.charAt(j) == charBuf[i]; i++, j++) {
+                /* empty */
+            }
+            if (// found full sequence
+            i == last)
+                return offset - bufPos;
+        }
+    }
+    return -1;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

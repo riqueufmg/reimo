@@ -1,0 +1,355 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method private idRangeIndex(id long) : long extracted from private prepareRange(id long, addition boolean) : void in class org.neo4j.internal.id.indexed.IdRangeMarker
+
+Code Before:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
+-        key.setIdRangeIdx( id / idsPerEntry );
+         value.clear( generation, addition );
+     }
+ 
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
+-                    prepareRange( bridgeId, true );
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
+-                    writer.merge( key, value, merger );
+                 }
+             }
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+Code After:
+------------
+@@ -184,10 +184,15 @@ public void markFree( long id )
+ 
+     private void prepareRange( long id, boolean addition )
+     {
++        key.setIdRangeIdx( idRangeIndex( id ) );
+         value.clear( generation, addition );
+     }
+ 
++    private long idRangeIndex( long id )
++    {
++        return id / idsPerEntry;
++    }
++
+     private int idOffset( long id )
+     {
+         return toIntExact( id % idsPerEntry );
+@@ -204,20 +209,35 @@ private void bridgeGapBetweenHighestWrittenIdAndThisId( long id )
+         long highestWrittenId = this.highestWrittenId.get();
+         if ( bridgeIdGaps && highestWrittenId < id )
+         {
++            key.setIdRangeIdx( -1 );
++            boolean dirty = false;
+             while ( highestWrittenId < id - 1 )
+             {
+                 long bridgeId = ++highestWrittenId;
+                 if ( !isReservedId( bridgeId ) )
+                 {
++                    if ( idRangeIndex( bridgeId ) != key.getIdRangeIdx() )
++                    {
++                        if ( key.getIdRangeIdx() != -1 )
++                        {
++                            writer.merge( key, value, merger );
++                        }
++                        prepareRange( bridgeId, true );
++                    }
+                     value.setCommitBit( idOffset( bridgeId ) );
+                     if ( !started ) // i.e. in recovery mode
+                     {
+                         value.setReuseBit( idOffset( bridgeId ) );
+                     }
++                    dirty = true;
+                 }
+             }
++
++            if ( dirty )
++            {
++                writer.merge( key, value, merger );
++            }
++
+             // Well, we bridged the gap up and including id - 1, but we know that right after this the actual id will be written
+             // so to try to isolate updates to highestWrittenId to this method we can might as well do that right here.
+             this.highestWrittenId.set( id );
+
+Example 2:
+
+Refactoring Description: Extract Method private calculateCapacity(elementData Object[], minCapacity int) : int extracted from private ensureCapacityInternal(minCapacity int) : void in class java.util.ArrayList
+
+Code Before:
+------------
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (c) 1997, 2013, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
+-    private void ensureCapacityInternal(int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+-            minCapacity = Math.max(DEFAULT_CAPACITY, minCapacity);
+         }
+ 
+-        ensureExplicitCapacity(minCapacity);
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Code After:
+------------
+@@ -1,5 +1,5 @@
+ /*
++ * Copyright (c) 1997, 2017, Oracle and/or its affiliates. All rights reserved.
+  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+  *
+  * This code is free software; you can redistribute it and/or modify it
+@@ -28,6 +28,7 @@
+ import java.util.function.Consumer;
+ import java.util.function.Predicate;
+ import java.util.function.UnaryOperator;
++import sun.misc.SharedSecrets;
+ 
+ /**
+  * Resizable-array implementation of the <tt>List</tt> interface.  Implements
+@@ -219,12 +220,15 @@ public void ensureCapacity(int minCapacity) {
+         }
+     }
+ 
++    private static int calculateCapacity(Object[] elementData, int minCapacity) {
+         if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
++            return Math.max(DEFAULT_CAPACITY, minCapacity);
++        }
++        return minCapacity;
+         }
+ 
++    private void ensureCapacityInternal(int minCapacity) {
++        ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+     }
+ 
+     private void ensureExplicitCapacity(int minCapacity) {
+@@ -783,6 +787,8 @@ private void readObject(java.io.ObjectInputStream s)
+ 
+         if (size > 0) {
+             // be like clone(), allocate array based upon size not capacity
++            int capacity = calculateCapacity(elementData, size);
++            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+             ensureCapacityInternal(size);
+ 
+             Object[] a = elementData;
+
+Example 3:
+
+Refactoring Description: Extract Method public advanceBy(amount long, unit TimeUnit) : boolean extracted from public advanceBy(interval long) : boolean in class org.robolectric.util.Scheduler
+
+Code Before:
+------------
+@@ -4,6 +4,7 @@
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.ListIterator;
+ 
+ import static org.robolectric.util.Scheduler.IdleState.*;
+ 
+@@ -29,7 +30,7 @@ public class Scheduler {
+   /**
+    * Describes the current state of a {@link Scheduler}.
+    */
+-  public static enum IdleState {
+     /**
+      * The <tt>Scheduler</tt> will not automatically advance the clock nor execute any runnables.
+      */
+@@ -127,7 +128,7 @@ public synchronized boolean isPaused() {
+    * @param runnable    Runnable to add.
+    */
+   public synchronized void post(Runnable runnable) {
+-    postDelayed(runnable, 0);
+   }
+ 
+   /**
+@@ -137,6 +138,14 @@ public synchronized void post(Runnable runnable) {
+    * @param delayMillis Delay in millis.
+    */
+   public synchronized void postDelayed(Runnable runnable, long delayMillis) {
+     if ((idleState != CONSTANT_IDLE && (isPaused() || delayMillis > 0)) || Thread.currentThread() != associatedThread) {
+       queueRunnableAndSort(runnable, currentTime + delayMillis);
+     } else {
+@@ -195,9 +204,19 @@ public synchronized boolean advanceToNextPostedRunnable() {
+    *
+    * @param   interval  Time interval (in millis).
+    * @return  True if a runnable was executed.
+    */
+   public synchronized boolean advanceBy(long interval) {
+-    long endingTime = currentTime + interval;
+     return advanceTo(endingTime);
+   }
+ 
+
+Code After:
+------------
+@@ -4,6 +4,7 @@
+ import java.util.Collections;
+ import java.util.List;
+ import java.util.ListIterator;
++import java.util.concurrent.TimeUnit;
+ 
+ import static org.robolectric.util.Scheduler.IdleState.*;
+ 
+@@ -29,7 +30,7 @@ public class Scheduler {
+   /**
+    * Describes the current state of a {@link Scheduler}.
+    */
++  public enum IdleState {
+     /**
+      * The <tt>Scheduler</tt> will not automatically advance the clock nor execute any runnables.
+      */
+@@ -127,7 +128,7 @@ public synchronized boolean isPaused() {
+    * @param runnable    Runnable to add.
+    */
+   public synchronized void post(Runnable runnable) {
++    postDelayed(runnable, 0, TimeUnit.MILLISECONDS);
+   }
+ 
+   /**
+@@ -137,6 +138,14 @@ public synchronized void post(Runnable runnable) {
+    * @param delayMillis Delay in millis.
+    */
+   public synchronized void postDelayed(Runnable runnable, long delayMillis) {
++    postDelayed(runnable, delayMillis, TimeUnit.MILLISECONDS);
++  }
++
++  /**
++   * Add a runnable to the queue to be run after a delay.
++   */
++  public synchronized void postDelayed(Runnable runnable, long delay, TimeUnit unit) {
++    long delayMillis = unit.toMillis(delay);
+     if ((idleState != CONSTANT_IDLE && (isPaused() || delayMillis > 0)) || Thread.currentThread() != associatedThread) {
+       queueRunnableAndSort(runnable, currentTime + delayMillis);
+     } else {
+@@ -195,9 +204,19 @@ public synchronized boolean advanceToNextPostedRunnable() {
+    *
+    * @param   interval  Time interval (in millis).
+    * @return  True if a runnable was executed.
++   * @deprecated Use {@link #advanceBy(long, TimeUnit)}.
+    */
+   public synchronized boolean advanceBy(long interval) {
++    return advanceBy(interval, TimeUnit.MILLISECONDS);
++  }
++
++  /**
++   * Run all runnables that are scheduled to run in the next time interval.
++   *
++   * @return  True if a runnable was executed.
++   */
++  public synchronized boolean advanceBy(long amount, TimeUnit unit) {
++    long endingTime = currentTime + unit.toMillis(amount);
+     return advanceTo(endingTime);
+   }
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+private void visitTagEliminateAllocation(Tag tagEliminateAllocation, IParseDictionary parseDictionary) {
+    List<Tag> childrenJVMS = tagEliminateAllocation.getNamedChildren(TAG_JVMS);
+    String typeID = tagEliminateAllocation.getAttributes().get(ATTR_TYPE);
+    String typeOrKlassName = null;
+    if (typeID != null) {
+        typeOrKlassName = ParseUtil.lookupType(typeID, parseDictionary);
+        if (typeOrKlassName != null) {
+            for (Tag tagJVMS : childrenJVMS) {
+                Map<String, String> tagJVMSAttributes = tagJVMS.getAttributes();
+                String attrBCI = tagJVMSAttributes.get(ATTR_BCI);
+                int bciValue = 0;
+                if (attrBCI != null) {
+                    try {
+                        bciValue = Integer.parseInt(attrBCI);
+                    } catch (NumberFormatException nfe) {
+                        logger.error("Couldn't parse bci attribute {} tag {}", attrBCI, tagJVMS.toString(true));
+                        continue;
+                    }
+                } else {
+                    logger.error("Missing bci attribute on tag {}", tagJVMS.toString(true));
+                }
+                String methodID = tagJVMSAttributes.get(ATTR_METHOD);
+                BCIOpcodeMap bciOpcodeMap = parseDictionary.getBCIOpcodeMap(methodID);
+                //logger.info("method {} {} {}", methodID, parseDictionary.getParseMethod(), bciOpcodeMap.entrySet());
+                if (CompilationUtil.memberMatchesMethodID(currentMember, methodID, parseDictionary)) {
+                    storeEliminatedAllocation(currentMember, bciValue, typeOrKlassName, bciOpcodeMap);
+                } else if (processAnnotationsForInlinedMethods) {
+                    IMetaMember inlinedMember = findMemberForInlinedMethod(tagJVMS, parseDictionary);
+                    if (inlinedMember != null) {
+                        storeEliminatedAllocation(inlinedMember, bciValue, typeOrKlassName, bciOpcodeMap);
+                    } else {
+                        unhandledTags.add(tagJVMS);
+                    }
+                }
+            }
+        } else {
+            logger.error("Unknown type attribute {} on tag {}", typeID, tagEliminateAllocation.toString(true));
+        }
+    } else {
+        logger.error("Missing type attribute on tag {}", tagEliminateAllocation.toString(true));
+    }
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>

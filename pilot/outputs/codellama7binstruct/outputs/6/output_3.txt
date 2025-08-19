@@ -1,0 +1,46 @@
+  <refactored code>
+public static FilterResult filter(NodeFilter filter, Node root) {
+    return filter(filter, root, 0);
+}
+
+private static FilterResult filter(NodeFilter filter, Node node, int depth) {
+    FilterResult result = filter.head(node, depth);
+    if (result == FilterResult.STOP) {
+        return result;
+    }
+    if (node.childNodeSize() > 0) {
+        result = filter(filter, node.childNode(0), depth + 1);
+        if (result == FilterResult.STOP) {
+            return result;
+        }
+    }
+    if (result == FilterResult.CONTINUE || result == FilterResult.SKIP_CHILDREN) {
+        result = filter.tail(node, depth);
+        if (result == FilterResult.STOP) {
+            return result;
+        }
+    }
+    if (node.nextSibling() == null && depth > 0) {
+        result = filter(filter, node.parentNode(), depth - 1);
+        if (result == FilterResult.STOP) {
+            return result;
+        }
+    }
+    return result;
+}
+</refactored code>
+<refactoring explanation>
+The original code has a depth-first traversal of the tree, with a recursive call to filter() for each child node. However, this can lead to a stack overflow if the tree is very deep. To avoid this, we can use a loop instead of recursion, and keep track of the current node and its depth.
+
+We start by calling filter() with the root node and depth 0. The method then calls filter() recursively for each child node, with the child node and its depth as parameters. If the child node has no children, we move upwards to the parent node and continue with the next sibling. If the child node has no siblings, we move upwards to the parent node and continue with the next sibling.
+
+We also need to handle the case where the root node has no siblings. In this case, we return the result of the filter() method.
+
+The method returns the result of the filter() method, which is either FilterResult.STOP, FilterResult.CONTINUE, or FilterResult.SKIP_CHILDREN.
+
+The refactoring is done by creating a new method called filter() that takes the filter, node, and depth as parameters, and returns the result of the filter() method. The original method is then modified to call the new method with the root node and depth 0.
+
+The new method uses a loop to traverse the tree, and calls the filter() method recursively for each child node. It also handles the case where the child node has no siblings, and returns the result of the filter() method.
+
+The refactoring is done to avoid a stack overflow when traversing a very deep tree.
+</refactoring explanation>

@@ -1,0 +1,456 @@
+You are an expert in refactoring code snippets. Here are some examples of refactoring using the Extract Method technique.
+
+================= EXAMPLES =================
+
+Example 1:
+
+Refactoring Description: Extract Method public processMethodTree(tree MethodTree) : void extracted from public visitMethod(tree MethodTree, p Void) : Void in class org.checkerframework.common.basetype.BaseTypeVisitor
+
+Code Before:
+------------
+@@ -958,7 +958,23 @@ protected void checkDefaultConstructor(ClassTree tree) {}
+    * Also, it issues a "missing.this" error for static method annotated receivers.
+    */
+   @Override
+-  public Void visitMethod(MethodTree tree, Void p) {
+     // We copy the result from getAnnotatedType to ensure that circular types (e.g. K extends
+     // Comparable<K>) are represented by circular AnnotatedTypeMirrors, which avoids problems
+     // with later checks.
+@@ -983,7 +999,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+     try {
+       if (TreeUtils.isAnonymousConstructor(tree)) {
+         // We shouldn't dig deeper
+-        return null;
+       }
+ 
+       if (TreeUtils.isConstructor(tree)) {
+@@ -1051,7 +1067,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+ 
+       warnInvalidPolymorphicQualifier(tree.getTypeParameters());
+ 
+-      return super.visitMethod(tree, p);
+     } finally {
+       methodTree = preMT;
+     }
+
+Code After:
+------------
+@@ -958,7 +958,23 @@ protected void checkDefaultConstructor(ClassTree tree) {}
+    * Also, it issues a "missing.this" error for static method annotated receivers.
+    */
+   @Override
++  public final Void visitMethod(MethodTree tree, Void p) {
++    ClassTree enclosingClass = TreePathUtil.enclosingClass(getCurrentPath());
++    if (checker.shouldSkipDefs(enclosingClass, tree)) {
++      return null;
++    }
++    processMethodTree(tree);
++    return null;
++  }
++
++  /**
++   * Type-check {@literal methodTree}. Subclasses should override this method instead of {@link
++   * #visitMethod(MethodTree, Void)}.
++   *
++   * @param tree the method to type-check
++   */
++  public void processMethodTree(MethodTree tree) {
++
+     // We copy the result from getAnnotatedType to ensure that circular types (e.g. K extends
+     // Comparable<K>) are represented by circular AnnotatedTypeMirrors, which avoids problems
+     // with later checks.
+@@ -983,7 +999,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+     try {
+       if (TreeUtils.isAnonymousConstructor(tree)) {
+         // We shouldn't dig deeper
++        return;
+       }
+ 
+       if (TreeUtils.isConstructor(tree)) {
+@@ -1051,7 +1067,7 @@ public Void visitMethod(MethodTree tree, Void p) {
+ 
+       warnInvalidPolymorphicQualifier(tree.getTypeParameters());
+ 
++      super.visitMethod(tree, null);
+     } finally {
+       methodTree = preMT;
+     }
+
+Example 2:
+
+Refactoring Description: Extract Method private hideChildMenu(focus boolean) : void extracted from public selectItem(item MenuItem) : void in class com.google.gwt.user.client.ui.MenuBar
+
+Code Before:
+------------
+@@ -302,6 +302,7 @@ private int getClientRight() {
+   private MenuPopup popup;
+   private MenuItem selectedItem;
+   private MenuBar shownChildMenu;
+   private boolean vertical, autoOpen;
+   private boolean focusOnHover = true;
+ 
+@@ -513,6 +514,11 @@ public void clearItems() {
+   public void closeAllChildren(boolean focus) {
+     if (shownChildMenu != null) {
+       // Hide any open submenus of this item
+       shownChildMenu.onHide(focus);
+       shownChildMenu = null;
+       selectItem(null);
+@@ -863,8 +869,7 @@ public void selectItem(MenuItem item) {
+         if (shownChildMenu != null
+             && shownChildMenu == selectedItem.getSubMenu())
+         {
+-          shownChildMenu.onHide(false);
+-          popup.hide();
+           shownChildMenu = null;
+         }
+       }
+@@ -1014,8 +1019,7 @@ public void execute() {
+ 
+       // hide any open submenus of this item
+       if (shownChildMenu != null) {
+-        shownChildMenu.onHide(focus);
+-        popup.hide();
+         shownChildMenu = null;
+         selectItem(null);
+       }
+@@ -1025,20 +1029,17 @@ public void execute() {
+         openPopup(item);
+       } else if (item.getSubMenu() != shownChildMenu) {
+         // close the other submenu and open this one
+-        shownChildMenu.onHide(focus);
+-        popup.hide();
+         openPopup(item);
+       } else if (fireCommand && !autoOpen) {
+         // close this submenu
+-        shownChildMenu.onHide(focus);
+-        popup.hide();
+         shownChildMenu = null;
+         selectItem(item);
+       }
+     } else if (autoOpen && shownChildMenu != null) {
+       // close submenu
+-      shownChildMenu.onHide(focus);
+-      popup.hide();
+       shownChildMenu = null;
+     }
+   }
+@@ -1284,8 +1285,7 @@ private void moveToPrevItem() {
+    */
+   private void onHide(boolean focus) {
+     if (shownChildMenu != null) {
+-      shownChildMenu.onHide(focus);
+-      popup.hide();
+       if (focus) {
+         focus();
+       }
+@@ -1301,6 +1301,8 @@ private void openPopup(final MenuItem item) {
+     shownChildMenu = item.getSubMenu();
+     shownChildMenu.selectItem(null);
+     shownChildMenu.parentMenu = this;
+ 
+     popup = new MenuPopup();
+     popup.setWidget(shownChildMenu);
+@@ -1444,4 +1446,19 @@ private void selectPrevItem() {
+   private void setItemColSpan(UIObject item, int colspan) {
+     item.getElement().setPropertyInt("colSpan", colspan);
+   }
+ }
+
+Code After:
+------------
+@@ -302,6 +302,7 @@ private int getClientRight() {
+   private MenuPopup popup;
+   private MenuItem selectedItem;
+   private MenuBar shownChildMenu;
++  private MenuItem expandedMenuItem;
+   private boolean vertical, autoOpen;
+   private boolean focusOnHover = true;
+ 
+@@ -513,6 +514,11 @@ public void clearItems() {
+   public void closeAllChildren(boolean focus) {
+     if (shownChildMenu != null) {
+       // Hide any open submenus of this item
++      if (expandedMenuItem != null)
++      {
++        expandedMenuItem.setAriaExpanded(false);
++        expandedMenuItem = null;
++      }
+       shownChildMenu.onHide(focus);
+       shownChildMenu = null;
+       selectItem(null);
+@@ -863,8 +869,7 @@ public void selectItem(MenuItem item) {
+         if (shownChildMenu != null
+             && shownChildMenu == selectedItem.getSubMenu())
+         {
++          hideChildMenu(false);
+           shownChildMenu = null;
+         }
+       }
+@@ -1014,8 +1019,7 @@ public void execute() {
+ 
+       // hide any open submenus of this item
+       if (shownChildMenu != null) {
++        hideChildMenu(focus);
+         shownChildMenu = null;
+         selectItem(null);
+       }
+@@ -1025,20 +1029,17 @@ public void execute() {
+         openPopup(item);
+       } else if (item.getSubMenu() != shownChildMenu) {
+         // close the other submenu and open this one
++        hideChildMenu(focus);
+         openPopup(item);
+       } else if (fireCommand && !autoOpen) {
+         // close this submenu
++        hideChildMenu(focus);
+         shownChildMenu = null;
+         selectItem(item);
+       }
+     } else if (autoOpen && shownChildMenu != null) {
+       // close submenu
++      hideChildMenu(focus);
+       shownChildMenu = null;
+     }
+   }
+@@ -1284,8 +1285,7 @@ private void moveToPrevItem() {
+    */
+   private void onHide(boolean focus) {
+     if (shownChildMenu != null) {
++      hideChildMenu(focus);
+       if (focus) {
+         focus();
+       }
+@@ -1301,6 +1301,8 @@ private void openPopup(final MenuItem item) {
+     shownChildMenu = item.getSubMenu();
+     shownChildMenu.selectItem(null);
+     shownChildMenu.parentMenu = this;
++    expandedMenuItem = item;
++    item.setAriaExpanded(true);
+ 
+     popup = new MenuPopup();
+     popup.setWidget(shownChildMenu);
+@@ -1444,4 +1446,19 @@ private void selectPrevItem() {
+   private void setItemColSpan(UIObject item, int colspan) {
+     item.getElement().setPropertyInt("colSpan", colspan);
+   }
++
++  /**
++   * Hide currently displayed child menu and mark the associate menu item as closed.
++   * @param focus
++   */
++  private void hideChildMenu(boolean focus)
++  {
++    if (expandedMenuItem != null)
++    {
++      expandedMenuItem.setAriaExpanded(false);
++      expandedMenuItem = null;
++    }
++    shownChildMenu.onHide(focus);
++    popup.hide();
++  }
+ }
+
+Example 3:
+
+Refactoring Description: Extract Method package makeRDF_i(i int) : URIReference extracted from private rdf_n(i int) : URIReference in class org.apache.jena.rdfxml.xmlinput.states.WantPropertyElement
+
+Code Before:
+------------
+@@ -108,7 +108,7 @@ public FrameI startElement(String uri, String localName, String rawName,
+                 if (object != null) {
+                     if (!badStateCode(nextStateCode))
+                         // otherwise warning already given
+-                        warning(ERR_SYNTAX_ERROR, 
+                                 "On a property element, only one of the attributes rdf:nodeID or rdf:resource is permitted.");
+                 } else
+                     object = URIReference.resolve(this, x, ap.resource);
+@@ -223,25 +223,47 @@ private void clearObject() {
+         object = null;
+     }
+ 
+-    static private URIReference _rdf_n[] = new URIReference[0];
+ 
+     static private URIReference rdf_n(int i) {
+-        if (i >= _rdf_n.length) {
+-            int newLength = (i + 10) * 3 / 2;
+-            URIReference new_rdf_n[] = new URIReference[newLength];
+-            System.arraycopy(_rdf_n, 0, new_rdf_n, 0, _rdf_n.length);
+-            for (int j = _rdf_n.length; j < newLength; j++) {
+-                new_rdf_n[j] = URIReference.createNoChecks(rdfns + "_" + j);
+-            }
+-            _rdf_n = new_rdf_n;
+-        }
+-        return _rdf_n[i];
+     }
+ 
+     /***************************************************************************
+-     * 
+      * ERROR HANDLING CODE
+-     * 
+      **************************************************************************/
+ 
+     // Error detection
+@@ -269,9 +291,9 @@ private int errorNumber(int nextStateCode) {
+     }
+ 
+     /***************************************************************************
+-     * 
+      * ERROR MESSAGES
+-     * 
+      **************************************************************************/
+    private String descriptionOfCases(AttributeLexer ap, int nextStateCode,
+             String propAttrs) {
+@@ -369,14 +391,14 @@ private String complicatedErrorMessage(int nextStateCode,
+         if (ap.type != null && propAttrs != null) {
+             if (nodeIDResource == null)
+                 otherAtts += "the attribute rdf:type and the " + propAttrs;
+-            else 
+                 otherAtts += "the attribute rdf:type, the " + propAttrs;
+         } else if (ap.type != null) {
+             otherAtts += "the attribute rdf:type";
+         } else {
+             otherAtts = "the " + propAttrs;
+         }
+-        
+         if (nodeIDResource != null)
+             otherAtts += " and "+nodeIDResource;
+ 
+
+Code After:
+------------
+@@ -108,7 +108,7 @@ public FrameI startElement(String uri, String localName, String rawName,
+                 if (object != null) {
+                     if (!badStateCode(nextStateCode))
+                         // otherwise warning already given
++                        warning(ERR_SYNTAX_ERROR,
+                                 "On a property element, only one of the attributes rdf:nodeID or rdf:resource is permitted.");
+                 } else
+                     object = URIReference.resolve(this, x, ap.resource);
+@@ -223,25 +223,47 @@ private void clearObject() {
+         object = null;
+     }
+ 
++    // Allocate the first 20 rdf:_i ; calculate at run time any others.
++    static private final int RDF_N = 20;
++    static private URIReference _rdf_n_uri[] = new URIReference[RDF_N];
++    static {
++        for ( int i = 0 ; i < RDF_N; i++) {
++            _rdf_n_uri[i] = makeRDF_i(i);
++        }
++    }
+ 
+     static private URIReference rdf_n(int i) {
++        if ( i < 0 )
++            throw new IllegalStateException("Negative rdf:_i");
++        if (i < _rdf_n_uri.length)
++            return _rdf_n_uri[i];
++        return makeRDF_i(i);
+     }
+ 
++    static URIReference makeRDF_i(int i) {
++        return URIReference.createNoChecks(rdfns + "_" + i);
++    }
++
++    // Not thread safe. JENA-2172
++//    static private URIReference _rdf_n[] = new URIReference[0];
++//
++//    static private URIReference rdf_n(int i) {
++//        if (i >= _rdf_n.length) {
++//            int newLength = (i + 10) * 3 / 2;
++//            URIReference new_rdf_n[] = new URIReference[newLength];
++//            System.arraycopy(_rdf_n, 0, new_rdf_n, 0, _rdf_n.length);
++//            for (int j = _rdf_n.length; j < newLength; j++) {
++//                new_rdf_n[j] = URIReference.createNoChecks(rdfns + "_" + j);
++//            }
++//            _rdf_n = new_rdf_n;
++//        }
++//        return _rdf_n[i];
++//    }
++
+     /***************************************************************************
++     *
+      * ERROR HANDLING CODE
++     *
+      **************************************************************************/
+ 
+     // Error detection
+@@ -269,9 +291,9 @@ private int errorNumber(int nextStateCode) {
+     }
+ 
+     /***************************************************************************
++     *
+      * ERROR MESSAGES
++     *
+      **************************************************************************/
+    private String descriptionOfCases(AttributeLexer ap, int nextStateCode,
+             String propAttrs) {
+@@ -369,14 +391,14 @@ private String complicatedErrorMessage(int nextStateCode,
+         if (ap.type != null && propAttrs != null) {
+             if (nodeIDResource == null)
+                 otherAtts += "the attribute rdf:type and the " + propAttrs;
++            else
+                 otherAtts += "the attribute rdf:type, the " + propAttrs;
+         } else if (ap.type != null) {
+             otherAtts += "the attribute rdf:type";
+         } else {
+             otherAtts = "the " + propAttrs;
+         }
++
+         if (nodeIDResource != null)
+             otherAtts += " and "+nodeIDResource;
+ 
+
+================= REFACTORING MECHANICS =================
+
+Please provide a refactored version of the code snippets above using the Extract Method technique, following these mechanics: 
+
+1. Find a piece of code that does one clear task.
+2. Note what variables it uses or changes.
+3. Create a new method with a clear name.
+4. Move the piece there, adding needed parameters and returns.
+5. Replace the old chunk with a call to the new method.
+6. Compile and Test to confirm it works the same.
+
+================= CODE TO REFACTOR =================
+
+/**
+ * Returns the number of characters between the current position and the next instance of the input sequence
+ *
+ * @param seq scan target
+ * @return offset between current position and next instance of target. -1 if not found.
+ */
+int nextIndexOf(CharSequence seq) {
+    bufferUp();
+    // doesn't handle scanning for surrogates
+    char startChar = seq.charAt(0);
+    for (int offset = bufPos; offset < bufLength; offset++) {
+        // scan to first instance of startchar:
+        if (startChar != charBuf[offset])
+            while (++offset < bufLength && startChar != charBuf[offset]) {
+                /* empty */
+            }
+        int i = offset + 1;
+        int last = i + seq.length() - 1;
+        if (offset < bufLength && last <= bufLength) {
+            for (int j = 1; i < last && seq.charAt(j) == charBuf[i]; i++, j++) {
+                /* empty */
+            }
+            if (// found full sequence
+            i == last)
+                return offset - bufPos;
+        }
+    }
+    return -1;
+}
+
+================= OUTPUT FORMAT =================
+
+
+Return the result strictly using the format below:
+<refactored code>
+[The code after the refactoring should be between these tags.]
+</refactored code>
+<refactoring explanation>
+[The explanation of the refactoring should be between these tags.]
+</refactoring explanation>
